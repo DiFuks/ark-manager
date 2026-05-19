@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ArkManager.App.ViewModels"
+             xmlns:mods="using:ArkManager.Core.Services.Mods"
+             x:Class="ArkManager.App.Views.ModsView"
+             x:DataType="vm:ModsViewModel">
+    <Grid RowDefinitions="auto,auto,*,auto" RowSpacing="10">
+        <TextBlock Grid.Row="0" Text="Mods" FontSize="22" FontWeight="SemiBold"/>
+
+        <DockPanel Grid.Row="1" LastChildFill="True">
+            <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddCommand}" Padding="14,8"/>
+            <TextBox Text="{Binding NewModId}" PlaceholderText="CurseForge ID (или несколько через запятую/пробел)"/>
+        </DockPanel>
+
+        <Border Grid.Row="2" CornerRadius="6" Background="#11141d" Padding="0">
+            <ListBox ItemsSource="{Binding Mods}" SelectedItem="{Binding Selected}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="mods:ModEntry">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="{Binding Id}" FontFamily="Menlo,Consolas,monospace" FontWeight="SemiBold" Width="100"/>
+                            <TextBlock Text="{Binding DisplayName}" Opacity="0.85"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+            <Button Content="↑"          Command="{Binding MoveUpCommand}"   Padding="14,8"/>
+            <Button Content="↓"          Command="{Binding MoveDownCommand}" Padding="14,8"/>
+            <Button Content="🗑 Remove"  Command="{Binding RemoveCommand}"   Padding="14,8"/>
+            <Button Content="🌐 CurseForge" Command="{Binding OpenInCurseForgeCommand}" Padding="14,8"/>
+            <Button Content="↻ Reload"   Command="{Binding ReloadCommand}"   Padding="14,8"/>
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

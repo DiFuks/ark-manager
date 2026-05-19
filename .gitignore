@@ -1,0 +1,25 @@
+## .NET
+bin/
+obj/
+out/
+*.user
+*.suo
+*.userprefs
+*.cache
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+## Rider
+*.DotSettings.user
+*.csproj.user
+
+## Build / publish
+publish/
+artifacts/
+TestResults/
+
+## App-local state (if someone runs from repo)
+local-state/

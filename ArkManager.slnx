@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ArkManager.App/ArkManager.App.csproj" />
+    <Project Path="src/ArkManager.Core/ArkManager.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ArkManager.Core.Tests/ArkManager.Core.Tests.csproj" />
+  </Folder>
+</Solution>

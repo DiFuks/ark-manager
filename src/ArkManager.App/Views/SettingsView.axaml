@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ArkManager.App.ViewModels"
+             xmlns:m="using:ArkManager.Core.Models"
+             x:Class="ArkManager.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <ScrollViewer>
+        <StackPanel Spacing="14">
+            <TextBlock Text="Settings" FontSize="22" FontWeight="SemiBold"/>
+
+            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Runtime" FontWeight="SemiBold"/>
+                    <ComboBox ItemsSource="{Binding AllLaunchModes}" SelectedItem="{Binding LaunchMode}" Width="200"/>
+                    <TextBlock Text="Whisky bottle (wineprefix)"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="Auto-detect" Command="{Binding AutodetectWhiskyBottleCommand}"/>
+                        <TextBox Text="{Binding WhiskyBottlePath}"/>
+                    </DockPanel>
+                    <TextBlock Text="Wine binary override (опционально)"/>
+                    <TextBox Text="{Binding WineBinaryPath}"/>
+                    <TextBlock Text="Parallels VM name (для режима Parallels)"/>
+                    <TextBox Text="{Binding ParallelsVmName}"/>
+                </StackPanel>
+            </Border>
+
+            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Пути" FontWeight="SemiBold"/>
+                    <TextBlock Text="Server install path"/>
+                    <TextBox Text="{Binding ServerInstallPath}"/>
+                    <TextBlock Text="Backups directory"/>
+                    <TextBox Text="{Binding BackupsDirectory}"/>
+                    <TextBlock Text="SteamCMD path (опционально)"/>
+                    <TextBox Text="{Binding SteamCmdPath}"/>
+                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                        <TextBlock Grid.Column="0" Text="Сколько последних бэкапов хранить (0 = без ротации)" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="App data" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding DataDir}" FontFamily="Menlo,Consolas,monospace" Opacity="0.85"/>
+                    <Button Content="📁 Открыть в Finder" Command="{Binding OpenDataFolderCommand}" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="💾 Save" Command="{Binding SaveCommand}" Padding="20,10"/>
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

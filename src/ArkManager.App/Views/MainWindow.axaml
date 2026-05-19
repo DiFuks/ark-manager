@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ArkManager.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
+        Width="1100" Height="720"
+        MinWidth="900" MinHeight="600"
+        x:Class="ArkManager.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="ArkManager — ASA Server Manager">
+    <Window.Styles>
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="12,8"/>
+        </Style>
+    </Window.Styles>
+    <Grid ColumnDefinitions="220,*">
+        <Border Grid.Column="0" Background="#1f2230" Padding="0,12,0,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="16,0,16,16">
+                    <TextBlock Text="🦖 ArkManager" Foreground="White" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="ASA Server Manager" Foreground="#9aa1b0" FontSize="11" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ListBox ItemsSource="{Binding NavItems}"
+                         SelectedItem="{Binding Selected, Mode=TwoWay}"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:NavItem">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="{Binding Icon}" FontSize="16"/>
+                                <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+        <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Margin="16"/>
+    </Grid>
+</Window>

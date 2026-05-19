@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ArkManager.App.ViewModels"
+             x:Class="ArkManager.App.Views.ConfigView"
+             x:DataType="vm:ConfigViewModel">
+    <Grid RowDefinitions="auto,*,auto">
+        <TextBlock Grid.Row="0" Text="Configuration" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,12"/>
+        <TabControl Grid.Row="1">
+            <TabItem Header="Основное">
+                <ScrollViewer Padding="6">
+                    <StackPanel Spacing="10" Margin="6">
+                        <Grid ColumnDefinitions="180,*" RowDefinitions="auto,auto,auto,auto,auto,auto" RowSpacing="8" ColumnSpacing="12">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Map"             VerticalAlignment="Center"/>
+                            <TextBox  Grid.Row="0" Grid.Column="1" Text="{Binding Map}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Session name"    VerticalAlignment="Center"/>
+                            <TextBox  Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Max players"     VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding MaxPlayers}" Minimum="1" Maximum="200"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Port"            VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Port}" Minimum="1024" Maximum="65535"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Query port"      VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding QueryPort}" Minimum="1024" Maximum="65535"/>
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="RCON enabled"    VerticalAlignment="Center"/>
+                            <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                                <CheckBox IsChecked="{Binding RconEnabled}" Content="Enable"/>
+                                <NumericUpDown Value="{Binding RconPort}" Minimum="1024" Maximum="65535" Width="160"/>
+                            </StackPanel>
+                        </Grid>
+                        <Separator/>
+                        <TextBlock Text="Пароли" FontWeight="SemiBold"/>
+                        <Grid ColumnDefinitions="180,*" RowDefinitions="auto,auto,auto" RowSpacing="8" ColumnSpacing="12">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Server password"     VerticalAlignment="Center"/>
+                            <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding ServerPassword}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Admin password"      VerticalAlignment="Center"/>
+                            <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding AdminPassword}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Spectator password"  VerticalAlignment="Center"/>
+                            <TextBox   Grid.Row="2" Grid.Column="1" Text="{Binding SpectatorPassword}"/>
+                        </Grid>
+                        <Separator/>
+                        <TextBlock Text="Дополнительно" FontWeight="SemiBold"/>
+                        <CheckBox IsChecked="{Binding NoBattlEye}"      Content="-NoBattlEye (обязательно для Wine)"/>
+                        <CheckBox IsChecked="{Binding AutoManagedMods}" Content="-automanagedmods (авто-скачивание модов)"/>
+                        <TextBlock Text="Extra CLI args" Opacity="0.7"/>
+                        <TextBox Text="{Binding ExtraCommandLineArgs}"/>
+                        <TextBlock Text="Extra ?query-string params (разделять '?')" Opacity="0.7"/>
+                        <TextBox Text="{Binding ExtraQueryString}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="GameUserSettings.ini">
+                <TextBox Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                         FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+            </TabItem>
+            <TabItem Header="Game.ini">
+                <TextBox Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                         FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+            </TabItem>
+            <TabItem Header="Preview CLI">
+                <ScrollViewer>
+                    <TextBlock Text="{Binding CommandLinePreview}" TextWrapping="Wrap"
+                               FontFamily="Menlo,Consolas,monospace" FontSize="12" Margin="8"/>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+            <Button Content="💾 Save"           Command="{Binding SaveCommand}" Padding="14,8"/>
+            <Button Content="💾 Save ini files" Command="{Binding SaveIniFilesCommand}" Padding="14,8"/>
+            <Button Content="↻ Reload"         Command="{Binding ReloadCommand}" Padding="14,8"/>
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
