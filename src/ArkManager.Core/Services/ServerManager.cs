@@ -20,6 +20,8 @@ public sealed class ServerManager
     private readonly object _lock = new();
     private CancellationTokenSource? _cts;
     private RunningServer? _running;
+    private bool _stopRequested;
+    private CancellationTokenSource? _scheduleCts;
 
     public ServerState State { get; private set; } = ServerState.Stopped;
     public int? Pid => _running?.Pid;
@@ -45,6 +47,7 @@ public sealed class ServerManager
             if (State is ServerState.Running or ServerState.Starting)
                 throw new InvalidOperationException("Сервер уже запущен.");
             State = ServerState.Starting;
+            _stopRequested = false;
         }
         StateChanged?.Invoke(State);
 
@@ -60,17 +63,23 @@ public sealed class ServerManager
                 onExit: code =>
                 {
                     PushLog($"[server exited code={code}]");
+                    bool autoRestart;
                     lock (_lock)
                     {
                         State = code == 0 ? ServerState.Stopped : ServerState.Crashed;
                         _running = null;
+                        autoRestart = !_stopRequested
+                                      && code != 0
+                                      && _settings.Current.AutoRestartOnCrash;
                     }
                     StateChanged?.Invoke(State);
+                    if (autoRestart) _ = AutoRestartLoopAsync();
                 },
                 ct: _cts.Token);
 
             lock (_lock) State = ServerState.Running;
             StateChanged?.Invoke(State);
+            StartScheduledRestartTimer();
         }
         catch (Exception ex)
         {
@@ -89,8 +98,10 @@ public sealed class ServerManager
             if (State is ServerState.Stopped or ServerState.Crashed) return;
             State = ServerState.Stopping;
             pid = _running?.Pid;
+            _stopRequested = true;
         }
         StateChanged?.Invoke(State);
+        _scheduleCts?.Cancel();
 
         try
         {
@@ -107,6 +118,38 @@ public sealed class ServerManager
             StateChanged?.Invoke(State);
             PushLog("[server stopped by user]");
         }
+    }
+
+    private async Task AutoRestartLoopAsync()
+    {
+        var delay = Math.Max(1, _settings.Current.AutoRestartDelaySeconds);
+        PushLog($"[auto-restart] жду {delay}s и стартую заново...");
+        try { await Task.Delay(TimeSpan.FromSeconds(delay)); } catch { }
+        try { await StartAsync(); }
+        catch (Exception ex) { PushLog("[auto-restart] не получилось: " + ex.Message); }
+    }
+
+    private void StartScheduledRestartTimer()
+    {
+        _scheduleCts?.Cancel();
+        var hours = _settings.Current.ScheduledRestartHours;
+        if (hours <= 0) return;
+        _scheduleCts = new CancellationTokenSource();
+        var token = _scheduleCts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromHours(hours), token);
+                if (token.IsCancellationRequested) return;
+                PushLog("[scheduled restart]");
+                await StopAsync();
+                await Task.Delay(2000, token);
+                await StartAsync();
+            }
+            catch (OperationCanceledException) { /* normal */ }
+            catch (Exception ex) { PushLog("[scheduled restart failed] " + ex.Message); }
+        });
     }
 
     private void PushLog(string line)

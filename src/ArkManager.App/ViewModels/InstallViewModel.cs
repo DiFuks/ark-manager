@@ -63,6 +63,13 @@ public partial class InstallViewModel : ViewModelBase
         App.OpenInFinder(ServerInstallPath);
     }
 
+    [RelayCommand]
+    public async Task BrowseServerFolderAsync()
+    {
+        var picked = await Services.Browse.PickFolderAsync("Выбрать папку для ASA сервера", ServerInstallPath);
+        if (!string.IsNullOrEmpty(picked)) ServerInstallPath = picked;
+    }
+
     private void UpdateSteamState()
     {
         if (_steam == null) return;

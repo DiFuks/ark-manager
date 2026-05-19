@@ -23,6 +23,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _parallelsVmName = "";
     [ObservableProperty] private string _steamCmdPath = "";
     [ObservableProperty] private string _dataDir = "";
+    [ObservableProperty] private bool _autoRestartOnCrash;
+    [ObservableProperty] private int _autoRestartDelaySeconds = 10;
+    [ObservableProperty] private int _scheduledRestartHours;
     [ObservableProperty] private string _status = "";
 
     public SettingsViewModel() { }
@@ -41,6 +44,9 @@ public partial class SettingsViewModel : ViewModelBase
         ParallelsVmName = c.ParallelsVmName ?? "";
         SteamCmdPath = c.SteamCmdPath ?? "";
         DataDir = paths.DataDir;
+        AutoRestartOnCrash = c.AutoRestartOnCrash;
+        AutoRestartDelaySeconds = c.AutoRestartDelaySeconds;
+        ScheduledRestartHours = c.ScheduledRestartHours;
     }
 
     [RelayCommand]
@@ -57,6 +63,9 @@ public partial class SettingsViewModel : ViewModelBase
             s.WineBinaryPath = NullIfEmpty(WineBinaryPath);
             s.ParallelsVmName = NullIfEmpty(ParallelsVmName);
             s.SteamCmdPath = NullIfEmpty(SteamCmdPath);
+            s.AutoRestartOnCrash = AutoRestartOnCrash;
+            s.AutoRestartDelaySeconds = AutoRestartDelaySeconds;
+            s.ScheduledRestartHours = ScheduledRestartHours;
         });
         Status = "Сохранено.";
     }
@@ -75,6 +84,41 @@ public partial class SettingsViewModel : ViewModelBase
 
     [RelayCommand]
     public void OpenDataFolder() => App.OpenInFinder(DataDir);
+
+    [RelayCommand]
+    public async Task BrowseServerInstallAsync()
+    {
+        var p = await Services.Browse.PickFolderAsync("Папка сервера", ServerInstallPath);
+        if (!string.IsNullOrEmpty(p)) ServerInstallPath = p;
+    }
+
+    [RelayCommand]
+    public async Task BrowseBackupsAsync()
+    {
+        var p = await Services.Browse.PickFolderAsync("Папка для бэкапов", BackupsDirectory);
+        if (!string.IsNullOrEmpty(p)) BackupsDirectory = p;
+    }
+
+    [RelayCommand]
+    public async Task BrowseWhiskyBottleAsync()
+    {
+        var p = await Services.Browse.PickFolderAsync("Whisky bottle (wineprefix)", WhiskyBottlePath);
+        if (!string.IsNullOrEmpty(p)) WhiskyBottlePath = p;
+    }
+
+    [RelayCommand]
+    public async Task BrowseWineBinaryAsync()
+    {
+        var p = await Services.Browse.PickFileAsync("wine64 binary", WineBinaryPath);
+        if (!string.IsNullOrEmpty(p)) WineBinaryPath = p;
+    }
+
+    [RelayCommand]
+    public async Task BrowseSteamCmdAsync()
+    {
+        var p = await Services.Browse.PickFileAsync("steamcmd binary", SteamCmdPath);
+        if (!string.IsNullOrEmpty(p)) SteamCmdPath = p;
+    }
 
     private static string? NullIfEmpty(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 }

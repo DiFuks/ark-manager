@@ -43,6 +43,7 @@ public static class AppServices
         sc.AddTransient<ServerViewModel>();
         sc.AddTransient<SettingsViewModel>();
         sc.AddTransient<DoctorViewModel>();
+        sc.AddTransient<RconViewModel>();
 
         Provider = sc.BuildServiceProvider();
     }

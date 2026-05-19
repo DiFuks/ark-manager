@@ -40,6 +40,15 @@ public sealed class AppSettings
     /// <summary>Список профилей серверов (мульти-инстанс) — для будущего расширения. Пока используется только Default.</summary>
     [JsonPropertyName("profiles")]
     public List<ServerProfile> Profiles { get; set; } = new();
+
+    /// <summary>Авто-рестарт при ненулевом коде выхода / краше.</summary>
+    public bool AutoRestartOnCrash { get; set; } = false;
+
+    /// <summary>Пауза между авто-рестартами в секундах (back-off для первого, дальше тот же).</summary>
+    public int AutoRestartDelaySeconds { get; set; } = 10;
+
+    /// <summary>Периодический рестарт каждые N часов (0 = выкл).</summary>
+    public int ScheduledRestartHours { get; set; } = 0;
 }
 
 public sealed class ServerLaunchOptions

@@ -14,11 +14,17 @@
                     <ComboBox ItemsSource="{Binding AllLaunchModes}" SelectedItem="{Binding LaunchMode}" Width="200"/>
                     <TextBlock Text="Whisky bottle (wineprefix)"/>
                     <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="Auto-detect" Command="{Binding AutodetectWhiskyBottleCommand}"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                            <Button Content="Auto-detect" Command="{Binding AutodetectWhiskyBottleCommand}"/>
+                            <Button Content="📁..."        Command="{Binding BrowseWhiskyBottleCommand}"/>
+                        </StackPanel>
                         <TextBox Text="{Binding WhiskyBottlePath}"/>
                     </DockPanel>
                     <TextBlock Text="Wine binary override (опционально)"/>
-                    <TextBox Text="{Binding WineBinaryPath}"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseWineBinaryCommand}"/>
+                        <TextBox Text="{Binding WineBinaryPath}"/>
+                    </DockPanel>
                     <TextBlock Text="Parallels VM name (для режима Parallels)"/>
                     <TextBox Text="{Binding ParallelsVmName}"/>
                 </StackPanel>
@@ -28,14 +34,38 @@
                 <StackPanel Spacing="10">
                     <TextBlock Text="Пути" FontWeight="SemiBold"/>
                     <TextBlock Text="Server install path"/>
-                    <TextBox Text="{Binding ServerInstallPath}"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseServerInstallCommand}"/>
+                        <TextBox Text="{Binding ServerInstallPath}"/>
+                    </DockPanel>
                     <TextBlock Text="Backups directory"/>
-                    <TextBox Text="{Binding BackupsDirectory}"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseBackupsCommand}"/>
+                        <TextBox Text="{Binding BackupsDirectory}"/>
+                    </DockPanel>
                     <TextBlock Text="SteamCMD path (опционально)"/>
-                    <TextBox Text="{Binding SteamCmdPath}"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseSteamCmdCommand}"/>
+                        <TextBox Text="{Binding SteamCmdPath}"/>
+                    </DockPanel>
                     <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
                         <TextBlock Grid.Column="0" Text="Сколько последних бэкапов хранить (0 = без ротации)" VerticalAlignment="Center"/>
                         <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Авто-управление" FontWeight="SemiBold"/>
+                    <CheckBox IsChecked="{Binding AutoRestartOnCrash}" Content="Перезапускать при ненулевом коде выхода / краше"/>
+                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                        <TextBlock Grid.Column="0" Text="Пауза перед auto-restart (сек)" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Column="1" Value="{Binding AutoRestartDelaySeconds}" Minimum="1" Maximum="600"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                        <TextBlock Grid.Column="0" Text="Периодический рестарт каждые N часов (0 = выкл)" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Column="1" Value="{Binding ScheduledRestartHours}" Minimum="0" Maximum="168"/>
                     </Grid>
                 </StackPanel>
             </Border>

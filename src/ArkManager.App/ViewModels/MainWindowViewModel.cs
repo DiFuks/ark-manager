@@ -22,6 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ModsViewModel mods,
         BackupsViewModel backups,
         ServerViewModel server,
+        RconViewModel rcon,
         SettingsViewModel settings,
         DoctorViewModel doctor)
     {
@@ -29,6 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             new("Dashboard",   "🎮", dashboard),
             new("Server",      "▶️", server),
+            new("RCON",        "🛰️", rcon),
             new("Install",     "⬇️", install),
             new("Config",      "⚙️", config),
             new("Mods",        "🧩", mods),
@@ -47,6 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
         new ModsViewModel(),
         new BackupsViewModel(),
         new ServerViewModel(),
+        new RconViewModel(),
         new SettingsViewModel(),
         new DoctorViewModel())
     {

@@ -22,10 +22,9 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = AppServices.Get<MainWindowViewModel>(),
-            };
+            var window = new MainWindow { DataContext = AppServices.Get<MainWindowViewModel>() };
+            desktop.MainWindow = window;
+            Services.Browse.Owner = window;
         }
 
         base.OnFrameworkInitializationCompleted();
