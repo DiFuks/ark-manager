@@ -37,7 +37,7 @@ public partial class ConfigViewModel : ViewModelBase
     [ObservableProperty] private double _difficultyOffset = 1.0;
     [ObservableProperty] private double _overrideOfficialDifficulty = 5.0;
     [ObservableProperty] private double _tamingSpeedMultiplier = 1.0;
-    [ObservableProperty] private double _xpMultiplier = 1.0;
+    [ObservableProperty] private double _xPMultiplier = 1.0;
     [ObservableProperty] private double _harvestAmountMultiplier = 1.0;
     [ObservableProperty] private double _dayCycleSpeedScale = 1.0;
     [ObservableProperty] private double _dayTimeSpeedScale = 1.0;
