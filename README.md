@@ -10,9 +10,11 @@
 * менеджмент модов CurseForge — список ID, добавление/удаление, порядок;
 * запуск/остановка сервера, потоковый просмотр лога, uptime/PID;
 * **RCON клиент** (Source RCON по TCP) с быстрыми кнопками `saveworld`/`DoExit`/`Broadcast`;
+* **live player count** на Dashboard — бэкграунд-опрос `ListPlayers` раз в 30с;
 * **авто-рестарт** при креше + опциональный периодический рестарт каждые N часов;
 * поддержка **кластера** (`-ClusterId` / `-ClusterDirOverride`);
 * пресеты карт (TheIsland / Center / Scorched / Aberration / Extinction / Astraeos / Ragnarok);
+* **Rates tab** — Difficulty, XP/Taming/Harvest/DayCycle/FoodDrain/Mating/EggHatch/BabyMature;
 * опциональный **CurseForge API** для резолва ID → имя/описание модов;
 * runtime-абстракция: **Whisky** (по умолчанию), brew-wine, **Parallels** VM.
 
