@@ -19,6 +19,8 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         AppServices.Build();
+        // Запускаем синглтон-воркер, чтобы он подписался на StateChanged.
+        _ = AppServices.Get<ArkManager.Core.Services.Rcon.PlayerPoller>();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

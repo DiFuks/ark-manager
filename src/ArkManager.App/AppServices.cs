@@ -5,6 +5,7 @@ using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Doctor;
 using ArkManager.Core.Services.Launchers;
 using ArkManager.Core.Services.Mods;
+using ArkManager.Core.Services.Rcon;
 using ArkManager.Core.Services.Steam;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,6 +33,7 @@ public static class AppServices
         sc.AddSingleton<ParallelsLauncher>();
         sc.AddSingleton<LauncherFactory>();
         sc.AddSingleton<ServerManager>();
+        sc.AddSingleton<PlayerPoller>();
         sc.AddSingleton<DoctorService>();
 
         // ViewModels

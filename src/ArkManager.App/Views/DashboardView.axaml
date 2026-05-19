@@ -6,17 +6,21 @@
     <StackPanel Spacing="14">
         <TextBlock Text="Dashboard" FontSize="22" FontWeight="SemiBold"/>
         <Border CornerRadius="8" Padding="16" Background="#2a2f44">
-            <Grid ColumnDefinitions="*,*" RowDefinitions="auto,auto,auto,auto,auto" RowSpacing="8" ColumnSpacing="20">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Состояние" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*" RowDefinitions="auto,auto,auto,auto,auto,auto,auto" RowSpacing="8" ColumnSpacing="20">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Состояние"          Opacity="0.7"/>
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ServerState}" FontWeight="SemiBold"/>
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Сессия"   Opacity="0.7"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Сессия"              Opacity="0.7"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Runtime"  Opacity="0.7"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Runtime"             Opacity="0.7"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LaunchMode}"/>
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Сервер"   Opacity="0.7"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Сервер"              Opacity="0.7"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ServerPath}" TextWrapping="Wrap"/>
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Моды"     Opacity="0.7"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Моды"                Opacity="0.7"/>
                 <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ModCount}"/>
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Онлайн (RCON)"        Opacity="0.7"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding PlayersOnline}" FontWeight="SemiBold"/>
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Игроки"               Opacity="0.7"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding PlayersDetail}" TextWrapping="Wrap"/>
             </Grid>
         </Border>
         <StackPanel Orientation="Horizontal" Spacing="10">
