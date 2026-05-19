@@ -11,6 +11,10 @@ public partial class ConfigViewModel : ViewModelBase
     private readonly SettingsService? _settings;
     private readonly ConfigService? _config;
 
+    public IReadOnlyList<MapPreset> KnownMaps { get; } = Maps.Known;
+
+    [ObservableProperty] private MapPreset? _selectedMap;
+
     // Базовые настройки запуска (мапятся в ini + CLI).
     [ObservableProperty] private string _map = "TheIsland_WP";
     [ObservableProperty] private string _sessionName = "My ASA Server";
@@ -24,6 +28,8 @@ public partial class ConfigViewModel : ViewModelBase
     [ObservableProperty] private int _maxPlayers = 70;
     [ObservableProperty] private bool _noBattlEye = true;
     [ObservableProperty] private bool _autoManagedMods = true;
+    [ObservableProperty] private string _clusterId = "";
+    [ObservableProperty] private string _clusterDirOverride = "";
     [ObservableProperty] private string _extraCommandLineArgs = "";
     [ObservableProperty] private string _extraQueryString = "";
 
@@ -64,6 +70,8 @@ public partial class ConfigViewModel : ViewModelBase
             o.MaxPlayers = MaxPlayers;
             o.NoBattlEye = NoBattlEye;
             o.AutoManagedMods = AutoManagedMods;
+            o.ClusterId = string.IsNullOrWhiteSpace(ClusterId) ? null : ClusterId;
+            o.ClusterDirOverride = string.IsNullOrWhiteSpace(ClusterDirOverride) ? null : ClusterDirOverride;
             o.ExtraCommandLineArgs = ExtraCommandLineArgs;
             o.ExtraQueryString = ExtraQueryString;
             if (s.Profiles.Count > 0) s.Profiles[0].Options = o;
@@ -98,11 +106,17 @@ public partial class ConfigViewModel : ViewModelBase
         catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
     }
 
+    partial void OnSelectedMapChanged(MapPreset? value)
+    {
+        if (value != null && Map != value.Map) Map = value.Map;
+    }
+
     private void LoadFromSettings()
     {
         if (_settings == null) return;
         var o = _settings.Current.LaunchOptions;
         Map = o.Map; SessionName = o.SessionName;
+        SelectedMap = KnownMaps.FirstOrDefault(m => m.Map.Equals(o.Map, StringComparison.OrdinalIgnoreCase));
         Port = o.Port; QueryPort = o.QueryPort; RconPort = o.RconPort;
         RconEnabled = o.RconEnabled;
         ServerPassword = o.ServerPassword ?? "";
@@ -111,6 +125,8 @@ public partial class ConfigViewModel : ViewModelBase
         MaxPlayers = o.MaxPlayers;
         NoBattlEye = o.NoBattlEye;
         AutoManagedMods = o.AutoManagedMods;
+        ClusterId = o.ClusterId ?? "";
+        ClusterDirOverride = o.ClusterDirOverride ?? "";
         ExtraCommandLineArgs = o.ExtraCommandLineArgs;
         ExtraQueryString = o.ExtraQueryString;
     }
@@ -135,6 +151,8 @@ public partial class ConfigViewModel : ViewModelBase
             ServerPassword = ServerPassword, AdminPassword = AdminPassword,
             SpectatorPassword = SpectatorPassword, MaxPlayers = MaxPlayers,
             NoBattlEye = NoBattlEye, AutoManagedMods = AutoManagedMods,
+            ClusterId = string.IsNullOrWhiteSpace(ClusterId) ? null : ClusterId,
+            ClusterDirOverride = string.IsNullOrWhiteSpace(ClusterDirOverride) ? null : ClusterDirOverride,
             ExtraCommandLineArgs = ExtraCommandLineArgs,
             ExtraQueryString = ExtraQueryString,
         }};

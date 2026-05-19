@@ -9,6 +9,11 @@
 * создание и восстановление **бэкапов** (`ShooterGame/Saved`, zip, ротация);
 * менеджмент модов CurseForge — список ID, добавление/удаление, порядок;
 * запуск/остановка сервера, потоковый просмотр лога, uptime/PID;
+* **RCON клиент** (Source RCON по TCP) с быстрыми кнопками `saveworld`/`DoExit`/`Broadcast`;
+* **авто-рестарт** при креше + опциональный периодический рестарт каждые N часов;
+* поддержка **кластера** (`-ClusterId` / `-ClusterDirOverride`);
+* пресеты карт (TheIsland / Center / Scorched / Aberration / Extinction / Astraeos / Ragnarok);
+* опциональный **CurseForge API** для резолва ID → имя/описание модов;
 * runtime-абстракция: **Whisky** (по умолчанию), brew-wine, **Parallels** VM.
 
 ## Требования
@@ -109,12 +114,19 @@ ArkManager.sln(x)
 
 Превью полной строки доступно во вкладке **Config → Preview CLI**.
 
+## RCON
+
+Вкладка **RCON**. По умолчанию подставляет порт/пароль из текущих настроек.
+Используется протокол Source RCON (TCP). Команды:
+
+* `ListPlayers`, `Broadcast <msg>`, `saveworld`, `DoExit`, `KickPlayer <id>` и т.д.
+* быстрые кнопки `saveworld` и `DoExit` справа от Send.
+
 ## Что я пока не делал
 
-* RCON-клиент в самом приложении (можно отдельным шагом — есть RCONPort, пароль).
-* CurseForge API-интеграция (имена/описания модов по ID) — нужен API-ключ от CF Studios.
-* Multi-instance / cluster — модель `Profiles` уже есть, но UI работает только с первым (`Default`).
-* Авто-рестарт при креше / по расписанию.
+* Multi-instance UI — модель `Profiles` уже есть, но UI работает только с первым (`Default`).
+* Глобальный CurseForge browser — только резолв имени по ID, без поиска.
+* In-app realtime-статус игроков (отдельный воркер с периодическим `ListPlayers` по RCON).
 * GUI-локализация (сейчас русский в подсказках).
 
 ## Тесты

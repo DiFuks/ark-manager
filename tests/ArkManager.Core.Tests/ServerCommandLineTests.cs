@@ -46,4 +46,35 @@ public class ServerCommandLineTests
         Assert.Contains("-ForceAllowCaveFlyers", args);
         Assert.Contains("-ServerAllowAnsel", args);
     }
+
+    [Fact]
+    public void Build_Cluster_AppendsFlags()
+    {
+        var s = new AppSettings();
+        s.LaunchOptions.ClusterId = "my-cluster";
+        s.LaunchOptions.ClusterDirOverride = "/tmp/cluster";
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        Assert.Contains("-ClusterId=my-cluster", args);
+        Assert.Contains(args, a => a.StartsWith("-ClusterDirOverride="));
+    }
+
+    [Fact]
+    public void Build_Rcon_PopulatesQuery()
+    {
+        var s = new AppSettings();
+        s.LaunchOptions.RconEnabled = true;
+        s.LaunchOptions.RconPort = 27042;
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        Assert.Contains("RCONEnabled=True", args[0]);
+        Assert.Contains("RCONPort=27042", args[0]);
+    }
+
+    [Fact]
+    public void Build_NoBattlEye_Off_SkipsFlag()
+    {
+        var s = new AppSettings();
+        s.LaunchOptions.NoBattlEye = false;
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        Assert.DoesNotContain("-NoBattlEye", args);
+    }
 }

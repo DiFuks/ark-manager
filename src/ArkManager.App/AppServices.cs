@@ -25,6 +25,7 @@ public static class AppServices
         sc.AddSingleton<SteamCmdService>();
         sc.AddSingleton<ConfigService>();
         sc.AddSingleton<BackupService>();
+        sc.AddSingleton<CurseForgeClient>();
         sc.AddSingleton<ModsService>();
         sc.AddSingleton<WhiskyLauncher>();
         sc.AddSingleton<LocalWineLauncher>();

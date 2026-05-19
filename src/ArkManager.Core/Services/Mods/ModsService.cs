@@ -14,11 +14,14 @@ public sealed class ModsService
 {
     private readonly SettingsService _settings;
     private readonly ConfigService _config;
+    private readonly CurseForgeClient _cf;
+    private readonly Dictionary<string, ModEntry> _resolvedCache = new();
 
-    public ModsService(SettingsService settings, ConfigService config)
+    public ModsService(SettingsService settings, ConfigService config, CurseForgeClient cf)
     {
         _settings = settings;
         _config = config;
+        _cf = cf;
     }
 
     private ServerProfile DefaultProfile
@@ -34,7 +37,33 @@ public sealed class ModsService
     }
 
     public IReadOnlyList<ModEntry> List()
-        => DefaultProfile.ModIds.Select(id => new ModEntry(id)).ToList();
+        => DefaultProfile.ModIds
+            .Select(id => _resolvedCache.TryGetValue(id, out var e) ? e : new ModEntry(id))
+            .ToList();
+
+    public async Task ResolveNamesAsync(Action<ModEntry> onUpdate, CancellationToken ct = default)
+    {
+        var key = _settings.Current.CurseForgeApiKey;
+        if (string.IsNullOrWhiteSpace(key)) return;
+        foreach (var id in DefaultProfile.ModIds.ToArray())
+        {
+            ct.ThrowIfCancellationRequested();
+            if (_resolvedCache.ContainsKey(id)) continue;
+            try
+            {
+                var info = await _cf.GetModAsync(id, key, ct);
+                var entry = info != null
+                    ? new ModEntry(id, info.Name, info.Summary)
+                    : new ModEntry(id, "(не найдено в CurseForge)");
+                _resolvedCache[id] = entry;
+                onUpdate(entry);
+            }
+            catch (Exception ex)
+            {
+                onUpdate(new ModEntry(id, "(ошибка резолва)", ex.Message));
+            }
+        }
+    }
 
     public void Add(string id)
     {

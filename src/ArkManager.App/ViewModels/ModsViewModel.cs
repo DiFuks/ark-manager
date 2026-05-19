@@ -32,6 +32,23 @@ public partial class ModsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    public async Task ResolveNamesAsync()
+    {
+        if (_mods == null) return;
+        Status = "Резолвлю имена через CurseForge...";
+        try
+        {
+            await _mods.ResolveNamesAsync(entry => App.UiThread(() =>
+            {
+                var idx = Mods.ToList().FindIndex(m => m.Id == entry.Id);
+                if (idx >= 0) Mods[idx] = entry;
+            }));
+            Status = "Имена обновлены.";
+        }
+        catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
+    }
+
+    [RelayCommand]
     public void Add()
     {
         if (_mods == null) return;

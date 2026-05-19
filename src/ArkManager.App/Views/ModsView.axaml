@@ -30,6 +30,7 @@
             <Button Content="↓"          Command="{Binding MoveDownCommand}" Padding="14,8"/>
             <Button Content="🗑 Remove"  Command="{Binding RemoveCommand}"   Padding="14,8"/>
             <Button Content="🌐 CurseForge" Command="{Binding OpenInCurseForgeCommand}" Padding="14,8"/>
+            <Button Content="🔤 Resolve names" Command="{Binding ResolveNamesCommand}" Padding="14,8"/>
             <Button Content="↻ Reload"   Command="{Binding ReloadCommand}"   Padding="14,8"/>
             <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
         </StackPanel>

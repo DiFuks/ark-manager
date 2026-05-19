@@ -48,6 +48,8 @@
                         <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseSteamCmdCommand}"/>
                         <TextBox Text="{Binding SteamCmdPath}"/>
                     </DockPanel>
+                    <TextBlock Text="CurseForge API key (для резолва имён модов)"/>
+                    <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="•"/>
                     <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
                         <TextBlock Grid.Column="0" Text="Сколько последних бэкапов хранить (0 = без ротации)" VerticalAlignment="Center"/>
                         <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>

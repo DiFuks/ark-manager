@@ -26,6 +26,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _autoRestartOnCrash;
     [ObservableProperty] private int _autoRestartDelaySeconds = 10;
     [ObservableProperty] private int _scheduledRestartHours;
+    [ObservableProperty] private string _curseForgeApiKey = "";
     [ObservableProperty] private string _status = "";
 
     public SettingsViewModel() { }
@@ -47,6 +48,7 @@ public partial class SettingsViewModel : ViewModelBase
         AutoRestartOnCrash = c.AutoRestartOnCrash;
         AutoRestartDelaySeconds = c.AutoRestartDelaySeconds;
         ScheduledRestartHours = c.ScheduledRestartHours;
+        CurseForgeApiKey = c.CurseForgeApiKey ?? "";
     }
 
     [RelayCommand]
@@ -66,6 +68,7 @@ public partial class SettingsViewModel : ViewModelBase
             s.AutoRestartOnCrash = AutoRestartOnCrash;
             s.AutoRestartDelaySeconds = AutoRestartDelaySeconds;
             s.ScheduledRestartHours = ScheduledRestartHours;
+            s.CurseForgeApiKey = NullIfEmpty(CurseForgeApiKey);
         });
         Status = "Сохранено.";
     }

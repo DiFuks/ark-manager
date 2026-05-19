@@ -52,6 +52,11 @@ public static class ServerCommandLine
         if (o.NoBattlEye)
             list.Add("-NoBattlEye");
 
+        if (!string.IsNullOrWhiteSpace(o.ClusterId))
+            list.Add("-ClusterId=" + o.ClusterId);
+        if (!string.IsNullOrWhiteSpace(o.ClusterDirOverride))
+            list.Add("-ClusterDirOverride=\"" + o.ClusterDirOverride + "\"");
+
         if (!string.IsNullOrWhiteSpace(o.ExtraCommandLineArgs))
         {
             foreach (var arg in Tokenize(o.ExtraCommandLineArgs))

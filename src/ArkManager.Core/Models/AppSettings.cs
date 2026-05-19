@@ -41,6 +41,9 @@ public sealed class AppSettings
     [JsonPropertyName("profiles")]
     public List<ServerProfile> Profiles { get; set; } = new();
 
+    /// <summary>CurseForge Studios API key. Когда задан — Mods-страница резолвит ID→имя через api.curseforge.com.</summary>
+    public string? CurseForgeApiKey { get; set; }
+
     /// <summary>Авто-рестарт при ненулевом коде выхода / краше.</summary>
     public bool AutoRestartOnCrash { get; set; } = false;
 
@@ -65,6 +68,10 @@ public sealed class ServerLaunchOptions
     public int MaxPlayers { get; set; } = 70;
     public bool NoBattlEye { get; set; } = true;
     public bool AutoManagedMods { get; set; } = true;
+    /// <summary>Cluster ID — серверы с одинаковым ID образуют кластер (трансфер существ/предметов).</summary>
+    public string? ClusterId { get; set; }
+    /// <summary>Папка для кластер-данных. Если задана — добавляется -ClusterDirOverride=...</summary>
+    public string? ClusterDirOverride { get; set; }
     /// <summary>Дополнительные «голые» CLI-флаги, например "-ForceAllowCaveFlyers -ServerAllowAnsel".</summary>
     public string ExtraCommandLineArgs { get; set; } = "";
     /// <summary>Дополнительные QueryString-параметры после Map, разделённые ?.</summary>
