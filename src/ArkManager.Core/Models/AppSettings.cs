@@ -2,13 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace ArkManager.Core.Models;
 
-public enum LaunchMode
-{
-    Whisky,
-    LocalWine,
-    Parallels,
-}
-
 public sealed class AppSettings
 {
     /// <summary>Где лежит установленный ASA Dedicated Server (директория с ArkAscendedServer.exe).</summary>
@@ -23,16 +16,11 @@ public sealed class AppSettings
     /// <summary>Сколько последних бэкапов хранить (0 = без ротации).</summary>
     public int BackupRotationKeep { get; set; } = 10;
 
-    public LaunchMode LaunchMode { get; set; } = LaunchMode.Whisky;
-
-    /// <summary>Whisky: путь к боттлу (директория с wineprefix). Если null — авто-детект.</summary>
-    public string? WhiskyBottlePath { get; set; }
-
-    /// <summary>Путь до бинарника wine (для LocalWine или для оверрайда whisky-bundled wine).</summary>
+    /// <summary>Путь до бинарника wine64 (override). Если null — авто-детект в стандартных brew-путях.</summary>
     public string? WineBinaryPath { get; set; }
 
-    /// <summary>Имя Parallels VM, в которой запускается сервер.</summary>
-    public string? ParallelsVmName { get; set; }
+    /// <summary>Путь к WINEPREFIX (директория, куда wine кладёт «C:\»). По умолчанию — wineprefix в data-dir.</summary>
+    public string? WinePrefixPath { get; set; }
 
     /// <summary>Аргументы запуска. Map+опции попадают в начало; -mods / -NoBattlEye добавляются автоматически.</summary>
     public ServerLaunchOptions LaunchOptions { get; set; } = new();
@@ -52,6 +40,12 @@ public sealed class AppSettings
 
     /// <summary>Периодический рестарт каждые N часов (0 = выкл).</summary>
     public int ScheduledRestartHours { get; set; } = 0;
+
+    /// <summary>Автобэкап раз в N минут (0 = выкл). Ротация — через BackupRotationKeep.</summary>
+    public int AutoBackupIntervalMinutes { get; set; } = 0;
+
+    /// <summary>Делать автобэкап только когда сервер в состоянии Running.</summary>
+    public bool AutoBackupOnlyWhenRunning { get; set; } = true;
 }
 
 public sealed class ServerLaunchOptions

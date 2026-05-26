@@ -62,49 +62,6 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Rates">
-                <ScrollViewer Padding="6">
-                    <StackPanel Spacing="8" Margin="6">
-                        <TextBlock Text="Сложность" FontWeight="SemiBold"/>
-                        <Grid ColumnDefinitions="260,160,*" ColumnSpacing="10" RowDefinitions="auto,auto" RowSpacing="6">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="DifficultyOffset" VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding DifficultyOffset}" Increment="0.1" Minimum="0" Maximum="10"/>
-                            <TextBlock Grid.Row="0" Grid.Column="2" Text="0..1, обычно 1.0" Opacity="0.6" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="OverrideOfficialDifficulty" VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding OverrideOfficialDifficulty}" Increment="1" Minimum="0" Maximum="30"/>
-                            <TextBlock Grid.Row="1" Grid.Column="2" Text="5 = max wild dino level 150" Opacity="0.6" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Separator/>
-                        <TextBlock Text="Множители" FontWeight="SemiBold"/>
-                        <Grid ColumnDefinitions="260,160" ColumnSpacing="10" RowSpacing="6"
-                              RowDefinitions="auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto">
-                            <TextBlock Grid.Row="0"  Grid.Column="0" Text="TamingSpeedMultiplier"             VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="0"  Grid.Column="1" Value="{Binding TamingSpeedMultiplier}"             Increment="0.5" Minimum="0.1" Maximum="100"/>
-                            <TextBlock Grid.Row="1"  Grid.Column="0" Text="XPMultiplier"                      VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="1"  Grid.Column="1" Value="{Binding XPMultiplier}"                      Increment="0.5" Minimum="0.1" Maximum="100"/>
-                            <TextBlock Grid.Row="2"  Grid.Column="0" Text="HarvestAmountMultiplier"           VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="2"  Grid.Column="1" Value="{Binding HarvestAmountMultiplier}"           Increment="0.5" Minimum="0.1" Maximum="100"/>
-                            <TextBlock Grid.Row="3"  Grid.Column="0" Text="DayCycleSpeedScale"                VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="3"  Grid.Column="1" Value="{Binding DayCycleSpeedScale}"                Increment="0.1" Minimum="0.1" Maximum="10"/>
-                            <TextBlock Grid.Row="4"  Grid.Column="0" Text="DayTimeSpeedScale"                 VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="4"  Grid.Column="1" Value="{Binding DayTimeSpeedScale}"                 Increment="0.1" Minimum="0.1" Maximum="10"/>
-                            <TextBlock Grid.Row="5"  Grid.Column="0" Text="NightTimeSpeedScale"               VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="5"  Grid.Column="1" Value="{Binding NightTimeSpeedScale}"               Increment="0.1" Minimum="0.1" Maximum="10"/>
-                            <TextBlock Grid.Row="6"  Grid.Column="0" Text="Dino FoodDrainMultiplier"          VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="6"  Grid.Column="1" Value="{Binding DinoCharacterFoodDrainMultiplier}"  Increment="0.1" Minimum="0.1" Maximum="10"/>
-                            <TextBlock Grid.Row="7"  Grid.Column="0" Text="Player FoodDrainMultiplier"        VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="7"  Grid.Column="1" Value="{Binding PlayerCharacterFoodDrainMultiplier}" Increment="0.1" Minimum="0.1" Maximum="10"/>
-                            <TextBlock Grid.Row="8"  Grid.Column="0" Text="MatingIntervalMultiplier"          VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="8"  Grid.Column="1" Value="{Binding MatingIntervalMultiplier}"          Increment="0.1" Minimum="0.1" Maximum="10"/>
-                            <TextBlock Grid.Row="9"  Grid.Column="0" Text="EggHatchSpeedMultiplier"           VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="9"  Grid.Column="1" Value="{Binding EggHatchSpeedMultiplier}"           Increment="0.5" Minimum="0.1" Maximum="100"/>
-                            <TextBlock Grid.Row="10" Grid.Column="0" Text="BabyMatureSpeedMultiplier"         VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="10" Grid.Column="1" Value="{Binding BabyMatureSpeedMultiplier}"         Increment="0.5" Minimum="0.1" Maximum="100"/>
-                        </Grid>
-                        <Button Content="💾 Save rates" Command="{Binding SaveRatesCommand}" Padding="14,8" HorizontalAlignment="Left"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
             <TabItem Header="GameUserSettings.ini">
                 <TextBox Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                          FontFamily="Menlo,Consolas,monospace" FontSize="12"/>

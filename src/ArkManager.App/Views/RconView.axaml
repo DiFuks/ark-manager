@@ -12,23 +12,16 @@
             <Button  Grid.Column="3" Content="Connect"    Command="{Binding ConnectCommand}"    IsEnabled="{Binding !Connected}"/>
             <Button  Grid.Column="4" Content="Disconnect" Command="{Binding DisconnectCommand}" IsEnabled="{Binding Connected}"/>
         </Grid>
-        <Border Grid.Row="2" CornerRadius="6" Background="#0d0f17" Padding="6">
-            <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding Lines}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" FontFamily="Menlo,Consolas,monospace" FontSize="11" TextWrapping="Wrap"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Border>
-        <Grid Grid.Row="3" ColumnDefinitions="*,auto,auto,auto,auto" ColumnSpacing="6">
+        <TextBox Grid.Row="2" x:Name="LogBox" Text="{Binding Lines}" IsReadOnly="True" AcceptsReturn="True"
+                 TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="11"
+                 Background="#0d0f17" Padding="6"/>
+        <Grid Grid.Row="3" ColumnDefinitions="*,auto,auto,auto,auto,auto" ColumnSpacing="6">
             <TextBox Grid.Column="0" Text="{Binding Command}" PlaceholderText="RCON command (e.g. ListPlayers)"/>
             <Button  Grid.Column="1" Content="Send"      Command="{Binding SendCommand}"      IsEnabled="{Binding Connected}"/>
             <Button  Grid.Column="2" Content="saveworld" Command="{Binding SaveworldCommand}" IsEnabled="{Binding Connected}"/>
             <Button  Grid.Column="3" Content="DoExit"    Command="{Binding DoExitCommand}"    IsEnabled="{Binding Connected}"/>
-            <Button  Grid.Column="4" Content="🗑"        Command="{Binding ClearCommand}"/>
+            <Button  Grid.Column="4" Content="📋"        Command="{Binding CopyLogCommand}"  ToolTip.Tip="Copy log"/>
+            <Button  Grid.Column="5" Content="🗑"        Command="{Binding ClearCommand}"    ToolTip.Tip="Clear log"/>
         </Grid>
     </Grid>
 </UserControl>

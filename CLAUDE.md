@@ -3,7 +3,8 @@
 ASA (ARK: Survival Ascended) dedicated server manager для macOS. Аналог
 Windows-only ASADedicatedManager, написан под Mac. Цель — нативный mac-GUI
 для управления полным жизненным циклом сервера (install/config/mods/backup/
-start/stop/RCON), сам ASA-сервер при этом крутится под Wine/Whisky/Parallels.
+start/stop/RCON), сам ASA-сервер крутится через **wine64** (brew cask
+`wine-stable`), потому что нативной mac-сборки сервера не существует.
 
 ## Stack & commands
 
@@ -19,14 +20,14 @@ dotnet run --project src/ArkManager.App/ArkManager.App.csproj
 ## Layout
 
 - `src/ArkManager.Core/` — UI-агностичная бизнес-логика
-  - `Models/` — AppSettings, ServerLaunchOptions, ServerProfile, Maps, Rates
+  - `Models/` — AppSettings, ServerLaunchOptions, ServerProfile, Maps
   - `Services/{AppPaths,SettingsService,ServerManager}.cs`
-  - `Services/Steam/SteamCmdService.cs`
-  - `Services/Config/{IniFile,ConfigService,RatesService}.cs`
-  - `Services/Backups/BackupService.cs`
+  - `Services/Steam/SteamCmdService.cs` (+ `InstalledServerVersion` record)
+  - `Services/Config/{IniFile,ConfigService}.cs`
+  - `Services/Backups/{BackupService,AutoBackupWorker}.cs`
   - `Services/Mods/{ModsService,CurseForgeClient}.cs`
   - `Services/Doctor/DoctorService.cs`
-  - `Services/Launchers/{IServerLauncher,ServerCommandLine,WineLauncherBase,WhiskyLauncher,LocalWineLauncher,ParallelsLauncher,LauncherFactory}.cs`
+  - `Services/Launchers/{IServerLauncher,ServerCommandLine,WineLauncher}.cs`
   - `Services/Rcon/{RconClient,PlayerPoller}.cs`
   - `Util/ProcessRunner.cs`
 - `src/ArkManager.App/` — Avalonia 12 GUI
@@ -36,7 +37,18 @@ dotnet run --project src/ArkManager.App/ArkManager.App.csproj
   - `Converters/OkIcon.cs` — bool → ✅/❌
   - `ViewModels/*ViewModel.cs` — partial + `[ObservableProperty]` / `[RelayCommand]`
   - `Views/*View.{axaml,axaml.cs}` — `ViewLocator` биндит по имени класса
-- `tests/ArkManager.Core.Tests/` — IniFile / ServerCommandLine / Rates / PlayerPoller
+- `tests/ArkManager.Core.Tests/` — xUnit. `Core.csproj` имеет
+  `<InternalsVisibleTo Include="ArkManager.Core.Tests" />` — internal-методы
+  тестируемы.
+
+## Табы UI (текущий список)
+
+`MainWindowViewModel` собирает nav:
+
+`Server → RCON → Install → Config → Mods → Backups → Doctor → Settings`
+
+(Стартовый таб — `Server`. Dashboard был, но удалён: единственное уникальное
+с него — players online / names — переехало в Server.)
 
 ## App-local state
 
@@ -46,7 +58,8 @@ Vendor-каталог приложения (соответствует прав�
 - Linux:  `$XDG_DATA_HOME/ArkManager/`
 - Win:    `%APPDATA%/ArkManager/`
 
-Содержит: `settings.json`, `logs/`, `steamcmd/`, `backups/`, `server/` (default).
+Содержит: `settings.json`, `logs/`, `steamcmd/`, `backups/`, `server/` (default),
+`wineprefix/` (default WINEPREFIX).
 
 ## Подводные камни кода (не очевидно из исходников)
 
@@ -61,7 +74,29 @@ Vendor-каталог приложения (соответствует прав�
 - `_rconPort` → `RconPort` (это ок, RCON в коде везде PascalCase `RconPort`)
 - если нужен `URL` — поле должно быть `_uRL`
 
-Если уже всплыла такая ошибка с другой аббревиатурой — фикс однострочный.
+### Дизейбл команд (Start/Stop по состоянию)
+
+Pattern: `[NotifyCanExecuteChangedFor(nameof(StartCommand))]` на поле
+`_state` + `[RelayCommand(CanExecute = nameof(CanStart))]` на методе. Avalonia
+сам дизейблит `Button` через `ICommand.CanExecute` — `IsEnabled` в XAML
+явно прописывать не надо. См. `ServerViewModel.CanStart/CanStop`.
+
+### ServerCommandLine: пароли и RCON НЕ в URL
+
+`ServerCommandLine.Build` строит URL-query вида
+`TheIsland_WP?listen?SessionName=...?Port=N?QueryPort=M?MaxPlayers=K`.
+В URL **специально не кладутся** `ServerPassword` / `ServerAdminPassword` /
+`SpectatorPassword` / `RCONEnabled` / `RCONPort`. Причина: ASA URL-парсер
+может склеить хвост строки в значение пароля и сохранить так в
+`GameUserSettings.ini` — потом RCON-аутентификация ломается (приходит склеенный
+пароль вида `2222?RCONEnabled=True?RCONPort=27020`).
+
+Эти ключи пишутся **только в ini** через `ConfigService.ApplyLaunchOptionsToIni`
+(`[ServerSettings]` секция). Оттуда сервер их и читает. RCON-клиент тоже
+работает по ini-значению.
+
+Тесты `Build_Passwords_NotInUrlQuery` / `Build_Rcon_NotInUrlQuery`
+проверяют отсутствие этих ключей в URL.
 
 ### Avalonia 12
 
@@ -94,11 +129,14 @@ Vendor-каталог приложения (соответствует прав�
 
 ## ASA technical quirks (что НЕ интуитивно)
 
-- **App ID 2430930**, free anonymous download
+- **App ID 2430930**, free anonymous download.
 - **Нет native Mac/Linux build** — только Windows .exe. SteamCMD на маке
   требует **`+@sSteamCmdForcePlatformType windows`** перед `+login anonymous`,
-  иначе откажет «invalid platform».
-- **`.exe` запускается через Wine** (Whisky / brew wine / Parallels VM).
+  иначе откажет «invalid platform». Плюс **`+app_info_update 1`** — без него
+  steamcmd падает с «Failed to install app — Missing configuration» (PICS-кэш
+  не подтягивается).
+- **`.exe` запускается через wine64** (cask `wine-stable`). Других режимов
+  больше нет — Whisky-cask архивирован (Aug 2024), Parallels-launcher выпилен.
 - **BattlEye под Wine не работает** → флаг **`-NoBattlEye`** обязателен, включён
   в `ServerLaunchOptions` по умолчанию.
 - **Моды через CurseForge** (не Steam Workshop). Передаются как
@@ -107,30 +145,75 @@ Vendor-каталог приложения (соответствует прав�
   одинаковый ID на нескольких серверах = общие трансферы.
 - **Save папка**: `<ServerInstallPath>/ShooterGame/Saved/SavedArks/<Map>/`
 - **Конфиги**: `<ServerInstallPath>/ShooterGame/Saved/Config/WindowsServer/{GameUserSettings,Game}.ini`
+- **Server build version**: `<ServerInstallPath>/steamapps/appmanifest_2430930.acf`
+  (top-level keys `buildid` + `LastUpdated`). Latest build тянется через
+  `steamcmd +app_info_print 2430930`, регэксп ищет `public` → `buildid`.
 - **RCON**: Source RCON (TCP). Маркер-пакет нужен для склейки многосегментных
-  ответов — у нас в `RconClient.SendAsync` он есть.
+  ответов — у нас в `RconClient.SendAsync` он есть. RCON-пароль =
+  `ServerAdminPassword` из `[ServerSettings]` в ini (не из CLI!).
 - **CurseForge API**: ASA gameId = 83374, endpoint `/v1/mods/{id}`, header
   `x-api-key`. Без ключа резолв имён не работает, но это не блокирует ничего.
 
-## Whisky paths
+## Wine setup (cask `wine-stable`)
 
-- wine: `/Applications/Whisky.app/Contents/Resources/Libraries/Wine/bin/wine64`
-- bottles (новая версия): `~/Library/Containers/com.isaacmarovitz.Whisky/Bottles/`
-- bottles (старая): `~/Library/Application Support/com.isaacmarovitz.Whisky/Bottles/`
+- wine64 path (искаем в этом порядке через `WineLauncher.EnumerateWineCandidates`):
+  - `/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64`
+  - `/Applications/Wine Staging.app/...` / `/Applications/Wine Devel.app/...`
+  - `/Applications/Game Porting Toolkit.app/...` (если ставился GPTK вручную)
+  - `/Applications/Wine Crossover.app/...` (старый gcenx, fallback)
+  - `/opt/homebrew/bin/wine64` / `/usr/local/bin/wine64`
+- WINEPREFIX = `~/Library/Application Support/ArkManager/wineprefix` (по умолчанию).
+  Wine инициализирует префикс автоматически при первом запуске сервера —
+  займёт ~30 сек, в логе будут «mountmgr/winemenubuilder» — это нормально.
 
-`WhiskyLauncher.EnumerateBottleRoots()` перебирает оба.
+### Doctor → Install wine
 
-Bottle создаётся юзером один раз вручную через Whisky.app — программно мы его
-не создаём (планировалось «bottle-creation helper», но не реализовано).
+Brew в version ≥4.6 убрал `--no-quarantine`. Плюс cask `wine-stable` тянет
+`gstreamer-runtime` как .pkg-инсталлер, который **требует sudo**. Запускать
+brew как child-процесс ArkManager бесполезно: stdio редиректнут, sudo
+не видит tty → виснет.
 
-## Что НЕ сделано (намеренно out of scope для текущего скоупа)
+Решение в `DoctorService.InstallWineViaBrewAsync`: пишем скрипт в
+`/tmp/ark-manager-install-wine.sh` и запускаем `open -a Terminal <script>`.
+Скрипт:
+1. Проверяет Rosetta 2 (`arch -x86_64 /usr/bin/true`); ставит если нет
+   (`softwareupdate --install-rosetta --agree-to-license`). wine-stable —
+   Intel-only.
+2. `brew install --cask wine-stable`.
+3. `xattr -dr com.apple.quarantine "/Applications/Wine Stable.app"` — снимает
+   карантин (Gatekeeper иначе блокирует wine64).
+
+UI просит юзера дождаться окончания в Terminal и нажать `↻ Run checks`
+обратно в Doctor.
+
+**Важно:** cask wine-stable помечен deprecated с отключением **2026-09-01**.
+После этой даты `brew install --cask wine-stable` сломается — нужно будет
+переезжать на `gcenx/wine/game-porting-toolkit` (10 GB + Rosetta).
+
+## Автобэкап
+
+`AutoBackupWorker` (singleton, pre-resolved в `App.OnFrameworkInitializationCompleted`).
+Фоновый цикл `Task.Run`. Параметры из settings:
+- `AutoBackupIntervalMinutes` — 0 выключает.
+- `AutoBackupOnlyWhenRunning` — если true, пропускаем тики когда
+  `ServerManager.State != Running` (избегаем гонять одинаковые снимки
+  у простаивающего сервера).
+
+Подписка на `SettingsService.Changed` — текущий sleep кенселится через
+linked CTS, новый интервал применяется немедленно (а не на следующем тике).
+
+События `BackupCreated` / `BackupFailed` / `Log` + публичное `NextRunUtc`.
+`BackupsViewModel` показывает «автобэкап через MM:SS», тикает раз в 5с.
+
+## Что НЕ сделано (намеренно out of scope)
 
 - Multi-instance UI (модель `Profiles` готова, GUI работает только с первым).
-- Bottle-creation helper для Whisky.
 - CurseForge browser/search (только resolve ID → имя).
 - GUI локализация (микс ru/en).
 - ARK Game.ini secondary settings (OverrideEngramEntries, EngramOverrides и
   тонна других кастомизаций) — есть raw-редактор Game.ini как fallback.
+- Лимит RAM сервера. У ASA нет CLI-флага, на macOS нет cgroups, `ulimit -v`
+  ломает wine. Workaround — `ScheduledRestartHours` (есть в Settings).
 
 ## Code style
 
@@ -142,18 +225,5 @@ Bottle создаётся юзером один раз вручную через
 - VM имеют параметрless конструктор для XAML-дизайнера; реальные инстансы
   через DI.
 - Tests xUnit, без mock-фреймворков. Парсеры / pure logic — приоритет.
-
-## Существующие коммиты (для контекста)
-
-```
-d437477 Force dark theme
-1d3d5d3 Fix ObservableProperty name for XPMultiplier
-51f2da0 Update README: live players, Rates tab
-26bbed0 Rates tab: difficulty + common multipliers
-0af81c3 PlayerPoller + live player count on Dashboard
-baa3a76 Maps presets, cluster CLI, CurseForge name lookup
-ae1a241 Browse buttons, RCON client, auto-restart
-f89e125 Initial ArkManager skeleton
-```
 
 Branch `main`, без remote (юзер пушит сам по желанию).

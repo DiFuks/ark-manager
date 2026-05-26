@@ -9,7 +9,7 @@
         <TextBlock Grid.Row="0" Text="Doctor" FontSize="22" FontWeight="SemiBold"/>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
             <Button Content="↻ Run checks" Command="{Binding RunCommand}" IsEnabled="{Binding !Busy}" Padding="14,8"/>
-            <Button Content="⬇ Install Whisky (brew)" Command="{Binding InstallWhiskyCommand}" IsEnabled="{Binding !Busy}" Padding="14,8"/>
+            <Button Content="⬇ Install wine (brew)" Command="{Binding InstallWineCommand}" IsEnabled="{Binding !Busy}" Padding="14,8"/>
             <TextBlock Text="{Binding Summary}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
         </StackPanel>
 
@@ -34,17 +34,13 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Border>
-            <Border Grid.Column="1" CornerRadius="6" Background="#11141d" Padding="6">
-                <ScrollViewer>
-                    <ItemsControl ItemsSource="{Binding InstallLog}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" FontFamily="Menlo,Consolas,monospace" FontSize="11" TextWrapping="Wrap"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Border>
+            <Grid Grid.Column="1" RowDefinitions="auto,*" RowSpacing="4">
+                <Button Grid.Row="0" Content="📋 Copy install log" Command="{Binding CopyInstallLogCommand}"
+                        HorizontalAlignment="Right" Padding="8,2"/>
+                <TextBox Grid.Row="1" x:Name="LogBox" Text="{Binding InstallLog}" IsReadOnly="True" AcceptsReturn="True"
+                         TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="11"
+                         Background="#11141d" Padding="6"/>
+            </Grid>
         </Grid>
 
         <ProgressBar Grid.Row="3" IsIndeterminate="True" IsVisible="{Binding Busy}" Height="4"/>

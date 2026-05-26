@@ -33,6 +33,7 @@
             <Button Content="📁 Open folder"          Command="{Binding OpenFolderCommand}" Padding="14,8"/>
             <Button Content="↻ Reload"                Command="{Binding ReloadCommand}"  Padding="14,8"/>
             <ProgressBar Width="200" Minimum="0" Maximum="1" Value="{Binding Progress}" IsVisible="{Binding Busy}" Height="6" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding AutoBackupStatus}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
             <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
         </StackPanel>
     </Grid>

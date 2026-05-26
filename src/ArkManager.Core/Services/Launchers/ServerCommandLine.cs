@@ -12,6 +12,11 @@ public static class ServerCommandLine
     public static IReadOnlyList<string> Build(AppSettings settings, IReadOnlyList<string> modIds)
     {
         var o = settings.LaunchOptions;
+        // Пароли и RCON НЕ кладём в URL-query. Причина: ASA URL-парсер при наличии
+        // нескольких параметров после ServerAdminPassword= может склеить хвост строки
+        // в значение пароля и сохранить так в GameUserSettings.ini — RCON-аутентификация
+        // потом ломается. Эти ключи пишутся в ini через ConfigService.ApplyLaunchOptionsToIni,
+        // оттуда сервер их и читает.
         var queryParts = new List<string>
         {
             o.Map,
@@ -21,17 +26,6 @@ public static class ServerCommandLine
             $"QueryPort={o.QueryPort}",
             $"MaxPlayers={o.MaxPlayers}",
         };
-        if (!string.IsNullOrEmpty(o.ServerPassword))
-            queryParts.Add($"ServerPassword={Escape(o.ServerPassword)}");
-        if (!string.IsNullOrEmpty(o.AdminPassword))
-            queryParts.Add($"ServerAdminPassword={Escape(o.AdminPassword)}");
-        if (!string.IsNullOrEmpty(o.SpectatorPassword))
-            queryParts.Add($"SpectatorPassword={Escape(o.SpectatorPassword)}");
-        if (o.RconEnabled)
-        {
-            queryParts.Add($"RCONEnabled=True");
-            queryParts.Add($"RCONPort={o.RconPort}");
-        }
 
         if (!string.IsNullOrWhiteSpace(o.ExtraQueryString))
         {

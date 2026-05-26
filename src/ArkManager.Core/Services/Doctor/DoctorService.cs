@@ -11,13 +11,13 @@ public sealed class DoctorService
 {
     private readonly SettingsService _settings;
     private readonly SteamCmdService _steam;
-    private readonly LauncherFactory _launchers;
+    private readonly IServerLauncher _launcher;
 
-    public DoctorService(SettingsService settings, SteamCmdService steam, LauncherFactory launchers)
+    public DoctorService(SettingsService settings, SteamCmdService steam, IServerLauncher launcher)
     {
         _settings = settings;
         _steam = steam;
-        _launchers = launchers;
+        _launcher = launcher;
     }
 
     public async Task<IReadOnlyList<CheckResult>> RunAsync(CancellationToken ct = default)
@@ -37,12 +37,10 @@ public sealed class DoctorService
             ? new("ASA Dedicated Server", true, exe)
             : new("ASA Dedicated Server", false, "Не установлен в " + serverPath, "Нажмите «Install / Update server»."));
 
-        // 3. Launchers
-        foreach (var (mode, launcher) in _launchers.All())
-        {
-            var probe = await launcher.ProbeAsync(ct);
-            results.Add(new($"Runtime: {mode}", probe.Available, probe.DiagnosticMessage ?? ""));
-        }
+        // 3. Wine runtime
+        var probe = await _launcher.ProbeAsync(ct);
+        results.Add(new("Wine", probe.Available, probe.DiagnosticMessage ?? "",
+            probe.Available ? null : "Нажмите «Install wine (brew)»."));
 
         // 4. Brew
         results.Add(File.Exists("/opt/homebrew/bin/brew") || File.Exists("/usr/local/bin/brew")
@@ -65,8 +63,14 @@ public sealed class DoctorService
         return results;
     }
 
-    public async Task<bool> InstallWhiskyViaBrewAsync(Action<string> onOutput, CancellationToken ct = default)
+    public async Task<bool> InstallWineViaBrewAsync(Action<string> onOutput, CancellationToken ct = default)
     {
+        if (!OperatingSystem.IsMacOS())
+        {
+            onOutput("Установка wine через brew поддерживается только на macOS.");
+            return false;
+        }
+
         var brew = File.Exists("/opt/homebrew/bin/brew") ? "/opt/homebrew/bin/brew"
                  : File.Exists("/usr/local/bin/brew") ? "/usr/local/bin/brew"
                  : null;
@@ -76,10 +80,53 @@ public sealed class DoctorService
             return false;
         }
 
-        var exit = await ProcessRunner.RunStreamingAsync(
-            brew, new[] { "install", "--cask", "whisky" },
-            onStdOut: onOutput, onStdErr: onOutput,
-            ct: ct);
-        return exit == 0;
+        // Запускаем установку в Terminal.app, а не как child-процесс ArkManager.
+        // Причина: gstreamer-runtime (dep wine-stable) — это .pkg-инсталлер с sudo,
+        // brew открывает пароль через tty. У нас stdio редиректнут — sudo виснет навсегда.
+        // Параллельно скрипт проверяет/ставит Rosetta 2 (wine-stable собран под Intel).
+        var script = $"""
+            #!/bin/bash
+            set -e
+            echo "==> ArkManager: установка wine-stable"
+            if ! /usr/bin/arch -x86_64 /usr/bin/true >/dev/null 2>&1; then
+                echo "Rosetta 2 не установлена. Ставлю..."
+                softwareupdate --install-rosetta --agree-to-license
+            else
+                echo "Rosetta 2 OK"
+            fi
+            echo "==> brew install --cask wine-stable (потребуется sudo для gstreamer-runtime)"
+            "{brew}" install --cask wine-stable
+            echo "==> xattr -dr com.apple.quarantine"
+            /usr/bin/xattr -dr com.apple.quarantine "/Applications/Wine Stable.app" || true
+            echo ""
+            echo "==> Готово. Вернитесь в ArkManager → Doctor → Run checks."
+            echo "Окно можно закрыть."
+            """;
+
+        var scriptPath = Path.Combine(Path.GetTempPath(), "ark-manager-install-wine.sh");
+        await File.WriteAllTextAsync(scriptPath, script, ct);
+        File.SetUnixFileMode(scriptPath,
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
+        onOutput("Открываю Terminal.app — введите пароль там, когда попросит.");
+        onOutput("Скрипт: " + scriptPath);
+        onOutput("");
+        onOutput("После завершения установки нажмите ↻ Run checks в этой вкладке.");
+
+        var psi = new System.Diagnostics.ProcessStartInfo("/usr/bin/open") { UseShellExecute = false };
+        psi.ArgumentList.Add("-a");
+        psi.ArgumentList.Add("Terminal");
+        psi.ArgumentList.Add(scriptPath);
+        try
+        {
+            System.Diagnostics.Process.Start(psi);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            onOutput("Не удалось открыть Terminal: " + ex.Message);
+            onOutput("Запустите скрипт вручную: bash \"" + scriptPath + "\"");
+            return false;
+        }
     }
 }

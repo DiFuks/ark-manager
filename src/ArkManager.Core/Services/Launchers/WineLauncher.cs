@@ -1,0 +1,148 @@
+using System.Diagnostics;
+using ArkManager.Core.Models;
+using ArkManager.Core.Util;
+
+namespace ArkManager.Core.Services.Launchers;
+
+/// <summary>
+/// Запуск ArkAscendedServer.exe через wine64 (любая брю-сборка: gcenx wine-crossover,
+/// wine-stable, gptk и т.п.). WINEPREFIX — отдельная папка в data-dir приложения;
+/// wine сам инициализирует префикс при первом запуске (slow first-run, ~30 сек).
+/// </summary>
+public sealed class WineLauncher : IServerLauncher
+{
+    /// <summary>Стандартные пути, в которых ищем wine64. Первый найденный — используется.</summary>
+    public static IEnumerable<string> EnumerateWineCandidates()
+    {
+        // wine-stable / wine@staging / wine@devel ставятся как .app:
+        yield return "/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64";
+        yield return "/Applications/Wine Staging.app/Contents/Resources/wine/bin/wine64";
+        yield return "/Applications/Wine Devel.app/Contents/Resources/wine/bin/wine64";
+        // GPTK (gcenx) — fallback на случай ручной установки:
+        yield return "/Applications/Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64";
+        // Старый gcenx wine-crossover (если кто-то поставил вручную):
+        yield return "/Applications/Wine Crossover.app/Contents/Resources/wine/bin/wine64";
+        // Brew formula (не cask) — на всякий, для редких сборок:
+        yield return "/opt/homebrew/bin/wine64";
+        yield return "/usr/local/bin/wine64";
+        yield return "/opt/homebrew/bin/wine";
+        yield return "/usr/local/bin/wine";
+    }
+
+    public static string? FindWineBinary()
+        => EnumerateWineCandidates().FirstOrDefault(File.Exists);
+
+    public async Task<LauncherStatus> ProbeAsync(CancellationToken ct = default)
+    {
+        var wine = FindWineBinary();
+        if (wine == null)
+            return new LauncherStatus(false,
+                "wine не найден. Установите через brew: brew install --cask --no-quarantine gcenx/wine/wine-crossover");
+
+        try
+        {
+            var r = await ProcessRunner.RunCaptureAsync(wine, new[] { "--version" }, ct: ct);
+            if (r.ExitCode != 0)
+                return new LauncherStatus(false, "wine не запускается: " + r.StdErr);
+            return new LauncherStatus(true, r.StdOut.Trim() + " (" + wine + ")");
+        }
+        catch (Exception ex)
+        {
+            return new LauncherStatus(false, ex.Message);
+        }
+    }
+
+    public async Task<RunningServer> StartAsync(
+        AppSettings settings,
+        IReadOnlyList<string> modIds,
+        Action<string> onOutput,
+        Action<int> onExit,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(settings.ServerInstallPath) ||
+            !File.Exists(Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe")))
+        {
+            throw new InvalidOperationException("ArkAscendedServer.exe не найден. Установите сервер на вкладке Install.");
+        }
+
+        var exe = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
+        var wine = ResolveWineBinary(settings);
+        var prefix = ResolveWinePrefix(settings);
+        Directory.CreateDirectory(prefix);
+
+        var args = new List<string> { exe };
+        args.AddRange(ServerCommandLine.Build(settings, modIds));
+
+        var env = new Dictionary<string, string>
+        {
+            ["WINEPREFIX"] = prefix,
+            ["WINEDEBUG"] = "-all",
+        };
+
+        var workDir = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64");
+
+        var tcs = new TaskCompletionSource<RunningServer>();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var exit = await ProcessRunner.RunStreamingAsync(
+                    wine, args,
+                    line => onOutput(line),
+                    line => onOutput(line),
+                    workingDir: workDir,
+                    env: env,
+                    onStarted: p => tcs.TrySetResult(new RunningServer(p.Id, DateTime.UtcNow)),
+                    ct: ct);
+                onExit(exit);
+            }
+            catch (Exception ex)
+            {
+                onOutput("[launcher error] " + ex.Message);
+                onExit(-1);
+                tcs.TrySetException(ex);
+            }
+        }, CancellationToken.None);
+
+        return await tcs.Task;
+    }
+
+    public Task StopAsync(int pid, CancellationToken ct = default)
+    {
+        try
+        {
+            using var p = Process.GetProcessById(pid);
+            if (!p.HasExited) p.Kill(entireProcessTree: true);
+        }
+        catch (ArgumentException) { /* уже мёртв */ }
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> IsRunningAsync(int pid, CancellationToken ct = default)
+    {
+        try
+        {
+            using var p = Process.GetProcessById(pid);
+            return Task.FromResult(!p.HasExited);
+        }
+        catch { return Task.FromResult(false); }
+    }
+
+    private static string ResolveWineBinary(AppSettings settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.WineBinaryPath) && File.Exists(settings.WineBinaryPath))
+            return settings.WineBinaryPath;
+        return FindWineBinary()
+               ?? throw new InvalidOperationException(
+                   "wine не найден. Установите через Doctor → «Install wine».");
+    }
+
+    private static string ResolveWinePrefix(AppSettings settings)
+    {
+        // Если задан явно — используем как есть. Иначе — собственный prefix в data-dir.
+        if (!string.IsNullOrWhiteSpace(settings.WinePrefixPath))
+            return settings.WinePrefixPath;
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return Path.Combine(home, "Library", "Application Support", "ArkManager", "wineprefix");
+    }
+}

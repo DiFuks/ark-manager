@@ -1,8 +1,15 @@
 using System.Formats.Tar;
 using System.IO.Compression;
+using System.Text;
+using System.Text.RegularExpressions;
 using ArkManager.Core.Util;
 
 namespace ArkManager.Core.Services.Steam;
+
+/// <summary>
+/// Слепок локально установленной версии ASA сервера (из appmanifest_*.acf).
+/// </summary>
+public sealed record InstalledServerVersion(string BuildId, DateTimeOffset? LastUpdated);
 
 /// <summary>
 /// Установка/обновление ASA Dedicated Server (Steam App ID 2430930) через steamcmd.
@@ -101,6 +108,10 @@ public sealed class SteamCmdService
             "+@sSteamCmdForcePlatformType", "windows",
             "+force_install_dir", installDir,
             "+login", "anonymous",
+            // Без этого SteamCMD на маке с принудительной windows-платформой падает
+            // с «Failed to install app '2430930' (Missing configuration)» — манифест
+            // не подтягивается, кэш пустой. app_info_update 1 форсит refresh.
+            "+app_info_update", "1",
             "+app_update", AsaDedicatedServerAppId.ToString(), "validate",
             "+quit",
         };
@@ -111,5 +122,76 @@ public sealed class SteamCmdService
             onStdOut: onOutput,
             onStdErr: onOutput,
             ct: ct);
+    }
+
+    /// <summary>
+    /// Читает локально установленную версию из steamapps/appmanifest_2430930.acf.
+    /// Возвращает null, если манифест ещё не создан (сервер не установлен).
+    /// </summary>
+    public InstalledServerVersion? ReadInstalledVersion(string installDir)
+    {
+        if (string.IsNullOrWhiteSpace(installDir)) return null;
+        var manifest = Path.Combine(installDir, "steamapps", $"appmanifest_{AsaDedicatedServerAppId}.acf");
+        if (!File.Exists(manifest)) return null;
+        string text;
+        try { text = File.ReadAllText(manifest); }
+        catch { return null; }
+        return ParseManifest(text);
+    }
+
+    /// <summary>
+    /// Парсер VDF-манифеста — нам достаточно вытащить top-level "buildid" и "LastUpdated".
+    /// </summary>
+    internal static InstalledServerVersion? ParseManifest(string text)
+    {
+        var buildId = Regex.Match(text, "\"buildid\"\\s+\"(\\d+)\"", RegexOptions.IgnoreCase).Groups[1].Value;
+        if (string.IsNullOrEmpty(buildId)) return null;
+        var lastUpd = Regex.Match(text, "\"LastUpdated\"\\s+\"(\\d+)\"", RegexOptions.IgnoreCase).Groups[1].Value;
+        DateTimeOffset? when = long.TryParse(lastUpd, out var ts) && ts > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(ts)
+            : null;
+        return new InstalledServerVersion(buildId, when);
+    }
+
+    /// <summary>
+    /// Спрашивает у Steam актуальный buildid для public-ветки через
+    /// steamcmd app_info_print. Делает app_info_update 1 для свежего PICS-кэша.
+    /// Медленно (steamcmd сам по себе медленный) — вызывать только по явной кнопке.
+    /// </summary>
+    public async Task<string?> QueryLatestBuildIdAsync(Action<string>? onLog = null, CancellationToken ct = default)
+    {
+        if (!IsSteamCmdInstalled())
+            throw new InvalidOperationException("steamcmd не установлен.");
+        var bin = ResolveSteamCmdBinary();
+        var args = new[]
+        {
+            "+@sSteamCmdForcePlatformType", "windows",
+            "+login", "anonymous",
+            "+app_info_update", "1",
+            "+app_info_print", AsaDedicatedServerAppId.ToString(),
+            "+quit",
+        };
+
+        var buf = new StringBuilder();
+        onLog?.Invoke($"$ {bin} +app_info_print {AsaDedicatedServerAppId}");
+        await ProcessRunner.RunStreamingAsync(
+            bin, args,
+            onStdOut: line => { buf.AppendLine(line); onLog?.Invoke(line); },
+            onStdErr: line => onLog?.Invoke(line),
+            ct: ct);
+        return ParseLatestBuildId(buf.ToString());
+    }
+
+    /// <summary>
+    /// Ищет в выводе app_info_print билд public-ветки.
+    /// Формат: "branches" { "public" { "buildid" "23321173" ... } ... }.
+    /// </summary>
+    internal static string? ParseLatestBuildId(string output)
+    {
+        var m = Regex.Match(
+            output,
+            "\"public\"\\s*\\{[^}]*?\"buildid\"\\s+\"(\\d+)\"",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        return m.Success ? m.Groups[1].Value : null;
     }
 }

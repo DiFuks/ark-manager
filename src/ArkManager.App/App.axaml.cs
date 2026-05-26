@@ -21,6 +21,7 @@ public partial class App : Application
         AppServices.Build();
         // Запускаем синглтон-воркер, чтобы он подписался на StateChanged.
         _ = AppServices.Get<ArkManager.Core.Services.Rcon.PlayerPoller>();
+        _ = AppServices.Get<ArkManager.Core.Services.Backups.AutoBackupWorker>();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -42,12 +43,17 @@ public partial class App : Application
     {
         try
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                Process.Start("open", path);
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                Process.Start("explorer.exe", path);
-            else
-                Process.Start("xdg-open", path);
+            // ArgumentList корректно квотит путь с пробелами ("Application Support").
+            // Process.Start("open", path) сплитит по пробелам и ломается.
+            var psi = new ProcessStartInfo
+            {
+                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "open"
+                         : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "explorer.exe"
+                         : "xdg-open",
+                UseShellExecute = false,
+            };
+            psi.ArgumentList.Add(path);
+            Process.Start(psi);
         }
         catch { /* ignore */ }
     }
@@ -62,12 +68,25 @@ public partial class App : Application
         {
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    Process.Start("open", url);
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+                var psi = new ProcessStartInfo
+                {
+                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "open"
+                             : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd"
+                             : "xdg-open",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    psi.ArgumentList.Add("/c");
+                    psi.ArgumentList.Add("start");
+                    psi.ArgumentList.Add(url);
+                }
                 else
-                    Process.Start("xdg-open", url);
+                {
+                    psi.ArgumentList.Add(url);
+                }
+                Process.Start(psi);
             }
             catch { /* ignore */ }
         }

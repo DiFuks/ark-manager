@@ -16,7 +16,6 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedChanged(NavItem value) => OnPropertyChanged(nameof(CurrentPage));
 
     public MainWindowViewModel(
-        DashboardViewModel dashboard,
         InstallViewModel install,
         ConfigViewModel config,
         ModsViewModel mods,
@@ -28,7 +27,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         NavItems = new ObservableCollection<NavItem>
         {
-            new("Dashboard",   "🎮", dashboard),
             new("Server",      "▶️", server),
             new("RCON",        "🛰️", rcon),
             new("Install",     "⬇️", install),
@@ -43,7 +41,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     // Параметрless конструктор нужен только для XAML-дизайнера.
     public MainWindowViewModel() : this(
-        new DashboardViewModel(),
         new InstallViewModel(),
         new ConfigViewModel(),
         new ModsViewModel(),

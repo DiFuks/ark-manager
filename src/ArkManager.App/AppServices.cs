@@ -26,19 +26,16 @@ public static class AppServices
         sc.AddSingleton<SteamCmdService>();
         sc.AddSingleton<ConfigService>();
         sc.AddSingleton<BackupService>();
+        sc.AddSingleton<AutoBackupWorker>();
         sc.AddSingleton<CurseForgeClient>();
         sc.AddSingleton<ModsService>();
-        sc.AddSingleton<WhiskyLauncher>();
-        sc.AddSingleton<LocalWineLauncher>();
-        sc.AddSingleton<ParallelsLauncher>();
-        sc.AddSingleton<LauncherFactory>();
+        sc.AddSingleton<IServerLauncher, WineLauncher>();
         sc.AddSingleton<ServerManager>();
         sc.AddSingleton<PlayerPoller>();
         sc.AddSingleton<DoctorService>();
 
         // ViewModels
         sc.AddSingleton<MainWindowViewModel>();
-        sc.AddTransient<DashboardViewModel>();
         sc.AddTransient<InstallViewModel>();
         sc.AddTransient<ConfigViewModel>();
         sc.AddTransient<ModsViewModel>();

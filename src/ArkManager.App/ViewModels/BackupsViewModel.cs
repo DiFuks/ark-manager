@@ -8,6 +8,7 @@ namespace ArkManager.App.ViewModels;
 public partial class BackupsViewModel : ViewModelBase
 {
     private readonly BackupService? _service;
+    private readonly AutoBackupWorker? _auto;
 
     public ObservableCollection<BackupInfo> Backups { get; } = new();
     [ObservableProperty] private BackupInfo? _selected;
@@ -15,13 +16,40 @@ public partial class BackupsViewModel : ViewModelBase
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _busy;
     [ObservableProperty] private double _progress;
+    [ObservableProperty] private string _autoBackupStatus = "автобэкап выключен";
 
     public BackupsViewModel() { }
 
-    public BackupsViewModel(BackupService service)
+    public BackupsViewModel(BackupService service, AutoBackupWorker auto)
     {
         _service = service;
+        _auto = auto;
         Reload();
+
+        _auto.BackupCreated += _ => App.UiThread(() => { Reload(); UpdateAutoStatus(); });
+        _auto.Log          += msg => App.UiThread(() => { Status = msg; UpdateAutoStatus(); });
+
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                await Task.Delay(5000);
+                App.UiThread(UpdateAutoStatus);
+            }
+        });
+        UpdateAutoStatus();
+    }
+
+    private void UpdateAutoStatus()
+    {
+        if (_auto?.NextRunUtc is { } next)
+        {
+            var left = next - DateTime.UtcNow;
+            AutoBackupStatus = left <= TimeSpan.Zero
+                ? "автобэкап: создаётся..."
+                : $"автобэкап через {(int)left.TotalMinutes:00}:{left.Seconds:00}";
+        }
+        else AutoBackupStatus = "автобэкап выключен";
     }
 
     [RelayCommand]

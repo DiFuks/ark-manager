@@ -53,16 +53,36 @@ public sealed class RconClient : IAsyncDisposable
         if (_stream == null) throw new InvalidOperationException("Не подключён.");
         var id = _nextId++;
         await WritePacketAsync(id, SERVERDATA_EXECCOMMAND, command, ct);
-        // Маркерный пакет — чтобы отловить конец многосегментного ответа.
-        var markerId = _nextId++;
-        await WritePacketAsync(markerId, SERVERDATA_RESPONSE_VALUE, "", ct);
 
+        // ASA эхо-ит id команды в ответном пакете. Читаем до пакета с нашим id,
+        // игнорируя служебные (периодический "Keep Alive" приходит с id=0 и любым
+        // чужим id). ВАЖНО: не полагаемся на эхо пустого RESPONSE_VALUE-маркера —
+        // ASA его НЕ зеркалит для коротких ответов, из-за чего старый код висел
+        // (и попутно копил тело "Keep Alive" в ответ).
         var sb = new StringBuilder();
+        string first;
         while (true)
         {
-            var (rid, type, body) = await ReadPacketAsync(ct);
-            if (rid == markerId) break;
-            if (type == SERVERDATA_RESPONSE_VALUE) sb.Append(body);
+            var (rid, _, body) = await ReadPacketAsync(ct);
+            if (rid != id) continue;
+            sb.Append(body);
+            first = body;
+            break;
+        }
+
+        // Один пакет вмещает ~4096 байт. Если ответ упёрся в лимит — он
+        // многосегментный: шлём пустой EXECCOMMAND-маркер (на него ASA ОТВЕЧАЕТ)
+        // и дочитываем сегменты с нашим id до пакета-маркера.
+        if (first.Length >= 4000)
+        {
+            var markerId = _nextId++;
+            await WritePacketAsync(markerId, SERVERDATA_EXECCOMMAND, "", ct);
+            while (true)
+            {
+                var (rid, _, body) = await ReadPacketAsync(ct);
+                if (rid == markerId) break;
+                if (rid == id) sb.Append(body);
+            }
         }
         return sb.ToString();
     }

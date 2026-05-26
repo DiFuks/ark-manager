@@ -1,6 +1,4 @@
-using ArkManager.Core.Models;
 using ArkManager.Core.Services;
-using ArkManager.Core.Services.Launchers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -11,21 +9,18 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly SettingsService? _settings;
     private readonly AppPaths? _paths;
 
-    public IReadOnlyList<LaunchMode> AllLaunchModes { get; } =
-        new[] { LaunchMode.Whisky, LaunchMode.LocalWine, LaunchMode.Parallels };
-
-    [ObservableProperty] private LaunchMode _launchMode = LaunchMode.Whisky;
     [ObservableProperty] private string _serverInstallPath = "";
     [ObservableProperty] private string _backupsDirectory = "";
     [ObservableProperty] private int _backupRotationKeep = 10;
-    [ObservableProperty] private string _whiskyBottlePath = "";
     [ObservableProperty] private string _wineBinaryPath = "";
-    [ObservableProperty] private string _parallelsVmName = "";
+    [ObservableProperty] private string _winePrefixPath = "";
     [ObservableProperty] private string _steamCmdPath = "";
     [ObservableProperty] private string _dataDir = "";
     [ObservableProperty] private bool _autoRestartOnCrash;
     [ObservableProperty] private int _autoRestartDelaySeconds = 10;
     [ObservableProperty] private int _scheduledRestartHours;
+    [ObservableProperty] private int _autoBackupIntervalMinutes;
+    [ObservableProperty] private bool _autoBackupOnlyWhenRunning = true;
     [ObservableProperty] private string _curseForgeApiKey = "";
     [ObservableProperty] private string _status = "";
 
@@ -36,18 +31,18 @@ public partial class SettingsViewModel : ViewModelBase
         _settings = settings;
         _paths = paths;
         var c = settings.Current;
-        LaunchMode = c.LaunchMode;
         ServerInstallPath = c.ServerInstallPath ?? "";
         BackupsDirectory = c.BackupsDirectory ?? "";
         BackupRotationKeep = c.BackupRotationKeep;
-        WhiskyBottlePath = c.WhiskyBottlePath ?? "";
         WineBinaryPath = c.WineBinaryPath ?? "";
-        ParallelsVmName = c.ParallelsVmName ?? "";
+        WinePrefixPath = c.WinePrefixPath ?? "";
         SteamCmdPath = c.SteamCmdPath ?? "";
         DataDir = paths.DataDir;
         AutoRestartOnCrash = c.AutoRestartOnCrash;
         AutoRestartDelaySeconds = c.AutoRestartDelaySeconds;
         ScheduledRestartHours = c.ScheduledRestartHours;
+        AutoBackupIntervalMinutes = c.AutoBackupIntervalMinutes;
+        AutoBackupOnlyWhenRunning = c.AutoBackupOnlyWhenRunning;
         CurseForgeApiKey = c.CurseForgeApiKey ?? "";
     }
 
@@ -57,32 +52,20 @@ public partial class SettingsViewModel : ViewModelBase
         if (_settings == null) return;
         _settings.Update(s =>
         {
-            s.LaunchMode = LaunchMode;
             s.ServerInstallPath = NullIfEmpty(ServerInstallPath);
             s.BackupsDirectory = NullIfEmpty(BackupsDirectory);
             s.BackupRotationKeep = BackupRotationKeep;
-            s.WhiskyBottlePath = NullIfEmpty(WhiskyBottlePath);
             s.WineBinaryPath = NullIfEmpty(WineBinaryPath);
-            s.ParallelsVmName = NullIfEmpty(ParallelsVmName);
+            s.WinePrefixPath = NullIfEmpty(WinePrefixPath);
             s.SteamCmdPath = NullIfEmpty(SteamCmdPath);
             s.AutoRestartOnCrash = AutoRestartOnCrash;
             s.AutoRestartDelaySeconds = AutoRestartDelaySeconds;
             s.ScheduledRestartHours = ScheduledRestartHours;
+            s.AutoBackupIntervalMinutes = AutoBackupIntervalMinutes;
+            s.AutoBackupOnlyWhenRunning = AutoBackupOnlyWhenRunning;
             s.CurseForgeApiKey = NullIfEmpty(CurseForgeApiKey);
         });
         Status = "Сохранено.";
-    }
-
-    [RelayCommand]
-    public void AutodetectWhiskyBottle()
-    {
-        foreach (var root in WhiskyLauncher.EnumerateBottleRoots())
-        {
-            if (!Directory.Exists(root)) continue;
-            var first = Directory.EnumerateDirectories(root).FirstOrDefault();
-            if (first != null) { WhiskyBottlePath = first; Status = "Найден боттл: " + first; return; }
-        }
-        Status = "Whisky-боттлы не найдены.";
     }
 
     [RelayCommand]
@@ -103,17 +86,17 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    public async Task BrowseWhiskyBottleAsync()
-    {
-        var p = await Services.Browse.PickFolderAsync("Whisky bottle (wineprefix)", WhiskyBottlePath);
-        if (!string.IsNullOrEmpty(p)) WhiskyBottlePath = p;
-    }
-
-    [RelayCommand]
     public async Task BrowseWineBinaryAsync()
     {
         var p = await Services.Browse.PickFileAsync("wine64 binary", WineBinaryPath);
         if (!string.IsNullOrEmpty(p)) WineBinaryPath = p;
+    }
+
+    [RelayCommand]
+    public async Task BrowseWinePrefixAsync()
+    {
+        var p = await Services.Browse.PickFolderAsync("WINEPREFIX", WinePrefixPath);
+        if (!string.IsNullOrEmpty(p)) WinePrefixPath = p;
     }
 
     [RelayCommand]

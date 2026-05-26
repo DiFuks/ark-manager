@@ -33,21 +33,6 @@ public partial class ConfigViewModel : ViewModelBase
     [ObservableProperty] private string _extraCommandLineArgs = "";
     [ObservableProperty] private string _extraQueryString = "";
 
-    // Rates.
-    [ObservableProperty] private double _difficultyOffset = 1.0;
-    [ObservableProperty] private double _overrideOfficialDifficulty = 5.0;
-    [ObservableProperty] private double _tamingSpeedMultiplier = 1.0;
-    [ObservableProperty] private double _xPMultiplier = 1.0;
-    [ObservableProperty] private double _harvestAmountMultiplier = 1.0;
-    [ObservableProperty] private double _dayCycleSpeedScale = 1.0;
-    [ObservableProperty] private double _dayTimeSpeedScale = 1.0;
-    [ObservableProperty] private double _nightTimeSpeedScale = 1.0;
-    [ObservableProperty] private double _dinoCharacterFoodDrainMultiplier = 1.0;
-    [ObservableProperty] private double _playerCharacterFoodDrainMultiplier = 1.0;
-    [ObservableProperty] private double _matingIntervalMultiplier = 1.0;
-    [ObservableProperty] private double _eggHatchSpeedMultiplier = 1.0;
-    [ObservableProperty] private double _babyMatureSpeedMultiplier = 1.0;
-
     // Raw-просмотр и редактирование ini.
     [ObservableProperty] private string _gameUserSettingsRaw = "";
     [ObservableProperty] private string _gameIniRaw = "";
@@ -153,47 +138,6 @@ public partial class ConfigViewModel : ViewModelBase
             ? File.ReadAllText(_config.GameUserSettingsPath) : "";
         GameIniRaw = File.Exists(_config.GamePath)
             ? File.ReadAllText(_config.GamePath) : "";
-
-        var ini = _config.LoadGameUserSettings();
-        var r = RatesIni.ReadFrom(ini);
-        DifficultyOffset = r.DifficultyOffset;
-        OverrideOfficialDifficulty = r.OverrideOfficialDifficulty;
-        TamingSpeedMultiplier = r.TamingSpeedMultiplier;
-        XPMultiplier = r.XPMultiplier;
-        HarvestAmountMultiplier = r.HarvestAmountMultiplier;
-        DayCycleSpeedScale = r.DayCycleSpeedScale;
-        DayTimeSpeedScale = r.DayTimeSpeedScale;
-        NightTimeSpeedScale = r.NightTimeSpeedScale;
-        DinoCharacterFoodDrainMultiplier = r.DinoCharacterFoodDrainMultiplier;
-        PlayerCharacterFoodDrainMultiplier = r.PlayerCharacterFoodDrainMultiplier;
-        MatingIntervalMultiplier = r.MatingIntervalMultiplier;
-        EggHatchSpeedMultiplier = r.EggHatchSpeedMultiplier;
-        BabyMatureSpeedMultiplier = r.BabyMatureSpeedMultiplier;
-    }
-
-    [RelayCommand]
-    public void SaveRates()
-    {
-        if (_config == null) return;
-        var ini = _config.LoadGameUserSettings();
-        RatesIni.WriteInto(ini, new Rates
-        {
-            DifficultyOffset = DifficultyOffset,
-            OverrideOfficialDifficulty = OverrideOfficialDifficulty,
-            TamingSpeedMultiplier = TamingSpeedMultiplier,
-            XPMultiplier = XPMultiplier,
-            HarvestAmountMultiplier = HarvestAmountMultiplier,
-            DayCycleSpeedScale = DayCycleSpeedScale,
-            DayTimeSpeedScale = DayTimeSpeedScale,
-            NightTimeSpeedScale = NightTimeSpeedScale,
-            DinoCharacterFoodDrainMultiplier = DinoCharacterFoodDrainMultiplier,
-            PlayerCharacterFoodDrainMultiplier = PlayerCharacterFoodDrainMultiplier,
-            MatingIntervalMultiplier = MatingIntervalMultiplier,
-            EggHatchSpeedMultiplier = EggHatchSpeedMultiplier,
-            BabyMatureSpeedMultiplier = BabyMatureSpeedMultiplier,
-        });
-        _config.SaveGameUserSettings(ini);
-        Status = "Рейты сохранены в GameUserSettings.ini";
     }
 
     private IReadOnlyList<string> BuildCli()

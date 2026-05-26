@@ -10,7 +10,7 @@ public partial class DoctorViewModel : ViewModelBase
     private readonly DoctorService? _service;
 
     public ObservableCollection<CheckResult> Results { get; } = new();
-    public ObservableCollection<string> InstallLog { get; } = new();
+    [ObservableProperty] private string _installLog = "";
     [ObservableProperty] private bool _busy;
     [ObservableProperty] private string _summary = "";
 
@@ -39,17 +39,20 @@ public partial class DoctorViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    public async Task InstallWhiskyAsync()
+    public async Task InstallWineAsync()
     {
         if (_service == null) return;
         Busy = true;
         try
         {
-            InstallLog.Clear();
-            var ok = await _service.InstallWhiskyViaBrewAsync(line => App.UiThread(() => InstallLog.Add(line)));
-            App.UiThread(() => InstallLog.Add(ok ? "[ok]" : "[fail]"));
-            await RunAsync();
+            InstallLog = "";
+            // Метод запускает Terminal.app со скриптом и возвращается сразу — реальная
+            // установка идёт в Terminal, юзер нажмёт «↻ Run checks» по окончании.
+            await _service.InstallWineViaBrewAsync(line => App.UiThread(() => InstallLog += line + Environment.NewLine));
         }
         finally { Busy = false; }
     }
+
+    [RelayCommand]
+    public async Task CopyInstallLog() => await Services.Browse.CopyToClipboardAsync(InstallLog);
 }

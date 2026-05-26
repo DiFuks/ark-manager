@@ -29,12 +29,18 @@ public class ServerCommandLineTests
     }
 
     [Fact]
-    public void Build_ServerPassword_IsIncludedInQuery()
+    public void Build_Passwords_NotInUrlQuery()
     {
+        // Пароли пишутся ТОЛЬКО в ini (через ConfigService.ApplyLaunchOptionsToIni),
+        // в URL не кладём — иначе ASA склеивает хвост строки в значение пароля.
         var s = new AppSettings();
-        s.LaunchOptions.ServerPassword = "secret";
+        s.LaunchOptions.ServerPassword = "srv";
+        s.LaunchOptions.AdminPassword = "adm";
+        s.LaunchOptions.SpectatorPassword = "spec";
         var args = ServerCommandLine.Build(s, Array.Empty<string>());
-        Assert.Contains("ServerPassword=secret", args[0]);
+        Assert.DoesNotContain("ServerPassword", args[0]);
+        Assert.DoesNotContain("ServerAdminPassword", args[0]);
+        Assert.DoesNotContain("SpectatorPassword", args[0]);
     }
 
     [Fact]
@@ -59,14 +65,15 @@ public class ServerCommandLineTests
     }
 
     [Fact]
-    public void Build_Rcon_PopulatesQuery()
+    public void Build_Rcon_NotInUrlQuery()
     {
+        // RCONEnabled/RCONPort идут только в GameUserSettings.ini.
         var s = new AppSettings();
         s.LaunchOptions.RconEnabled = true;
         s.LaunchOptions.RconPort = 27042;
         var args = ServerCommandLine.Build(s, Array.Empty<string>());
-        Assert.Contains("RCONEnabled=True", args[0]);
-        Assert.Contains("RCONPort=27042", args[0]);
+        Assert.DoesNotContain("RCONEnabled", args[0]);
+        Assert.DoesNotContain("RCONPort", args[0]);
     }
 
     [Fact]

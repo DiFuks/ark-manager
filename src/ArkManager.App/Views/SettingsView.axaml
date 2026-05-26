@@ -10,23 +10,17 @@
 
             <Border CornerRadius="8" Padding="16" Background="#2a2f44">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Runtime" FontWeight="SemiBold"/>
-                    <ComboBox ItemsSource="{Binding AllLaunchModes}" SelectedItem="{Binding LaunchMode}" Width="200"/>
-                    <TextBlock Text="Whisky bottle (wineprefix)"/>
-                    <DockPanel LastChildFill="True">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
-                            <Button Content="Auto-detect" Command="{Binding AutodetectWhiskyBottleCommand}"/>
-                            <Button Content="📁..."        Command="{Binding BrowseWhiskyBottleCommand}"/>
-                        </StackPanel>
-                        <TextBox Text="{Binding WhiskyBottlePath}"/>
-                    </DockPanel>
-                    <TextBlock Text="Wine binary override (опционально)"/>
+                    <TextBlock Text="Wine" FontWeight="SemiBold"/>
+                    <TextBlock Text="wine64 binary (опционально — пусто = авто-детект brew)"/>
                     <DockPanel LastChildFill="True">
                         <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseWineBinaryCommand}"/>
                         <TextBox Text="{Binding WineBinaryPath}"/>
                     </DockPanel>
-                    <TextBlock Text="Parallels VM name (для режима Parallels)"/>
-                    <TextBox Text="{Binding ParallelsVmName}"/>
+                    <TextBlock Text="WINEPREFIX (директория, куда wine кладёт C:\)"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseWinePrefixCommand}"/>
+                        <TextBox Text="{Binding WinePrefixPath}"/>
+                    </DockPanel>
                 </StackPanel>
             </Border>
 
@@ -69,6 +63,11 @@
                         <TextBlock Grid.Column="0" Text="Периодический рестарт каждые N часов (0 = выкл)" VerticalAlignment="Center"/>
                         <NumericUpDown Grid.Column="1" Value="{Binding ScheduledRestartHours}" Minimum="0" Maximum="168"/>
                     </Grid>
+                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                        <TextBlock Grid.Column="0" Text="Автобэкап каждые N минут (0 = выкл)" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalMinutes}" Minimum="0" Maximum="1440"/>
+                    </Grid>
+                    <CheckBox IsChecked="{Binding AutoBackupOnlyWhenRunning}" Content="Делать автобэкап только когда сервер запущен"/>
                 </StackPanel>
             </Border>
 

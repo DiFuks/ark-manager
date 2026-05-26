@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 
 namespace ArkManager.App.Services;
@@ -29,6 +30,13 @@ public static class Browse
             SuggestedStartLocation = start,
         });
         return result.FirstOrDefault()?.TryGetLocalPath();
+    }
+
+    public static async Task CopyToClipboardAsync(string text)
+    {
+        var owner = Owner;
+        if (owner?.Clipboard == null) return;
+        await owner.Clipboard.SetTextAsync(text);
     }
 
     public static async Task<string?> PickFileAsync(string title, string? startPath = null)

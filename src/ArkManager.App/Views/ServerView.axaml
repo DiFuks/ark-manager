@@ -3,11 +3,12 @@
              xmlns:vm="using:ArkManager.App.ViewModels"
              x:Class="ArkManager.App.Views.ServerView"
              x:DataType="vm:ServerViewModel">
-    <Grid RowDefinitions="auto,auto,*">
+    <Grid RowDefinitions="auto,auto,auto,*">
         <TextBlock Grid.Row="0" Text="Server" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,10"/>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
             <Button Content="▶ Start"  Command="{Binding StartCommand}" Padding="14,8"/>
             <Button Content="■ Stop"   Command="{Binding StopCommand}"  Padding="14,8"/>
+            <Button Content="📋 Copy log"  Command="{Binding CopyLogCommand}"  Padding="14,8"/>
             <Button Content="🗑 Clear log" Command="{Binding ClearLogCommand}" Padding="14,8"/>
             <Border Padding="10,6" Background="#2a2f44" CornerRadius="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -21,16 +22,19 @@
             </Border>
             <TextBox Text="{Binding Filter}" Width="200" PlaceholderText="filter..."/>
         </StackPanel>
-        <Border Grid.Row="2" CornerRadius="6" Background="#0d0f17" Padding="6">
-            <ScrollViewer x:Name="LogScroll">
-                <ItemsControl ItemsSource="{Binding Log}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" FontFamily="Menlo,Consolas,monospace" FontSize="11" TextWrapping="Wrap"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+        <Border Grid.Row="2" Padding="10,6" Background="#2a2f44" CornerRadius="6" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="players:" Opacity="0.6"/>
+                <TextBlock Text="{Binding PlayersOnline}" FontWeight="SemiBold"/>
+                <TextBlock Text="·" Opacity="0.4"/>
+                <TextBlock Text="{Binding PlayersDetail}" TextTrimming="CharacterEllipsis" MaxWidth="800"/>
+                <TextBlock Text="·" Opacity="0.4"/>
+                <TextBlock Text="sampled" Opacity="0.6"/>
+                <TextBlock Text="{Binding LastSample}"/>
+            </StackPanel>
         </Border>
+        <TextBox Grid.Row="3" x:Name="LogBox" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
+                 TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="11"
+                 Background="#0d0f17" Padding="6"/>
     </Grid>
 </UserControl>
