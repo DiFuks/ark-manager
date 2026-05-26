@@ -39,6 +39,21 @@ public partial class ConfigViewModel : ViewModelBase
 
     [ObservableProperty] private string _status = "";
 
+    // Активный под-таб (Основное / GameUserSettings.ini / Game.ini / Preview CLI).
+    // От него зависит, что делает единственная кнопка Save.
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveContextCommand))]
+    [NotifyPropertyChangedFor(nameof(SaveButtonText))]
+    private int _selectedTabIndex;
+
+    public string SaveButtonText => SelectedTabIndex switch
+    {
+        0 => "💾 Save settings",
+        1 => "💾 Save GameUserSettings.ini",
+        2 => "💾 Save Game.ini",
+        _ => "💾 Save"
+    };
+
     public string CommandLinePreview => string.Join(" ", Quote(BuildCli()));
 
     public ConfigViewModel() { }
@@ -77,10 +92,17 @@ public partial class ConfigViewModel : ViewModelBase
             if (s.Profiles.Count > 0) s.Profiles[0].Options = o;
         });
         // Зеркало в ini (если папка существует — иначе будет применено после первого запуска).
-        try { _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions); }
+        try
+        {
+            _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
+            // Форма пишет [ServerSettings] прямо в GameUserSettings.ini — перечитываем raw-таб,
+            // чтобы он не показывал устаревший текст и потом не затёр только что записанное.
+            if (File.Exists(_config.GameUserSettingsPath))
+                GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
+        }
         catch { /* server папка ещё не создана */ }
 
-        Status = "Сохранено в " + (_settings != null ? "settings.json" : "");
+        Status = "Сохранено в settings.json";
         OnPropertyChanged(nameof(CommandLinePreview));
     }
 
@@ -93,15 +115,28 @@ public partial class ConfigViewModel : ViewModelBase
         OnPropertyChanged(nameof(CommandLinePreview));
     }
 
-    [RelayCommand]
-    public void SaveIniFiles()
+    private bool CanSaveContext() => SelectedTabIndex is 0 or 1 or 2;
+
+    // Единственная кнопка Save: действие зависит от активного под-таба.
+    // На «Preview CLI» сохранять нечего — команда дизейблится через CanSaveContext.
+    [RelayCommand(CanExecute = nameof(CanSaveContext))]
+    public void SaveContext()
     {
-        if (_config == null) return;
+        switch (SelectedTabIndex)
+        {
+            case 0: Save(); break;
+            case 1: SaveRawIni(_config?.GameUserSettingsPath, GameUserSettingsRaw, "GameUserSettings.ini"); break;
+            case 2: SaveRawIni(_config?.GamePath, GameIniRaw, "Game.ini"); break;
+        }
+    }
+
+    private void SaveRawIni(string? path, string content, string label)
+    {
+        if (path == null) return;
         try
         {
-            File.WriteAllText(_config.GameUserSettingsPath, GameUserSettingsRaw);
-            File.WriteAllText(_config.GamePath, GameIniRaw);
-            Status = "ini-файлы сохранены";
+            File.WriteAllText(path, content);
+            Status = label + " сохранён";
         }
         catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
     }

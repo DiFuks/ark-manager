@@ -21,6 +21,18 @@ public class ServerCommandLineTests
     }
 
     [Fact]
+    public void Build_RoutesFullLogToStdout()
+    {
+        // Сервер запускается headless (без winemac.drv → нет окна), поэтому полный UE-лог
+        // нужно гнать в stdout, иначе он уходит только в окно/файл и не виден в ArkManager.
+        var s = new AppSettings();
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        Assert.Contains("-stdout", args);
+        Assert.Contains("-FullStdOutLogOutput", args);
+        Assert.Contains("-unattended", args);
+    }
+
+    [Fact]
     public void Build_AddsModsFlag_WhenModsPresent()
     {
         var s = new AppSettings();

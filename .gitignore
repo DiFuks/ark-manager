@@ -1,6 +1,8 @@
 ## .NET
 bin/
 obj/
+bin.noindex/
+obj.noindex/
 out/
 *.user
 *.suo
@@ -23,3 +25,6 @@ TestResults/
 
 ## App-local state (if someone runs from repo)
 local-state/
+
+# macOS app bundle (build-app.sh)
+/dist/

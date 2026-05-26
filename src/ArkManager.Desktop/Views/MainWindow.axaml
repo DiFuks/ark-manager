@@ -8,6 +8,7 @@
         MinWidth="900" MinHeight="600"
         x:Class="ArkManager.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/AppIcon.png"
         Title="ArkManager — ASA Server Manager">
     <Window.Styles>
         <Style Selector="ListBoxItem">

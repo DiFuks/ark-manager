@@ -14,7 +14,7 @@ start/stop/RCON), сам ASA-сервер крутится через **wine64**
 ```bash
 dotnet build ArkManager.slnx
 dotnet test  ArkManager.slnx
-dotnet run --project src/ArkManager.App/ArkManager.App.csproj
+dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
 ```
 
 ## Layout
@@ -30,7 +30,7 @@ dotnet run --project src/ArkManager.App/ArkManager.App.csproj
   - `Services/Launchers/{IServerLauncher,ServerCommandLine,WineLauncher}.cs`
   - `Services/Rcon/{RconClient,PlayerPoller}.cs`
   - `Util/ProcessRunner.cs`
-- `src/ArkManager.App/` — Avalonia 12 GUI
+- `src/ArkManager.Desktop/` — Avalonia 12 GUI
   - `App.axaml(.cs)` — DI bootstrap, UiThread/OpenInFinder/OpenInBrowser, **force dark theme**
   - `AppServices.cs` — DI composition root
   - `Services/Browse.cs` — file/folder picker через `TopLevel.StorageProvider`

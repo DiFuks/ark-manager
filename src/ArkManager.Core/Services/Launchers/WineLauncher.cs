@@ -77,6 +77,12 @@ public sealed class WineLauncher : IServerLauncher
         {
             ["WINEPREFIX"] = prefix,
             ["WINEDEBUG"] = "-all",
+            // Отключаем графический драйвер wine — ASA dedicated server headless, окно ему
+            // не нужно. Без этого wine рисует «Server Console»-окно, где текст нечитаемо
+            // бел-на-бел (фон строк = дефолтный белый GDI-bk, реестром не правится).
+            // Лог при этом идёт в stdout (-stdout -FullStdOutLogOutput) и виден в ArkManager.
+            // Проверено: сервер полностью стартует без дисплея.
+            ["WINEDLLOVERRIDES"] = "winemac.drv=",
         };
 
         var workDir = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64");

@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/ArkManager.App/ArkManager.App.csproj" />
+    <Project Path="src/ArkManager.Desktop/ArkManager.App.csproj" />
     <Project Path="src/ArkManager.Core/ArkManager.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -5,7 +5,7 @@
              x:DataType="vm:ConfigViewModel">
     <Grid RowDefinitions="auto,*,auto">
         <TextBlock Grid.Row="0" Text="Configuration" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,12"/>
-        <TabControl Grid.Row="1">
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
             <TabItem Header="Основное">
                 <ScrollViewer Padding="6">
                     <StackPanel Spacing="10" Margin="6">
@@ -63,12 +63,26 @@
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="GameUserSettings.ini">
-                <TextBox Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
-                         FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+                <Grid RowDefinitions="auto,*">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                        <TextBox Width="240" PlaceholderText="Найти…" KeyDown="OnSearchKeyDown"/>
+                        <Button Content="Find next ⏎" Click="OnFindNext"/>
+                        <TextBlock VerticalAlignment="Center" Opacity="0.7"/>
+                    </StackPanel>
+                    <TextBox Grid.Row="1" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True"
+                             TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+                </Grid>
             </TabItem>
             <TabItem Header="Game.ini">
-                <TextBox Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
-                         FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+                <Grid RowDefinitions="auto,*">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                        <TextBox Width="240" PlaceholderText="Найти…" KeyDown="OnSearchKeyDown"/>
+                        <Button Content="Find next ⏎" Click="OnFindNext"/>
+                        <TextBlock VerticalAlignment="Center" Opacity="0.7"/>
+                    </StackPanel>
+                    <TextBox Grid.Row="1" Text="{Binding GameIniRaw}" AcceptsReturn="True"
+                             TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+                </Grid>
             </TabItem>
             <TabItem Header="Preview CLI">
                 <ScrollViewer>
@@ -78,9 +92,8 @@
             </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
-            <Button Content="💾 Save"           Command="{Binding SaveCommand}" Padding="14,8"/>
-            <Button Content="💾 Save ini files" Command="{Binding SaveIniFilesCommand}" Padding="14,8"/>
-            <Button Content="↻ Reload"         Command="{Binding ReloadCommand}" Padding="14,8"/>
+            <Button Content="{Binding SaveButtonText}" Command="{Binding SaveContextCommand}" Padding="14,8"/>
+            <Button Content="↻ Reload"               Command="{Binding ReloadCommand}" Padding="14,8"/>
             <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
         </StackPanel>
     </Grid>

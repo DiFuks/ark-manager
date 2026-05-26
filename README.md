@@ -43,7 +43,7 @@ ASA-сервер заведомо работает под Wine при флаге
 git clone <repo>
 cd ark-manager
 dotnet build ArkManager.slnx
-dotnet run --project src/ArkManager.App/ArkManager.App.csproj
+dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
 ```
 
 При первом запуске создаётся `~/Library/Application Support/ArkManager/`:
@@ -97,7 +97,7 @@ ArkManager.slnx
 │   │       ├── ServerCommandLine.cs     # сборка CLI ASA (без паролей в URL)
 │   │       └── WineLauncher.cs          # wine64 + WINEPREFIX
 │   └── Util/ProcessRunner.cs    # потоковый wrapper над Process
-├── src/ArkManager.App/          # Avalonia 12 GUI, MVVM (CommunityToolkit.Mvvm)
+├── src/ArkManager.Desktop/          # Avalonia 12 GUI, MVVM (CommunityToolkit.Mvvm)
 │   ├── App.axaml(.cs)           # DI + helpers (UiThread/OpenInFinder/OpenInBrowser)
 │   ├── AppServices.cs           # ServiceCollection composition root
 │   ├── ViewModels/              # *ViewModel.cs per таб

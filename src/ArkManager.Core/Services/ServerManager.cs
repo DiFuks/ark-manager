@@ -3,6 +3,7 @@ using ArkManager.Core.Models;
 using ArkManager.Core.Services.Launchers;
 using ArkManager.Core.Services.Mods;
 using ArkManager.Core.Services.Rcon;
+using ArkManager.Core.Util;
 
 namespace ArkManager.Core.Services;
 
@@ -28,7 +29,14 @@ public sealed class ServerManager
     public int? Pid => _running?.Pid;
     public DateTime? StartedAt => _running?.StartedAt;
 
+    /// <summary>
+    /// Сервер не просто запущен (процесс жив), а закончил загрузку мира и принимает подключения.
+    /// До этого State=Running, но это ещё «жёлтая» фаза. Определяется по строке лога.
+    /// </summary>
+    public bool IsReady { get; private set; }
+
     public event Action<ServerState>? StateChanged;
+    public event Action<bool>? ReadyChanged;
     public event Action<string>? LogLine;
 
     private readonly ConcurrentQueue<string> _ringLog = new();
@@ -47,10 +55,10 @@ public sealed class ServerManager
         {
             if (State is ServerState.Running or ServerState.Starting)
                 throw new InvalidOperationException("Сервер уже запущен.");
-            State = ServerState.Starting;
             _stopRequested = false;
         }
-        StateChanged?.Invoke(State);
+        SetReady(false);
+        SetState(ServerState.Starting);
 
         try
         {
@@ -63,31 +71,32 @@ public sealed class ServerManager
                 onExit: code =>
                 {
                     PushLog($"[server exited code={code}]");
+                    ServerState target;
                     bool autoRestart;
                     lock (_lock)
                     {
                         // При намеренной остановке (включая хард-кил fallback, дающий
                         // ненулевой код) это НЕ краш — состояние Stopped.
-                        State = (code == 0 || _stopRequested) ? ServerState.Stopped : ServerState.Crashed;
+                        target = (code == 0 || _stopRequested) ? ServerState.Stopped : ServerState.Crashed;
                         _running = null;
                         autoRestart = !_stopRequested
                                       && code != 0
                                       && _settings.Current.AutoRestartOnCrash;
                     }
-                    StateChanged?.Invoke(State);
+                    SetReady(false);
+                    SetState(target);
                     if (autoRestart) _ = AutoRestartLoopAsync();
                 },
                 ct: _cts.Token);
 
-            lock (_lock) State = ServerState.Running;
-            StateChanged?.Invoke(State);
+            SetState(ServerState.Running);
             StartScheduledRestartTimer();
         }
         catch (Exception ex)
         {
             PushLog("[start failed] " + ex.Message);
-            lock (_lock) { State = ServerState.Crashed; _running = null; }
-            StateChanged?.Invoke(State);
+            lock (_lock) { _running = null; }
+            SetState(ServerState.Crashed);
             throw;
         }
     }
@@ -98,11 +107,10 @@ public sealed class ServerManager
         lock (_lock)
         {
             if (State is ServerState.Stopped or ServerState.Crashed) return;
-            State = ServerState.Stopping;
             pid = _running?.Pid;
             _stopRequested = true;
         }
-        StateChanged?.Invoke(State);
+        SetState(ServerState.Stopping);
         _scheduleCts?.Cancel();
 
         try
@@ -124,10 +132,106 @@ public sealed class ServerManager
         }
         finally
         {
-            lock (_lock) { State = ServerState.Stopped; _running = null; }
-            StateChanged?.Invoke(State);
+            lock (_lock) { _running = null; }
+            SetReady(false);
+            SetState(ServerState.Stopped);
             PushLog("[server stopped by user]");
         }
+    }
+
+    /// <summary>
+    /// Остановка при выходе менеджера (Ctrl+C / закрытие окна / SIGTERM). Делает best-effort
+    /// graceful-сейв по RCON, затем ГАРАНТИРОВАННО убивает процесс — чтобы не оставить
+    /// осиротевший сервер, который менеджер потом не видит. Блокируемо-ожидаемая короткая операция.
+    /// </summary>
+    public async Task ShutdownAsync()
+    {
+        int? pid;
+        lock (_lock)
+        {
+            if (State is ServerState.Stopped or ServerState.Crashed) return;
+            _stopRequested = true;
+            pid = _running?.Pid;
+        }
+        SetState(ServerState.Stopping);
+        _scheduleCts?.Cancel();
+
+        // Сохранить мир (saveworld + DoExit). Внутри свой таймаут, ошибки не критичны.
+        await TryGracefulSaveAndExitAsync(CancellationToken.None);
+
+        // Немного ждём добровольного выхода после DoExit, потом добиваем — kill обязателен.
+        if (pid is int p)
+        {
+            await WaitForExitAsync(p, TimeSpan.FromSeconds(10), CancellationToken.None);
+            try { await _launcher.StopAsync(p); } catch { /* уже мёртв */ }
+        }
+        _cts?.Cancel();
+
+        lock (_lock) { _running = null; }
+        SetReady(false);
+        SetState(ServerState.Stopped);
+    }
+
+    /// <summary>
+    /// «Усыновление»: если менеджер был убит (Force Quit / SIGKILL / краш) и оставил
+    /// работающий ArkAscendedServer.exe — подхватываем его на старте, чтобы показать Running,
+    /// дать Stop по RCON и не дать запустить второй сервер. Зовётся один раз при запуске.
+    /// </summary>
+    public async Task AdoptIfRunningAsync()
+    {
+        lock (_lock) { if (State != ServerState.Stopped) return; }
+
+        var installPath = _settings.Current.ServerInstallPath;
+        if (string.IsNullOrWhiteSpace(installPath)) return;
+        var exe = Path.Combine(installPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
+
+        DiscoveredServer? found;
+        try
+        {
+            var ps = await ProcessRunner.RunCaptureAsync("/bin/ps",
+                new[] { "-axww", "-o", "pid=,etime=,command=" });
+            found = ServerDiscovery.Find(ps.StdOut, exe);
+        }
+        catch { return; } // не macOS / ps недоступен
+
+        if (found is not DiscoveredServer d) return;
+
+        lock (_lock)
+        {
+            if (State != ServerState.Stopped) return; // успели запустить сами
+            _running = new RunningServer(d.Pid, DateTime.UtcNow - d.Uptime);
+            _stopRequested = false;
+        }
+        SetReady(true); // уже работает и принимает игроков
+        SetState(ServerState.Running);
+        PushLog($"[adopted running server pid={d.Pid}, up {d.Uptime:hh\\:mm\\:ss}]");
+        StartAdoptedMonitor(d.Pid);
+    }
+
+    /// <summary>Лога у усыновлённого процесса нет (stdout чужой) — поллим, жив ли он.</summary>
+    private void StartAdoptedMonitor(int pid)
+    {
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                await Task.Delay(3000);
+                lock (_lock) { if (_running?.Pid != pid) return; } // остановили сами / заменили
+                if (await _launcher.IsRunningAsync(pid)) continue;
+
+                bool changed;
+                lock (_lock)
+                {
+                    changed = _running?.Pid == pid;
+                    if (changed) _running = null;
+                }
+                if (!changed) return;
+                SetReady(false);
+                SetState(ServerState.Stopped);
+                PushLog("[adopted server exited]");
+                return;
+            }
+        });
     }
 
     /// <summary>Решает, имеет ли смысл пытаться graceful-сейв по RCON.</summary>
@@ -221,6 +325,33 @@ public sealed class ServerManager
         _ringLog.Enqueue(line);
         // Кольцо ~5000 строк
         while (_ringLog.Count > 5000 && _ringLog.TryDequeue(out _)) { }
+        if (!IsReady && IsServerReadyLine(line)) SetReady(true);
         LogLine?.Invoke(line);
     }
+
+    private void SetReady(bool value)
+    {
+        if (IsReady == value) return;
+        IsReady = value;
+        ReadyChanged?.Invoke(value);
+    }
+
+    /// <summary>
+    /// Меняет состояние и шлёт StateChanged ТОЛЬКО при реальной смене. Без этого Stopped
+    /// прилетал дважды (из onExit процесса и из finally StopAsync) → дубль уведомлений.
+    /// Событие вызываем вне lock, чтобы обработчик не мог поймать дедлок/реентранси.
+    /// </summary>
+    private void SetState(ServerState s)
+    {
+        lock (_lock)
+        {
+            if (State == s) return;
+            State = s;
+        }
+        StateChanged?.Invoke(s);
+    }
+
+    /// <summary>Строка лога, означающая, что мир загружен и сервер принимает подключения.</summary>
+    internal static bool IsServerReadyLine(string line)
+        => line.Contains("advertising for join", StringComparison.OrdinalIgnoreCase);
 }

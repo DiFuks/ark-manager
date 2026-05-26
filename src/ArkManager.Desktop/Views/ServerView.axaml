@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ArkManager.App.ViewModels"
+             x:Class="ArkManager.App.Views.ServerView"
+             x:DataType="vm:ServerViewModel">
+    <Grid RowDefinitions="auto,auto,auto,auto,*">
+        <TextBlock Grid.Row="0" Text="Server" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+        <!-- Действия + фильтр: WrapPanel переносит на новую строку при нехватке ширины. -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,6">
+            <Button Content="▶ Start"     Command="{Binding StartCommand}"   Padding="14,8" Margin="0,0,8,4"/>
+            <Button Content="■ Stop"      Command="{Binding StopCommand}"    Padding="14,8" Margin="0,0,8,4"/>
+            <Button Content="📋 Copy log"  Command="{Binding CopyLogCommand}"  Padding="14,8" Margin="0,0,8,4"/>
+            <Button Content="🗑 Clear log" Command="{Binding ClearLogCommand}" Padding="14,8" Margin="0,0,8,4"/>
+            <TextBox Text="{Binding Filter}" Width="200" PlaceholderText="filter..." Margin="0,0,0,4"/>
+        </WrapPanel>
+
+        <!-- Статус-метрики: отдельный статусбар, поля переносятся внутри. -->
+        <Border Grid.Row="2" Padding="10,6" Background="#2a2f44" CornerRadius="6" Margin="0,0,0,8">
+            <WrapPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,18,0">
+                    <Ellipse Width="11" Height="11" Fill="{Binding StatusBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,18,0">
+                    <TextBlock Text="pid:" Opacity="0.6"/><TextBlock Text="{Binding Pid}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,18,0">
+                    <TextBlock Text="up:" Opacity="0.6"/><TextBlock Text="{Binding Uptime}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,18,0">
+                    <TextBlock Text="cpu:" Opacity="0.6"/><TextBlock Text="{Binding CpuUsage}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <TextBlock Text="ram:" Opacity="0.6"/><TextBlock Text="{Binding RamUsage}"/>
+                </StackPanel>
+            </WrapPanel>
+        </Border>
+
+        <!-- Игроки: тоже переносится. -->
+        <Border Grid.Row="3" Padding="10,6" Background="#2a2f44" CornerRadius="6" Margin="0,0,0,10">
+            <WrapPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,18,0">
+                    <TextBlock Text="players:" Opacity="0.6"/>
+                    <TextBlock Text="{Binding PlayersOnline}" FontWeight="SemiBold"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,18,0">
+                    <TextBlock Text="{Binding PlayersDetail}" TextTrimming="CharacterEllipsis" MaxWidth="700"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="sampled" Opacity="0.6"/>
+                    <TextBlock Text="{Binding LastSample}"/>
+                </StackPanel>
+            </WrapPanel>
+        </Border>
+
+        <TextBox Grid.Row="4" x:Name="LogBox" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
+                 TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="11"
+                 Background="#0d0f17" Padding="6"/>
+    </Grid>
+</UserControl>

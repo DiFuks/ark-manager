@@ -33,4 +33,14 @@ public class ServerManagerTests
         var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = password };
         Assert.False(ServerManager.ShouldAttemptGracefulSave(o));
     }
+
+    // «Зелёный» индикатор готовности = строка лога, которую ASA печатает, когда мир загружен
+    // и сервер начал принимать подключения. До неё процесс жив, но это ещё «жёлтая» загрузка.
+    [Theory]
+    [InlineData("[2026.05.26-22.43.10:834][232]Server has completed startup and is now advertising for join. (2.07GB Mem)", true)]
+    [InlineData("Server has completed startup and is now ADVERTISING FOR JOIN.", true)]
+    [InlineData("[2026.05.26-22.42.50:723][  2]Server: \"x\" has successfully started!", false)]
+    [InlineData("LogMemory: Platform Memory Stats for WindowsServer", false)]
+    public void IsServerReadyLine_DetectsAdvertisingMarker(string line, bool expected)
+        => Assert.Equal(expected, ServerManager.IsServerReadyLine(line));
 }
