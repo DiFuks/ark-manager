@@ -14,6 +14,7 @@ public partial class ServerViewModel : ViewModelBase
     private readonly ServerManager? _server;
 
     [ObservableProperty] private string _log = "";
+    [ObservableProperty] private string _identity = "—";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartCommand))]
@@ -57,9 +58,11 @@ public partial class ServerViewModel : ViewModelBase
 
     public ServerViewModel() { }
 
-    public ServerViewModel(ServerManager server, PlayerPoller poller)
+    public ServerViewModel(ServerManager server, PlayerPoller poller, SettingsService settings)
     {
         _server = server;
+        var s = settings.Current.LaunchOptions;
+        Identity = $"{s.SessionName} · {s.Map}";
         foreach (var l in server.Snapshot()) AppendLine(l);
         server.StateChanged += s => App.UiThread(() => { State = s.ToString(); Pid = server.Pid; });
         server.ReadyChanged += r => App.UiThread(() => Ready = r);
