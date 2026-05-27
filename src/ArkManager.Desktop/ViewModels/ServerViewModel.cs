@@ -81,7 +81,7 @@ public partial class ServerViewModel : ViewModelBase
         {
             PlayersOnline = s.Count;
             PlayersDetail = s.Error != null
-                ? "❗ " + s.Error
+                ? s.Error
                 : s.Names.Count == 0 ? "—" : string.Join(", ", s.Names);
             LastSample = s.SampledUtc.ToLocalTime().ToString("HH:mm:ss");
         });

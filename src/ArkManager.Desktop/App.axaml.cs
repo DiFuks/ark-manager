@@ -53,7 +53,7 @@ public partial class App : Application
             {
                 ServerState.Starting => $"Server \"{Name()}\" is starting…",
                 ServerState.Stopped  => $"Server \"{Name()}\" stopped",
-                ServerState.Crashed  => $"⚠️ Server \"{Name()}\" crashed",
+                ServerState.Crashed  => $"Server \"{Name()}\" crashed",
                 _ => null, // Running ловим через ReadyChanged; Stopping — транзитный, пропускаем
             };
             if (msg != null) Notify("ArkManager", msg);

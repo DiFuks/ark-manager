@@ -114,8 +114,8 @@ public partial class InstallViewModel : ViewModelBase
             return;
         }
         UpdateStatus = string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
-            ? "✅ up to date"
-            : $"⚠️ update available (latest {LatestBuild})";
+            ? "Up to date"
+            : $"Update available (latest {LatestBuild})";
     }
 
     [RelayCommand]
@@ -137,8 +137,8 @@ public partial class InstallViewModel : ViewModelBase
     {
         if (_steam == null) return;
         SteamCmdState = _steam.IsSteamCmdInstalled()
-            ? "✅ installed: " + _steam.ResolveSteamCmdBinary()
-            : "❌ not installed";
+            ? "Installed: " + _steam.ResolveSteamCmdBinary()
+            : "Not installed";
     }
 
     [RelayCommand]
