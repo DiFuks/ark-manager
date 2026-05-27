@@ -1,8 +1,14 @@
 using System.IO.Compression;
+using ArkManager.Core.Util;
 
 namespace ArkManager.Core.Services.Backups;
 
-public sealed record BackupInfo(string FilePath, DateTime CreatedUtc, long SizeBytes, string? Note);
+public sealed record BackupInfo(string FilePath, DateTime CreatedUtc, long SizeBytes, string? Note)
+{
+    public string DisplayName => string.IsNullOrWhiteSpace(Note) ? "Auto snapshot" : Note!;
+    public string Age => DisplayFormat.RelativeTime(CreatedUtc, DateTime.UtcNow);
+    public string SizeText => DisplayFormat.HumanSize(SizeBytes);
+}
 
 /// <summary>
 /// Бэкапит ShooterGame/Saved/SavedArks (+ Config + Profiles) в zip-файл с таймстампом.
