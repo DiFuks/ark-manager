@@ -3,98 +3,149 @@
              xmlns:vm="using:ArkManager.App.ViewModels"
              x:Class="ArkManager.App.Views.ConfigView"
              x:DataType="vm:ConfigViewModel">
-    <Grid RowDefinitions="auto,*,auto">
-        <TextBlock Grid.Row="0" Text="Configuration" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,12"/>
-        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
-            <TabItem Header="Основное">
-                <ScrollViewer Padding="6">
-                    <StackPanel Spacing="10" Margin="6">
-                        <Grid ColumnDefinitions="180,*" RowDefinitions="auto,auto,auto,auto,auto,auto" RowSpacing="8" ColumnSpacing="12">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Map"             VerticalAlignment="Center"/>
-                            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="8">
-                                <ComboBox Grid.Column="0"
-                                          ItemsSource="{Binding KnownMaps}"
-                                          SelectedItem="{Binding SelectedMap}"
-                                          PlaceholderText="Preset..."/>
-                                <TextBox Grid.Column="1" Text="{Binding Map}" PlaceholderText="custom map"/>
-                            </Grid>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Session name"    VerticalAlignment="Center"/>
-                            <TextBox  Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Max players"     VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding MaxPlayers}" Minimum="1" Maximum="200"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Port"            VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Port}" Minimum="1024" Maximum="65535"/>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Query port"      VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding QueryPort}" Minimum="1024" Maximum="65535"/>
-                            <TextBlock Grid.Row="5" Grid.Column="0" Text="RCON enabled"    VerticalAlignment="Center"/>
-                            <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                                <CheckBox IsChecked="{Binding RconEnabled}" Content="Enable"/>
-                                <NumericUpDown Value="{Binding RconPort}" Minimum="1024" Maximum="65535" Width="160"/>
+    <Grid RowDefinitions="auto,*,auto" RowSpacing="14">
+        <StackPanel Grid.Row="0" Spacing="6">
+            <TextBlock Classes="h1" Text="Configuration"/>
+            <TextBlock Classes="meta" Text="ShooterGame/Saved/Config/WindowsServer"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="1" Classes="seg" SelectedIndex="{Binding SelectedTabIndex}" Padding="0">
+            <TabItem Header="Basic">
+                <ScrollViewer Padding="0">
+                    <StackPanel Spacing="12" Margin="0,10,0,0">
+                        <Border Classes="panel">
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="section" Text="SERVER" Margin="0,0,0,8"/>
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Map" VerticalAlignment="Center"/>
+                                    <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <ComboBox Grid.Column="0" ItemsSource="{Binding KnownMaps}" SelectedItem="{Binding SelectedMap}" PlaceholderText="Preset…" HorizontalAlignment="Stretch"/>
+                                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding Map}" PlaceholderText="custom map"/>
+                                    </Grid>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Session name" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Max players" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding MaxPlayers}" Minimum="1" Maximum="200" HorizontalAlignment="Left" Width="140"/>
+                                </Grid>
                             </StackPanel>
-                        </Grid>
-                        <Separator/>
-                        <TextBlock Text="Пароли" FontWeight="SemiBold"/>
-                        <Grid ColumnDefinitions="180,*" RowDefinitions="auto,auto,auto" RowSpacing="8" ColumnSpacing="12">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Server password"     VerticalAlignment="Center"/>
-                            <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding ServerPassword}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Admin password"      VerticalAlignment="Center"/>
-                            <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding AdminPassword}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Spectator password"  VerticalAlignment="Center"/>
-                            <TextBox   Grid.Row="2" Grid.Column="1" Text="{Binding SpectatorPassword}"/>
-                        </Grid>
-                        <Separator/>
-                        <TextBlock Text="Дополнительно" FontWeight="SemiBold"/>
-                        <CheckBox IsChecked="{Binding NoBattlEye}"      Content="-NoBattlEye (обязательно для Wine)"/>
-                        <CheckBox IsChecked="{Binding AutoManagedMods}" Content="-automanagedmods (авто-скачивание модов)"/>
-                        <Separator/>
-                        <TextBlock Text="Кластер" FontWeight="SemiBold"/>
-                        <Grid ColumnDefinitions="180,*" RowDefinitions="auto,auto" RowSpacing="8" ColumnSpacing="12">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Cluster ID" VerticalAlignment="Center"/>
-                            <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding ClusterId}" PlaceholderText="общий для серверов кластера"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Cluster dir override" VerticalAlignment="Center"/>
-                            <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding ClusterDirOverride}" PlaceholderText="опционально"/>
-                        </Grid>
-                        <Separator/>
-                        <TextBlock Text="Extra CLI args" Opacity="0.7"/>
-                        <TextBox Text="{Binding ExtraCommandLineArgs}"/>
-                        <TextBlock Text="Extra ?query-string params (разделять '?')" Opacity="0.7"/>
-                        <TextBox Text="{Binding ExtraQueryString}"/>
+                        </Border>
+
+                        <Border Classes="panel">
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="section" Text="NETWORK" Margin="0,0,0,8"/>
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Game port" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Port}" Minimum="1024" Maximum="65535" HorizontalAlignment="Left" Width="140"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Query port" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding QueryPort}" Minimum="1024" Maximum="65535" HorizontalAlignment="Left" Width="140"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="RCON" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="14">
+                                        <ToggleSwitch IsChecked="{Binding RconEnabled}" OnContent="Enabled" OffContent="Disabled"/>
+                                        <NumericUpDown Value="{Binding RconPort}" Minimum="1024" Maximum="65535" Width="140"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="panel">
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="section" Text="PASSWORDS" Margin="0,0,0,8"/>
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Server password" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ServerPassword}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Admin password" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AdminPassword}"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Spectator password" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SpectatorPassword}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="panel">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="section" Text="ADVANCED"/>
+                                <CheckBox IsChecked="{Binding NoBattlEye}" Content="-NoBattlEye (required for Wine)"/>
+                                <CheckBox IsChecked="{Binding AutoManagedMods}" Content="-automanagedmods (auto-download mods)"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="panel">
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="section" Text="CLUSTER" Margin="0,0,0,8"/>
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto" RowSpacing="10" ColumnSpacing="14">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Cluster ID" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ClusterId}" PlaceholderText="shared across cluster servers"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Cluster dir override" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ClusterDirOverride}" PlaceholderText="optional"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="panel">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="section" Text="EXTRA ARGUMENTS"/>
+                                <TextBlock Text="Extra CLI args" Foreground="{DynamicResource MutedBrush}"/>
+                                <TextBox Classes="mono" Text="{Binding ExtraCommandLineArgs}"/>
+                                <TextBlock Text="Extra ?query-string params (separate with '?')" Foreground="{DynamicResource MutedBrush}"/>
+                                <TextBox Classes="mono" Text="{Binding ExtraQueryString}"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Height="40"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
             <TabItem Header="GameUserSettings.ini">
-                <Grid RowDefinitions="auto,*">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                        <TextBox Width="240" PlaceholderText="Найти…" KeyDown="OnSearchKeyDown"/>
+                <Grid RowDefinitions="auto,*" Margin="0,10,0,0">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                        <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
                         <Button Content="Find next ⏎" Click="OnFindNext"/>
-                        <TextBlock VerticalAlignment="Center" Opacity="0.7"/>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True"
-                             TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+                    <TextBox Grid.Row="1" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                             FontFamily="{DynamicResource MonoFont}" FontSize="12"
+                             Background="{DynamicResource ConsoleBrush}"
+                             BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                             CornerRadius="11" Padding="12"/>
                 </Grid>
             </TabItem>
+
             <TabItem Header="Game.ini">
-                <Grid RowDefinitions="auto,*">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                        <TextBox Width="240" PlaceholderText="Найти…" KeyDown="OnSearchKeyDown"/>
+                <Grid RowDefinitions="auto,*" Margin="0,10,0,0">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                        <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
                         <Button Content="Find next ⏎" Click="OnFindNext"/>
-                        <TextBlock VerticalAlignment="Center" Opacity="0.7"/>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Text="{Binding GameIniRaw}" AcceptsReturn="True"
-                             TextWrapping="NoWrap" FontFamily="Menlo,Consolas,monospace" FontSize="12"/>
+                    <TextBox Grid.Row="1" Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                             FontFamily="{DynamicResource MonoFont}" FontSize="12"
+                             Background="{DynamicResource ConsoleBrush}"
+                             BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                             CornerRadius="11" Padding="12"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Preview CLI">
-                <ScrollViewer>
-                    <TextBlock Text="{Binding CommandLinePreview}" TextWrapping="Wrap"
-                               FontFamily="Menlo,Consolas,monospace" FontSize="12" Margin="8"/>
-                </ScrollViewer>
+
+            <TabItem Header="CLI Preview">
+                <Border Classes="console" Margin="0,10,0,0">
+                    <ScrollViewer>
+                        <TextBlock Text="{Binding CommandLinePreview}" TextWrapping="Wrap"
+                                   FontFamily="{DynamicResource MonoFont}" FontSize="12"
+                                   Foreground="{DynamicResource TextBrush}" Margin="14"/>
+                    </ScrollViewer>
+                </Border>
             </TabItem>
         </TabControl>
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
-            <Button Content="{Binding SaveButtonText}" Command="{Binding SaveContextCommand}" Padding="14,8"/>
-            <Button Content="↻ Reload"               Command="{Binding ReloadCommand}" Padding="14,8"/>
-            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7" Margin="12,0,0,0"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary" Command="{Binding SaveContextCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{DynamicResource IconSave}"/><TextBlock Text="{Binding SaveButtonText}"/>
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding ReloadCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{DynamicResource IconRefresh}"/><TextBlock Text="Reload"/>
+                </StackPanel>
+            </Button>
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" Margin="6,0,0,0"/>
         </StackPanel>
     </Grid>
 </UserControl>
