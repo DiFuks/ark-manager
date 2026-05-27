@@ -3,6 +3,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://ArkManager.App/Themes/Tokens.axaml"/>
         <ResourceInclude Source="avares://ArkManager.App/Themes/Icons.axaml"/>
+        <ResourceInclude Source="avares://ArkManager.App/Themes/ControlThemes.axaml"/>
     </ResourceDictionary.MergedDictionaries>
     <FontFamily x:Key="DisplayFont">avares://ArkManager.App/Assets/Fonts/#Zilla Slab</FontFamily>
     <FontFamily x:Key="UiFont">avares://ArkManager.App/Assets/Fonts/#IBM Plex Sans</FontFamily>

@@ -1,0 +1,66 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Плоская кнопка-спиннер: прозрачная, hover = мягкий фон, шеврон-глиф по центру. -->
+    <ControlTheme x:Key="SpinnerRepeatButton" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="r" Background="{TemplateBinding Background}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^:pointerover /template/ Border#r">
+            <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
+        </Style>
+    </ControlTheme>
+
+    <!-- ButtonSpinner используется только внутри NumericUpDown. Переопределяем целиком:
+         скруглённый бордер + ClipToBounds (квадратные кнопки обрезаются по дуге), плоские
+         спиннеры с line-шевронами. -->
+    <ControlTheme x:Key="{x:Type ButtonSpinner}" TargetType="ButtonSpinner">
+        <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line2Brush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="Padding" Value="9,0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        ClipToBounds="True">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <ContentPresenter Name="PART_ContentPresenter" Grid.Column="0"
+                                          Content="{TemplateBinding Content}"
+                                          HorizontalContentAlignment="Stretch"
+                                          VerticalContentAlignment="Center"
+                                          Padding="{TemplateBinding Padding}"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                    IsVisible="{TemplateBinding ShowButtonSpinner}">
+                            <RepeatButton Name="PART_IncreaseButton" Theme="{StaticResource SpinnerRepeatButton}">
+                                <Path Width="11" Height="7" Stretch="Uniform"
+                                      Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.5"
+                                      StrokeLineCap="Round" StrokeJoin="Round" Data="M1,6 L6,1 L11,6"/>
+                            </RepeatButton>
+                            <RepeatButton Name="PART_DecreaseButton" Theme="{StaticResource SpinnerRepeatButton}">
+                                <Path Width="11" Height="7" Stretch="Uniform"
+                                      Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.5"
+                                      StrokeLineCap="Round" StrokeJoin="Round" Data="M1,1 L6,6 L11,1"/>
+                            </RepeatButton>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

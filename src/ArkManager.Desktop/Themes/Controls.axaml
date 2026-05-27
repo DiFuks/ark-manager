@@ -101,17 +101,18 @@
     <Style Selector="TextBox.mono">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
     </Style>
+    <!-- Скруглённый вид даёт кастомный ControlTheme для ButtonSpinner (Themes/ControlThemes.axaml).
+         CornerRadius прокидывается в ButtonSpinner. Внутренний TextBox гасим, чтобы не было
+         второго бордера поверх бордера ButtonSpinner. -->
     <Style Selector="NumericUpDown">
-        <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
         <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="ClipToBounds" Value="True"/>
     </Style>
-    <!-- внутренний ButtonSpinner: прозрачный, без своего бордера/фона, чтобы не "стёсывал" скруглённые углы -->
-    <Style Selector="NumericUpDown /template/ ButtonSpinner">
+    <Style Selector="NumericUpDown /template/ TextBox">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="Padding" Value="2,0"/>
     </Style>
     <Style Selector="ComboBox">
         <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
