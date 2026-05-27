@@ -106,6 +106,12 @@
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
         <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
+    <!-- внутренний ButtonSpinner: прозрачный, без своего бордера/фона, чтобы не "стёсывал" скруглённые углы -->
+    <Style Selector="NumericUpDown /template/ ButtonSpinner">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
     </Style>
     <Style Selector="ComboBox">
         <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
@@ -158,17 +164,34 @@
         <Setter Property="Background" Value="Transparent"/>
     </Style>
 
-    <!-- ===== Config tab strip (segmented look) ===== -->
+    <!-- ===== Config tab strip (segmented look) =====
+         Полностью переопределяем шаблон TabItem: убираем Fluent-пипку (синее
+         подчёркивание) и делаем «таблетку» с мягким акцентным фоном на активном. -->
     <Style Selector="TabControl.seg">
         <Setter Property="Background" Value="Transparent"/>
     </Style>
     <Style Selector="TabControl.seg TabItem">
         <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
         <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
-        <Setter Property="Padding" Value="13,7"/>
-        <Setter Property="Margin" Value="0,0,2,0"/>
+        <Setter Property="Margin" Value="0,0,4,0"/>
         <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="SegRoot" Background="Transparent" CornerRadius="8" Padding="13,7">
+                    <ContentPresenter Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="TabControl.seg TabItem:pointerover /template/ Border#SegRoot">
+        <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
+    </Style>
+    <Style Selector="TabControl.seg TabItem:selected /template/ Border#SegRoot">
+        <Setter Property="Background" Value="{StaticResource AccentSoftBrush}"/>
     </Style>
     <Style Selector="TabControl.seg TabItem:selected">
         <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}"/>

@@ -48,10 +48,10 @@ public partial class ConfigViewModel : ViewModelBase
 
     public string SaveButtonText => SelectedTabIndex switch
     {
-        0 => "💾 Save settings",
-        1 => "💾 Save GameUserSettings.ini",
-        2 => "💾 Save Game.ini",
-        _ => "💾 Save"
+        0 => "Save settings",
+        1 => "Save GameUserSettings.ini",
+        2 => "Save Game.ini",
+        _ => "Save"
     };
 
     public string CommandLinePreview => string.Join(" ", Quote(BuildCli()));
