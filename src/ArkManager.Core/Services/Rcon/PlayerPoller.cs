@@ -68,7 +68,7 @@ public sealed class PlayerPoller : IAsyncDisposable
     {
         var opts = _settings.Current.LaunchOptions;
         if (!opts.RconEnabled || string.IsNullOrEmpty(opts.AdminPassword))
-            return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "RCON выключен или нет admin пароля");
+            return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "RCON disabled or no admin password");
 
         await using var c = new RconClient();
         await c.ConnectAsync("127.0.0.1", opts.RconPort, opts.AdminPassword!, ct);

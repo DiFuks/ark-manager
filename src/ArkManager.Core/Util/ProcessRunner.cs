@@ -30,7 +30,7 @@ public sealed class ProcessRunner
 
         using var p = new Process { StartInfo = psi };
         if (!p.Start())
-            throw new InvalidOperationException($"Не удалось запустить {fileName}");
+            throw new InvalidOperationException($"Failed to start {fileName}");
 
         var stdoutTask = p.StandardOutput.ReadToEndAsync(ct);
         var stderrTask = p.StandardError.ReadToEndAsync(ct);
@@ -68,7 +68,7 @@ public sealed class ProcessRunner
         p.ErrorDataReceived  += (_, e) => { if (e.Data != null) onStdErr(e.Data); };
 
         if (!p.Start())
-            throw new InvalidOperationException($"Не удалось запустить {fileName}");
+            throw new InvalidOperationException($"Failed to start {fileName}");
         p.BeginOutputReadLine();
         p.BeginErrorReadLine();
         onStarted?.Invoke(p);

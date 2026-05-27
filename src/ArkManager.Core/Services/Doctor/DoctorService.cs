@@ -28,36 +28,36 @@ public sealed class DoctorService
         if (_steam.IsSteamCmdInstalled())
             results.Add(new("SteamCMD", true, _steam.ResolveSteamCmdBinary()));
         else
-            results.Add(new("SteamCMD", false, "Не установлен", "Нажмите «Install SteamCMD» на вкладке Install."));
+            results.Add(new("SteamCMD", false, "Not installed", "Click \"Install SteamCMD\" on the Install tab."));
 
         // 2. ASA server files
         var serverPath = _settings.Current.ServerInstallPath ?? "";
         var exe = Path.Combine(serverPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
         results.Add(File.Exists(exe)
             ? new("ASA Dedicated Server", true, exe)
-            : new("ASA Dedicated Server", false, "Не установлен в " + serverPath, "Нажмите «Install / Update server»."));
+            : new("ASA Dedicated Server", false, "Not installed in " + serverPath, "Click \"Install / Update server\"."));
 
         // 3. Wine runtime
         var probe = await _launcher.ProbeAsync(ct);
         results.Add(new("Wine", probe.Available, probe.DiagnosticMessage ?? "",
-            probe.Available ? null : "Нажмите «Install wine (brew)»."));
+            probe.Available ? null : "Click \"Install wine (brew)\"."));
 
         // 4. Brew
         results.Add(File.Exists("/opt/homebrew/bin/brew") || File.Exists("/usr/local/bin/brew")
             ? new("Homebrew", true, "OK")
-            : new("Homebrew", false, "brew не найден", "Установите https://brew.sh"));
+            : new("Homebrew", false, "brew not found", "Install from https://brew.sh"));
 
         // 5. Свободное место в DataDir
         try
         {
             var di = new DriveInfo(Path.GetPathRoot(serverPath) ?? "/");
             var gb = di.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0;
-            results.Add(new("Свободное место", gb >= 20, $"{gb:F1} GB на {di.Name}",
-                gb < 20 ? "ASA-сервер занимает ~15-25 GB. Освободите место." : null));
+            results.Add(new("Disk free", gb >= 20, $"{gb:F1} GB on {di.Name}",
+                gb < 20 ? "ASA server requires ~15-25 GB. Free up disk space." : null));
         }
         catch (Exception ex)
         {
-            results.Add(new("Свободное место", false, ex.Message));
+            results.Add(new("Disk free", false, ex.Message));
         }
 
         return results;
@@ -67,7 +67,7 @@ public sealed class DoctorService
     {
         if (!OperatingSystem.IsMacOS())
         {
-            onOutput("Установка wine через brew поддерживается только на macOS.");
+            onOutput("Wine installation via brew is only supported on macOS.");
             return false;
         }
 
@@ -76,7 +76,7 @@ public sealed class DoctorService
                  : null;
         if (brew == null)
         {
-            onOutput("brew не найден.");
+            onOutput("brew not found.");
             return false;
         }
 
@@ -87,20 +87,20 @@ public sealed class DoctorService
         var script = $"""
             #!/bin/bash
             set -e
-            echo "==> ArkManager: установка wine-stable"
+            echo "==> ArkManager: installing wine-stable"
             if ! /usr/bin/arch -x86_64 /usr/bin/true >/dev/null 2>&1; then
-                echo "Rosetta 2 не установлена. Ставлю..."
+                echo "Rosetta 2 not installed. Installing..."
                 softwareupdate --install-rosetta --agree-to-license
             else
                 echo "Rosetta 2 OK"
             fi
-            echo "==> brew install --cask wine-stable (потребуется sudo для gstreamer-runtime)"
+            echo "==> brew install --cask wine-stable (sudo required for gstreamer-runtime)"
             "{brew}" install --cask wine-stable
             echo "==> xattr -dr com.apple.quarantine"
             /usr/bin/xattr -dr com.apple.quarantine "/Applications/Wine Stable.app" || true
             echo ""
-            echo "==> Готово. Вернитесь в ArkManager → Doctor → Run checks."
-            echo "Окно можно закрыть."
+            echo "==> Done. Return to ArkManager → Doctor → Run checks."
+            echo "You may close this window."
             """;
 
         var scriptPath = Path.Combine(Path.GetTempPath(), "ark-manager-install-wine.sh");
@@ -108,10 +108,10 @@ public sealed class DoctorService
         File.SetUnixFileMode(scriptPath,
             UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 
-        onOutput("Открываю Terminal.app — введите пароль там, когда попросит.");
-        onOutput("Скрипт: " + scriptPath);
+        onOutput("Opening Terminal.app — enter your password there when prompted.");
+        onOutput("Script: " + scriptPath);
         onOutput("");
-        onOutput("После завершения установки нажмите ↻ Run checks в этой вкладке.");
+        onOutput("After installation completes, click ↻ Run checks in this tab.");
 
         var psi = new System.Diagnostics.ProcessStartInfo("/usr/bin/open") { UseShellExecute = false };
         psi.ArgumentList.Add("-a");
@@ -124,8 +124,8 @@ public sealed class DoctorService
         }
         catch (Exception ex)
         {
-            onOutput("Не удалось открыть Terminal: " + ex.Message);
-            onOutput("Запустите скрипт вручную: bash \"" + scriptPath + "\"");
+            onOutput("Failed to open Terminal: " + ex.Message);
+            onOutput("Run the script manually: bash \"" + scriptPath + "\"");
             return false;
         }
     }

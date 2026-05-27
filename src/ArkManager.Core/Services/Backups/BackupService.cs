@@ -16,18 +16,18 @@ public sealed class BackupService
 
     private string ServerRoot =>
         _settings.Current.ServerInstallPath
-        ?? throw new InvalidOperationException("ServerInstallPath не задан.");
+        ?? throw new InvalidOperationException("ServerInstallPath is not set.");
 
     private string BackupsRoot =>
         _settings.Current.BackupsDirectory
-        ?? throw new InvalidOperationException("BackupsDirectory не задан.");
+        ?? throw new InvalidOperationException("BackupsDirectory is not set.");
 
     public async Task<BackupInfo> CreateBackupAsync(string? note, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         Directory.CreateDirectory(BackupsRoot);
         var savedDir = Path.Combine(ServerRoot, "ShooterGame", "Saved");
         if (!Directory.Exists(savedDir))
-            throw new InvalidOperationException("Папка ShooterGame/Saved не найдена. Запустите сервер хотя бы раз.");
+            throw new InvalidOperationException("ShooterGame/Saved folder not found. Run the server at least once.");
 
         var stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
         var safeNote = string.IsNullOrWhiteSpace(note)
@@ -61,7 +61,7 @@ public sealed class BackupService
     public async Task RestoreAsync(string backupZipPath, bool wipeFirst, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         if (!File.Exists(backupZipPath))
-            throw new FileNotFoundException("Бэкап не найден", backupZipPath);
+            throw new FileNotFoundException("Backup not found", backupZipPath);
 
         var savedDir = Path.Combine(ServerRoot, "ShooterGame", "Saved");
 

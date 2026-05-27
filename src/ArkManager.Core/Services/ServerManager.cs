@@ -54,7 +54,7 @@ public sealed class ServerManager
         lock (_lock)
         {
             if (State is ServerState.Running or ServerState.Starting)
-                throw new InvalidOperationException("Сервер уже запущен.");
+                throw new InvalidOperationException("Server is already running.");
             _stopRequested = false;
         }
         SetReady(false);
@@ -247,8 +247,8 @@ public sealed class ServerManager
         var o = _settings.Current.LaunchOptions;
         if (!ShouldAttemptGracefulSave(o))
         {
-            PushLog("[stop] RCON выключен или нет admin-пароля — graceful save пропущен " +
-                    "(hard-kill, возможна потеря прогресса с последнего автосейва).");
+            PushLog("[stop] RCON disabled or no admin password — graceful save skipped " +
+                    "(hard-kill; progress since last auto-save may be lost).");
             return;
         }
 
@@ -268,11 +268,11 @@ public sealed class ServerManager
             // не присылая ответ. Это НЕ ошибка — мир уже сохранён выше через saveworld.
             try { await rcon.SendAsync("DoExit", timeout.Token); }
             catch { /* соединение закрыто в процессе выхода — ожидаемо */ }
-            PushLog("[stop] DoExit отправлен, жду graceful-выход...");
+            PushLog("[stop] DoExit sent, waiting for graceful exit...");
         }
         catch (Exception ex)
         {
-            PushLog("[stop] graceful save не удался: " + ex.Message + " — fallback hard-kill.");
+            PushLog("[stop] graceful save failed: " + ex.Message + " — fallback hard-kill.");
         }
     }
 
@@ -291,10 +291,10 @@ public sealed class ServerManager
     private async Task AutoRestartLoopAsync()
     {
         var delay = Math.Max(1, _settings.Current.AutoRestartDelaySeconds);
-        PushLog($"[auto-restart] жду {delay}s и стартую заново...");
+        PushLog($"[auto-restart] waiting {delay}s before restarting...");
         try { await Task.Delay(TimeSpan.FromSeconds(delay)); } catch { }
         try { await StartAsync(); }
-        catch (Exception ex) { PushLog("[auto-restart] не получилось: " + ex.Message); }
+        catch (Exception ex) { PushLog("[auto-restart] failed: " + ex.Message); }
     }
 
     private void StartScheduledRestartTimer()

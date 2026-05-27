@@ -65,7 +65,7 @@ public partial class SettingsViewModel : ViewModelBase
             s.AutoBackupOnlyWhenRunning = AutoBackupOnlyWhenRunning;
             s.CurseForgeApiKey = NullIfEmpty(CurseForgeApiKey);
         });
-        Status = "Сохранено.";
+        Status = "Saved.";
     }
 
     [RelayCommand]
@@ -74,14 +74,14 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     public async Task BrowseServerInstallAsync()
     {
-        var p = await Services.Browse.PickFolderAsync("Папка сервера", ServerInstallPath);
+        var p = await Services.Browse.PickFolderAsync("Server folder", ServerInstallPath);
         if (!string.IsNullOrEmpty(p)) ServerInstallPath = p;
     }
 
     [RelayCommand]
     public async Task BrowseBackupsAsync()
     {
-        var p = await Services.Browse.PickFolderAsync("Папка для бэкапов", BackupsDirectory);
+        var p = await Services.Browse.PickFolderAsync("Backups folder", BackupsDirectory);
         if (!string.IsNullOrEmpty(p)) BackupsDirectory = p;
     }
 

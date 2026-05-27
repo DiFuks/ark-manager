@@ -16,7 +16,7 @@ public partial class BackupsViewModel : ViewModelBase
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _busy;
     [ObservableProperty] private double _progress;
-    [ObservableProperty] private string _autoBackupStatus = "автобэкап выключен";
+    [ObservableProperty] private string _autoBackupStatus = "auto-backup disabled";
 
     public BackupsViewModel() { }
 
@@ -46,10 +46,10 @@ public partial class BackupsViewModel : ViewModelBase
         {
             var left = next - DateTime.UtcNow;
             AutoBackupStatus = left <= TimeSpan.Zero
-                ? "автобэкап: создаётся..."
-                : $"автобэкап через {(int)left.TotalMinutes:00}:{left.Seconds:00}";
+                ? "auto-backup: creating..."
+                : $"auto-backup in {(int)left.TotalMinutes:00}:{left.Seconds:00}";
         }
-        else AutoBackupStatus = "автобэкап выключен";
+        else AutoBackupStatus = "auto-backup disabled";
     }
 
     [RelayCommand]
@@ -58,7 +58,7 @@ public partial class BackupsViewModel : ViewModelBase
         if (_service == null) return;
         Backups.Clear();
         foreach (var b in _service.ListBackups()) Backups.Add(b);
-        Status = $"{Backups.Count} бэкап(ов)";
+        Status = $"{Backups.Count} backup(s)";
     }
 
     [RelayCommand]
@@ -70,11 +70,11 @@ public partial class BackupsViewModel : ViewModelBase
         try
         {
             var info = await _service.CreateBackupAsync(Note, progress);
-            Status = "Создан: " + Path.GetFileName(info.FilePath);
+            Status = "Created: " + Path.GetFileName(info.FilePath);
             Reload();
             Note = "";
         }
-        catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; }
         finally { Busy = false; Progress = 0; }
     }
 
@@ -87,9 +87,9 @@ public partial class BackupsViewModel : ViewModelBase
         try
         {
             await _service.RestoreAsync(Selected.FilePath, wipeFirst: true, progress);
-            Status = "Восстановлен из: " + Path.GetFileName(Selected.FilePath);
+            Status = "Restored from: " + Path.GetFileName(Selected.FilePath);
         }
-        catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; }
         finally { Busy = false; Progress = 0; }
     }
 
@@ -102,7 +102,7 @@ public partial class BackupsViewModel : ViewModelBase
             _service.Delete(Selected.FilePath);
             Reload();
         }
-        catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; }
     }
 
     [RelayCommand]

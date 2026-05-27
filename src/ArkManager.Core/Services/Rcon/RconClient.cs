@@ -40,17 +40,17 @@ public sealed class RconClient : IAsyncDisposable
             if (type == SERVERDATA_RESPONSE_VALUE) continue;
             if (type == SERVERDATA_AUTH_RESPONSE)
             {
-                if (id == -1) throw new InvalidOperationException("RCON: неверный пароль.");
+                if (id == -1) throw new InvalidOperationException("RCON: wrong password.");
                 if (id == authId) return;
-                throw new InvalidOperationException("RCON: неожиданный auth response.");
+                throw new InvalidOperationException("RCON: unexpected auth response.");
             }
-            throw new InvalidOperationException($"RCON: неожиданный пакет type={type}.");
+            throw new InvalidOperationException($"RCON: unexpected packet type={type}.");
         }
     }
 
     public async Task<string> SendAsync(string command, CancellationToken ct = default)
     {
-        if (_stream == null) throw new InvalidOperationException("Не подключён.");
+        if (_stream == null) throw new InvalidOperationException("Not connected.");
         var id = _nextId++;
         await WritePacketAsync(id, SERVERDATA_EXECCOMMAND, command, ct);
 
@@ -121,7 +121,7 @@ public sealed class RconClient : IAsyncDisposable
         while (off < count)
         {
             var n = await _stream!.ReadAsync(buf.AsMemory(off, count - off), ct);
-            if (n == 0) throw new IOException("RCON: соединение закрыто.");
+            if (n == 0) throw new IOException("RCON: connection closed.");
             off += n;
         }
         return buf;

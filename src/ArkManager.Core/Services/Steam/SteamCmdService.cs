@@ -56,7 +56,7 @@ public sealed class SteamCmdService
     /// </summary>
     public async Task InstallSteamCmdAsync(Action<string> onLog, CancellationToken ct = default)
     {
-        onLog("Скачиваю steamcmd...");
+        onLog("Downloading steamcmd...");
         var url = OperatingSystem.IsMacOS() ? SteamCmdMacUrl : SteamCmdLinuxUrl;
         var tarGzPath = Path.Combine(_paths.SteamCmdDir, "steamcmd.tar.gz");
 
@@ -66,7 +66,7 @@ public sealed class SteamCmdService
         {
             await resp.CopyToAsync(fs, ct);
         }
-        onLog("Скачано. Распаковываю...");
+        onLog("Downloaded. Extracting...");
 
         await using (var fs = File.OpenRead(tarGzPath))
         await using (var gz = new GZipStream(fs, CompressionMode.Decompress))
@@ -85,7 +85,7 @@ public sealed class SteamCmdService
         }
 
         try { File.Delete(tarGzPath); } catch { /* ignore */ }
-        onLog("steamcmd готов: " + sh);
+        onLog("steamcmd ready: " + sh);
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ public sealed class SteamCmdService
         CancellationToken ct = default)
     {
         if (!IsSteamCmdInstalled())
-            throw new InvalidOperationException("steamcmd не установлен. Запустите Install SteamCMD сначала.");
+            throw new InvalidOperationException("steamcmd is not installed. Run Install SteamCMD first.");
 
         Directory.CreateDirectory(installDir);
         var bin = ResolveSteamCmdBinary();
@@ -161,7 +161,7 @@ public sealed class SteamCmdService
     public async Task<string?> QueryLatestBuildIdAsync(Action<string>? onLog = null, CancellationToken ct = default)
     {
         if (!IsSteamCmdInstalled())
-            throw new InvalidOperationException("steamcmd не установлен.");
+            throw new InvalidOperationException("steamcmd is not installed.");
         var bin = ResolveSteamCmdBinary();
         var args = new[]
         {

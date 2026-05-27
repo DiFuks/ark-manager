@@ -19,7 +19,7 @@ public partial class InstallViewModel : ViewModelBase
     [ObservableProperty] private string _installedBuild = "—";
     [ObservableProperty] private string _installedAt = "—";
     [ObservableProperty] private string _latestBuild = "—";
-    [ObservableProperty] private string _updateStatus = "не проверялось";
+    [ObservableProperty] private string _updateStatus = "not checked";
 
     public InstallViewModel() { }
 
@@ -42,7 +42,7 @@ public partial class InstallViewModel : ViewModelBase
             await _steam.InstallSteamCmdAsync(Append);
             UpdateSteamState();
         }
-        catch (Exception ex) { Append("[ошибка] " + ex.Message); }
+        catch (Exception ex) { Append("[error] " + ex.Message); }
         finally { Busy = false; }
     }
 
@@ -55,11 +55,11 @@ public partial class InstallViewModel : ViewModelBase
         {
             _settings.Update(s => s.ServerInstallPath = ServerInstallPath);
             await _steam.InstallOrUpdateServerAsync(ServerInstallPath, Append);
-            Append("[готово]");
+            Append("[done]");
             RefreshInstalledVersion();
             RecomputeUpdateStatus();
         }
-        catch (Exception ex) { Append("[ошибка] " + ex.Message); }
+        catch (Exception ex) { Append("[error] " + ex.Message); }
         finally { Busy = false; }
     }
 
@@ -68,18 +68,18 @@ public partial class InstallViewModel : ViewModelBase
     {
         if (_steam == null) return;
         Busy = true;
-        UpdateStatus = "проверяю...";
+        UpdateStatus = "checking...";
         try
         {
             RefreshInstalledVersion();
             var latest = await _steam.QueryLatestBuildIdAsync(Append);
-            LatestBuild = latest ?? "не удалось распарсить";
+            LatestBuild = latest ?? "failed to parse";
             RecomputeUpdateStatus();
         }
         catch (Exception ex)
         {
-            Append("[ошибка] " + ex.Message);
-            UpdateStatus = "ошибка проверки";
+            Append("[error] " + ex.Message);
+            UpdateStatus = "check failed";
         }
         finally { Busy = false; }
     }
@@ -106,16 +106,16 @@ public partial class InstallViewModel : ViewModelBase
 
     private void RecomputeUpdateStatus()
     {
-        if (InstalledBuild is "—" || LatestBuild is "—" or "не удалось распарсить")
+        if (InstalledBuild is "—" || LatestBuild is "—" or "failed to parse")
         {
-            if (LatestBuild is "не удалось распарсить") UpdateStatus = "не удалось распарсить ответ steamcmd";
-            else if (InstalledBuild is "—") UpdateStatus = "сервер не установлен";
-            else UpdateStatus = "нажмите Check для проверки";
+            if (LatestBuild is "failed to parse") UpdateStatus = "failed to parse steamcmd response";
+            else if (InstalledBuild is "—") UpdateStatus = "server not installed";
+            else UpdateStatus = "click Check to verify";
             return;
         }
         UpdateStatus = string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
-            ? "✅ актуальная версия"
-            : $"⚠️ доступно обновление (latest {LatestBuild})";
+            ? "✅ up to date"
+            : $"⚠️ update available (latest {LatestBuild})";
     }
 
     [RelayCommand]
@@ -129,7 +129,7 @@ public partial class InstallViewModel : ViewModelBase
     [RelayCommand]
     public async Task BrowseServerFolderAsync()
     {
-        var picked = await Services.Browse.PickFolderAsync("Выбрать папку для ASA сервера", ServerInstallPath);
+        var picked = await Services.Browse.PickFolderAsync("Select ASA server folder", ServerInstallPath);
         if (!string.IsNullOrEmpty(picked)) ServerInstallPath = picked;
     }
 
@@ -137,8 +137,8 @@ public partial class InstallViewModel : ViewModelBase
     {
         if (_steam == null) return;
         SteamCmdState = _steam.IsSteamCmdInstalled()
-            ? "✅ установлен: " + _steam.ResolveSteamCmdBinary()
-            : "❌ не установлен";
+            ? "✅ installed: " + _steam.ResolveSteamCmdBinary()
+            : "❌ not installed";
     }
 
     [RelayCommand]

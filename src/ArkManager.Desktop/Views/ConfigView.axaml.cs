@@ -40,7 +40,7 @@ public partial class ConfigView : UserControl
         // Продолжаем после текущего выделения/каретки, с заворотом к началу.
         var from = System.Math.Max(editor.SelectionStart, editor.SelectionEnd);
         var idx = TextSearch.NextMatch(text, term, from);
-        if (idx < 0) { if (info != null) info.Text = "нет совпадений"; return; }
+        if (idx < 0) { if (info != null) info.Text = "no matches"; return; }
 
         editor.Focus();
         editor.SelectionStart = idx;
