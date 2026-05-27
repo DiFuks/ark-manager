@@ -99,7 +99,7 @@
                 <Grid RowDefinitions="auto,*" Margin="0,10,0,0">
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
                         <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
-                        <Button Content="Find next ⏎" Click="OnFindNext"/>
+                        <Button Content="Find next" Click="OnFindNext"/>
                     </StackPanel>
                     <TextBox Grid.Row="1" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
@@ -113,7 +113,7 @@
                 <Grid RowDefinitions="auto,*" Margin="0,10,0,0">
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
                         <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
-                        <Button Content="Find next ⏎" Click="OnFindNext"/>
+                        <Button Content="Find next" Click="OnFindNext"/>
                     </StackPanel>
                     <TextBox Grid.Row="1" Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
