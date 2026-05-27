@@ -30,7 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new("Server",      "▶️", server),
             new("RCON",        "🛰️", rcon),
             new("Install",     "⬇️", install),
-            new("Config",      "⚙️", config),
+            new("Config",      "🧰", config),
             new("Mods",        "🧩", mods),
             new("Backups",     "💾", backups),
             new("Doctor",      "🩺", doctor),
