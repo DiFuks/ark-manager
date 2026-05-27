@@ -23,4 +23,7 @@
     <StreamGeometry x:Key="IconArrowDown">M12 19 L6 12 H10 V5 H14 V12 H18 Z</StreamGeometry>
     <StreamGeometry x:Key="IconGlobe">M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M4 12 H20 M12 3 C8 7 8 17 12 21 C16 17 16 7 12 3 Z</StreamGeometry>
     <StreamGeometry x:Key="IconSave">M5 5 H16 L19 8 V19 H5 Z M8 5 H14 V9 H8 Z M8 13 H16 V18 H8 Z</StreamGeometry>
+    <!-- status glyphs -->
+    <StreamGeometry x:Key="IconCheck">M9.3 16.6 L4.5 11.8 L3.1 13.2 L9.3 19.4 L20.9 7.8 L19.5 6.4 Z</StreamGeometry>
+    <StreamGeometry x:Key="IconCross">M18.3 5.7 L12 12 L5.7 5.7 L4.3 7.1 L10.6 13.4 L4.3 19.7 L5.7 21.1 L12 14.8 L18.3 21.1 L19.7 19.7 L13.4 13.4 L19.7 7.1 Z</StreamGeometry>
 </ResourceDictionary>
