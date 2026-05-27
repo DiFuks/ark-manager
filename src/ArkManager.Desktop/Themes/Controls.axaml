@@ -1,0 +1,176 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ===== Buttons ===== -->
+    <Style Selector="Button">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="14,9"/>
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
+    </Style>
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentOnBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentInkBrush}"/>
+    </Style>
+    <Style Selector="Button.icon">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Width" Value="38"/>
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+    </Style>
+    <Style Selector="Button.danger">
+        <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+        <Setter Property="BorderBrush" Value="#4cd9685a"/>
+    </Style>
+    <Style Selector="Button.chip">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="10,7"/>
+    </Style>
+
+    <!-- PathIcon default sizing inside controls -->
+    <Style Selector="PathIcon">
+        <Setter Property="Width" Value="15"/>
+        <Setter Property="Height" Value="15"/>
+    </Style>
+
+    <!-- ===== Panels / tiles ===== -->
+    <Style Selector="Border.panel">
+        <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="11"/>
+        <Setter Property="Padding" Value="18"/>
+    </Style>
+    <Style Selector="Border.tile">
+        <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="12,12"/>
+    </Style>
+    <Style Selector="Border.console">
+        <Setter Property="Background" Value="{StaticResource ConsoleBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="11"/>
+    </Style>
+
+    <!-- ===== Chips / pills ===== -->
+    <Style Selector="Border.chip">
+        <Setter Property="CornerRadius" Value="999"/>
+        <Setter Property="Padding" Value="9,6"/>
+        <Setter Property="Background" Value="{StaticResource OkSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource OkLineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Border.pill">
+        <Setter Property="CornerRadius" Value="999"/>
+        <Setter Property="Padding" Value="9,6"/>
+        <Setter Property="Background" Value="{StaticResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="#40e08a2b"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- ===== Inputs ===== -->
+    <Style Selector="TextBox">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="9,8"/>
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+    </Style>
+    <Style Selector="TextBox.mono">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+    </Style>
+    <Style Selector="NumericUpDown">
+        <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <Style Selector="ToggleSwitch">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    </Style>
+    <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    </Style>
+
+    <!-- ===== ScrollViewer / ProgressBar ===== -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Background" Value="{StaticResource LineBrush}"/>
+    </Style>
+
+    <!-- ===== Nav ListBox ===== -->
+    <Style Selector="ListBox.nav">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem">
+        <Setter Property="Padding" Value="11,9"/>
+        <Setter Property="Margin" Value="0,1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="14"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentSoftBrush}"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem:selected">
+        <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- ===== Generic list rows (Backups/Mods) ===== -->
+    <Style Selector="ListBox.rows">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <!-- ===== Config tab strip (segmented look) ===== -->
+    <Style Selector="TabControl.seg">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="TabControl.seg TabItem">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+        <Setter Property="Padding" Value="13,7"/>
+        <Setter Property="Margin" Value="0,0,2,0"/>
+        <Setter Property="MinHeight" Value="0"/>
+    </Style>
+    <Style Selector="TabControl.seg TabItem:selected">
+        <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}"/>
+    </Style>
+</Styles>

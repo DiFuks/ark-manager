@@ -3,13 +3,26 @@
              x:Class="ArkManager.App.App"
              xmlns:local="using:ArkManager.App"
              RequestedThemeVariant="Dark">
-             <!-- Кастомные фоны (#1f2230 / #2a2f44 / ...) рассчитаны на тёмную тему. -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
-  
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://ArkManager.App/Themes/Resources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://ArkManager.App/Themes/TextStyles.axaml"/>
+        <StyleInclude Source="avares://ArkManager.App/Themes/Controls.axaml"/>
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{DynamicResource BgBrush}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource UiFont}"/>
+        </Style>
     </Application.Styles>
 </Application>
