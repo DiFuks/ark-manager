@@ -52,7 +52,7 @@ public sealed class DoctorService
         {
             var di = new DriveInfo(Path.GetPathRoot(serverPath) ?? "/");
             var gb = di.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0;
-            results.Add(new("Disk free", gb >= 20, $"{gb:F1} GB on {di.Name}",
+            results.Add(new("Disk free", gb >= 20, FormattableString.Invariant($"{gb:F1} GB on {di.Name}"),
                 gb < 20 ? "ASA server requires ~15-25 GB. Free up disk space." : null));
         }
         catch (Exception ex)
