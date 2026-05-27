@@ -41,6 +41,14 @@ public partial class MainWindowViewModel : ViewModelBase
             new("Settings", G("M12 2 L14 4 H16.5 L17 6.5 L19.5 7.5 L19 10 L21 12 L19 14 L19.5 16.5 L17 17.5 L16.5 20 L14 20 L12 22 L10 20 L7.5 20 L7 17.5 L4.5 16.5 L5 14 L3 12 L5 10 L4.5 7.5 L7 6.5 L7.5 4 L10 4 Z M12 8 A4 4 0 1 0 12 16 A4 4 0 1 0 12 8 Z"), settings),
         };
         _selected = NavItems[0];
+
+        // Deep-link на стартовый таб через env (для тестов/скриншотов; по умолчанию выключено).
+        var startTab = Environment.GetEnvironmentVariable("ARKMANAGER_START_TAB");
+        if (!string.IsNullOrWhiteSpace(startTab))
+        {
+            var match = NavItems.FirstOrDefault(n => string.Equals(n.Title, startTab, StringComparison.OrdinalIgnoreCase));
+            if (match != null) _selected = match;
+        }
     }
 
     // Параметрless конструктор нужен только для XAML-дизайнера.
