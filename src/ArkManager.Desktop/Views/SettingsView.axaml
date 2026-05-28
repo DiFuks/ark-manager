@@ -27,20 +27,10 @@
                 <Border Classes="panel">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="section" Text="PATHS"/>
-                        <TextBlock Text="Server install path" Foreground="{DynamicResource MutedBrush}"/>
-                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
-                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding ServerInstallPath}"/>
-                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseServerInstallCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
-                        </Grid>
                         <TextBlock Text="Backups directory" Foreground="{DynamicResource MutedBrush}"/>
                         <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
                             <TextBox Grid.Column="0" Classes="mono" Text="{Binding BackupsDirectory}"/>
                             <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseBackupsCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
-                        </Grid>
-                        <TextBlock Text="SteamCMD path (optional)" Foreground="{DynamicResource MutedBrush}"/>
-                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
-                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding SteamCmdPath}"/>
-                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseSteamCmdCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
                         </Grid>
                         <TextBlock Text="CurseForge API key (for resolving mod names)" Foreground="{DynamicResource MutedBrush}"/>
                         <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="•"/>

@@ -9,12 +9,10 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly SettingsService? _settings;
     private readonly AppPaths? _paths;
 
-    [ObservableProperty] private string _serverInstallPath = "";
     [ObservableProperty] private string _backupsDirectory = "";
     [ObservableProperty] private int _backupRotationKeep = 10;
     [ObservableProperty] private string _wineBinaryPath = "";
     [ObservableProperty] private string _winePrefixPath = "";
-    [ObservableProperty] private string _steamCmdPath = "";
     [ObservableProperty] private string _dataDir = "";
     [ObservableProperty] private bool _autoRestartOnCrash;
     [ObservableProperty] private int _autoRestartDelaySeconds = 10;
@@ -31,12 +29,10 @@ public partial class SettingsViewModel : ViewModelBase
         _settings = settings;
         _paths = paths;
         var c = settings.Current;
-        ServerInstallPath = c.ServerInstallPath ?? "";
         BackupsDirectory = c.BackupsDirectory ?? "";
         BackupRotationKeep = c.BackupRotationKeep;
         WineBinaryPath = c.WineBinaryPath ?? "";
         WinePrefixPath = c.WinePrefixPath ?? "";
-        SteamCmdPath = c.SteamCmdPath ?? "";
         DataDir = paths.DataDir;
         AutoRestartOnCrash = c.AutoRestartOnCrash;
         AutoRestartDelaySeconds = c.AutoRestartDelaySeconds;
@@ -52,12 +48,10 @@ public partial class SettingsViewModel : ViewModelBase
         if (_settings == null) return;
         _settings.Update(s =>
         {
-            s.ServerInstallPath = NullIfEmpty(ServerInstallPath);
             s.BackupsDirectory = NullIfEmpty(BackupsDirectory);
             s.BackupRotationKeep = BackupRotationKeep;
             s.WineBinaryPath = NullIfEmpty(WineBinaryPath);
             s.WinePrefixPath = NullIfEmpty(WinePrefixPath);
-            s.SteamCmdPath = NullIfEmpty(SteamCmdPath);
             s.AutoRestartOnCrash = AutoRestartOnCrash;
             s.AutoRestartDelaySeconds = AutoRestartDelaySeconds;
             s.ScheduledRestartHours = ScheduledRestartHours;
@@ -70,13 +64,6 @@ public partial class SettingsViewModel : ViewModelBase
 
     [RelayCommand]
     public void OpenDataFolder() => App.OpenInFinder(DataDir);
-
-    [RelayCommand]
-    public async Task BrowseServerInstallAsync()
-    {
-        var p = await Services.Browse.PickFolderAsync("Server folder", ServerInstallPath);
-        if (!string.IsNullOrEmpty(p)) ServerInstallPath = p;
-    }
 
     [RelayCommand]
     public async Task BrowseBackupsAsync()
@@ -97,13 +84,6 @@ public partial class SettingsViewModel : ViewModelBase
     {
         var p = await Services.Browse.PickFolderAsync("WINEPREFIX", WinePrefixPath);
         if (!string.IsNullOrEmpty(p)) WinePrefixPath = p;
-    }
-
-    [RelayCommand]
-    public async Task BrowseSteamCmdAsync()
-    {
-        var p = await Services.Browse.PickFileAsync("steamcmd binary", SteamCmdPath);
-        if (!string.IsNullOrEmpty(p)) SteamCmdPath = p;
     }
 
     private static string? NullIfEmpty(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
