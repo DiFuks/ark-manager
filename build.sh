@@ -172,8 +172,17 @@ package_windows() {
   local out="$DIST/$APP_NAME-$VERSION-windows-x64"
   rm -rf "$out"; mkdir -p "$out"
   cp -R "$publish/." "$out/"
-  ( cd "$DIST" && zip -qr "$APP_NAME-$VERSION-windows-x64.zip" "$APP_NAME-$VERSION-windows-x64" )
-  echo "    -> $DIST/$APP_NAME-$VERSION-windows-x64.zip"
+  local zip_path="$DIST/$APP_NAME-$VERSION-windows-x64.zip"
+  rm -f "$zip_path"
+  if command -v zip >/dev/null 2>&1; then
+    ( cd "$DIST" && zip -qr "$APP_NAME-$VERSION-windows-x64.zip" "$APP_NAME-$VERSION-windows-x64" )
+  else
+    # Windows GitHub runners run this script in Git Bash without `zip`.
+    # PowerShell's Compress-Archive is always available on Windows.
+    powershell -NoLogo -NoProfile -Command \
+      "Compress-Archive -Path '$out' -DestinationPath '$zip_path' -Force"
+  fi
+  echo "    -> $zip_path"
 }
 
 # --- package: Linux ----------------------------------------------------------
