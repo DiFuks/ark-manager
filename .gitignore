@@ -32,3 +32,9 @@ local-state/
 
 ## Build caches
 build/.cache/
+
+## Local-only dumps (ARK save backups, scratch)
+save-backup/
+
+## Local design docs / planning scratchpad
+docs/superpowers/
