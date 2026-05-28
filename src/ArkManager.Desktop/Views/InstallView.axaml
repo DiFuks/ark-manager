@@ -44,15 +44,6 @@
                         <TextBox Grid.Column="0" Classes="mono" Text="{Binding ServerInstallPath}"/>
                         <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseServerFolderCommand}" ToolTip.Tip="Browse"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
                     </Grid>
-                    <Grid ColumnDefinitions="auto,*" RowDefinitions="auto,auto,auto" RowSpacing="6" ColumnSpacing="14"
-                          IsVisible="{Binding IsServerInstalled}">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Installed build" Foreground="{DynamicResource MutedBrush}"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InstalledBuild}" FontFamily="{DynamicResource MonoFont}"/>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Last updated" Foreground="{DynamicResource MutedBrush}"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding InstalledAt}"/>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Latest build" Foreground="{DynamicResource MutedBrush}"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LatestBuild}" FontFamily="{DynamicResource MonoFont}"/>
-                    </Grid>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Classes="primary" Content="{Binding ServerPrimaryActionLabel}"
                                 Command="{Binding InstallOrUpdateServerCommand}" IsEnabled="{Binding !Busy}"/>
@@ -80,7 +71,7 @@
                     <Button Grid.Column="1" Classes="icon" Command="{Binding CopyLogCommand}" ToolTip.Tip="Copy log" Margin="0,0,6,0"><PathIcon Data="{DynamicResource IconCopy}"/></Button>
                     <Button Grid.Column="2" Classes="icon" Command="{Binding ClearLogCommand}" ToolTip.Tip="Clear log"><PathIcon Data="{DynamicResource IconTrash}"/></Button>
                 </Grid>
-                <TextBox Grid.Row="1" x:Name="LogBox" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
+                <TextBox Grid.Row="1" x:Name="LogBox" Classes="log" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
                          TextWrapping="NoWrap" FontFamily="{DynamicResource MonoFont}" FontSize="11"
                          Background="Transparent" BorderThickness="0" Padding="14,2"/>
             </Grid>

@@ -144,6 +144,14 @@
     <Style Selector="TextBox.mono">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
     </Style>
+    <!-- Многострочные «лог»-боксы (console на Server/RCON/Install): снимаем фиксированную
+         Height=36 (она затирала растягивание в Grid.Row="*") и центрирование контента,
+         чтобы строки шли сверху, а текстбокс расползался на всю доступную высоту. -->
+    <Style Selector="TextBox.log">
+        <Setter Property="Height" Value="NaN"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Top"/>
+    </Style>
     <!-- NumericUpDown: поверхность = внутренний TextBox (рисуется обычным стилем TextBox выше →
          тот же фон/бордер/скругление, что у текст-полей). ButtonSpinner прозрачный и накладывает
          шевроны поверх справа (Themes/ControlThemes.axaml). Здесь лишь резервируем правый отступ
