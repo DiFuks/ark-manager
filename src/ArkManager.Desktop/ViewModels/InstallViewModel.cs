@@ -1,5 +1,6 @@
 using ArkManager.Core.Services;
 using ArkManager.Core.Services.Steam;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -12,14 +13,75 @@ public partial class InstallViewModel : ViewModelBase
     private readonly SteamCmdService? _steam;
 
     [ObservableProperty] private string _serverInstallPath = "";
-    [ObservableProperty] private string _steamCmdState = "";
     [ObservableProperty] private bool _busy;
+    [ObservableProperty] private bool _checking;
     [ObservableProperty] private string _log = "";
 
-    [ObservableProperty] private string _installedBuild = "—";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SteamCmdStatusText))]
+    [NotifyPropertyChangedFor(nameof(SteamCmdStatusBrush))]
+    [NotifyPropertyChangedFor(nameof(SteamCmdActionLabel))]
+    private bool _isSteamCmdInstalled;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerStatusText))]
+    [NotifyPropertyChangedFor(nameof(ServerStatusBrush))]
+    [NotifyPropertyChangedFor(nameof(ServerPrimaryActionLabel))]
+    [NotifyCanExecuteChangedFor(nameof(CheckForUpdatesCommand))]
+    private bool _isServerInstalled;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerStatusText))]
+    [NotifyPropertyChangedFor(nameof(ServerStatusBrush))]
+    private string _installedBuild = "—";
+
     [ObservableProperty] private string _installedAt = "—";
-    [ObservableProperty] private string _latestBuild = "—";
-    [ObservableProperty] private string _updateStatus = "not checked";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerStatusText))]
+    [NotifyPropertyChangedFor(nameof(ServerStatusBrush))]
+    private string _latestBuild = "—";
+
+    public string SteamCmdStatusText => IsSteamCmdInstalled ? "Installed" : "Not installed";
+    public IBrush SteamCmdStatusBrush => Tok(IsSteamCmdInstalled ? "OkBrush" : "DangerBrush");
+    public string SteamCmdActionLabel => IsSteamCmdInstalled ? "Reinstall SteamCMD" : "Install SteamCMD";
+
+    public string ServerPrimaryActionLabel => IsServerInstalled ? "Update server" : "Install server";
+
+    // Текст статуса сервера: «Not installed» → «Installed · build X» (не чекали) →
+    // «Up to date · build X» / «Update available · X → Y».
+    public string ServerStatusText
+    {
+        get
+        {
+            if (!IsServerInstalled) return "Not installed";
+            if (LatestBuild is "—") return $"Installed · build {InstalledBuild}";
+            if (LatestBuild is "failed to parse") return $"Installed · build {InstalledBuild} (update check failed)";
+            return string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
+                ? $"Up to date · build {InstalledBuild}"
+                : $"Update available · {InstalledBuild} → {LatestBuild}";
+        }
+    }
+
+    public IBrush ServerStatusBrush
+    {
+        get
+        {
+            if (!IsServerInstalled) return Tok("DangerBrush");
+            if (LatestBuild is "—" or "failed to parse") return Tok("MutedBrush");
+            return string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
+                ? Tok("OkBrush")
+                : Tok("WarnBrush");
+        }
+    }
+
+    private static IBrush Tok(string key)
+    {
+        if (Avalonia.Application.Current?.Resources is { } res
+            && res.TryGetResource(key, null, out var v) && v is IBrush b)
+            return b;
+        return Brushes.Gray;
+    }
 
     public InstallViewModel() { }
 
@@ -30,6 +92,11 @@ public partial class InstallViewModel : ViewModelBase
         ServerInstallPath = settings.Current.ServerInstallPath ?? "";
         UpdateSteamState();
         RefreshInstalledVersion();
+
+        // Авточек последней версии при старте — фоном. Запускается на UI-потоке,
+        // тяжёлый I/O steamcmd уходит off-thread внутри QueryLatestBuildIdAsync,
+        // continuation возвращается на UI через захваченный SyncContext.
+        if (IsServerInstalled) _ = CheckForUpdatesAsync();
     }
 
     [RelayCommand]
@@ -54,40 +121,56 @@ public partial class InstallViewModel : ViewModelBase
         try
         {
             _settings.Update(s => s.ServerInstallPath = ServerInstallPath);
+
+            // Update-сценарий: сначала чекаем, нужно ли вообще обновляться,
+            // чтобы не гонять steamcmd 5+ минут впустую.
+            if (IsServerInstalled)
+            {
+                Append("Checking for updates...");
+                var latest = await _steam.QueryLatestBuildIdAsync(Append);
+                LatestBuild = latest ?? "failed to parse";
+                if (latest != null && string.Equals(latest, InstalledBuild, StringComparison.Ordinal))
+                {
+                    Append($"[ok] Already on the latest build ({InstalledBuild}).");
+                    return;
+                }
+            }
+
             await _steam.InstallOrUpdateServerAsync(ServerInstallPath, Append);
             Append("[done]");
             RefreshInstalledVersion();
-            RecomputeUpdateStatus();
         }
         catch (Exception ex) { Append("[error] " + ex.Message); }
         finally { Busy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsServerInstalled))]
     public async Task CheckForUpdatesAsync()
     {
-        if (_steam == null) return;
-        Busy = true;
-        UpdateStatus = "checking...";
+        if (_steam == null || !IsServerInstalled) return;
+        Checking = true;
         try
         {
             RefreshInstalledVersion();
             var latest = await _steam.QueryLatestBuildIdAsync(Append);
             LatestBuild = latest ?? "failed to parse";
-            RecomputeUpdateStatus();
         }
         catch (Exception ex)
         {
             Append("[error] " + ex.Message);
-            UpdateStatus = "check failed";
+            LatestBuild = "failed to parse";
         }
-        finally { Busy = false; }
+        finally { Checking = false; }
     }
 
     partial void OnServerInstallPathChanged(string value)
     {
+        // Источник истины для ServerInstallPath переехал на этот таб (поле в Settings убрали).
+        // Сохраняем сразу на изменение, чтобы не терять при переключении вкладок.
+        _settings?.Update(s => s.ServerInstallPath = string.IsNullOrWhiteSpace(value) ? null : value);
         RefreshInstalledVersion();
-        RecomputeUpdateStatus();
+        // После смены пути latest-чек по предыдущему пути уже не релевантен.
+        LatestBuild = "—";
     }
 
     private void RefreshInstalledVersion()
@@ -96,26 +179,14 @@ public partial class InstallViewModel : ViewModelBase
         var v = _steam.ReadInstalledVersion(ServerInstallPath);
         if (v == null)
         {
+            IsServerInstalled = false;
             InstalledBuild = "—";
             InstalledAt = "—";
             return;
         }
+        IsServerInstalled = true;
         InstalledBuild = v.BuildId;
         InstalledAt = v.LastUpdated?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "—";
-    }
-
-    private void RecomputeUpdateStatus()
-    {
-        if (InstalledBuild is "—" || LatestBuild is "—" or "failed to parse")
-        {
-            if (LatestBuild is "failed to parse") UpdateStatus = "failed to parse steamcmd response";
-            else if (InstalledBuild is "—") UpdateStatus = "server not installed";
-            else UpdateStatus = "click Check to verify";
-            return;
-        }
-        UpdateStatus = string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
-            ? "Up to date"
-            : $"Update available (latest {LatestBuild})";
     }
 
     [RelayCommand]
@@ -136,9 +207,7 @@ public partial class InstallViewModel : ViewModelBase
     private void UpdateSteamState()
     {
         if (_steam == null) return;
-        SteamCmdState = _steam.IsSteamCmdInstalled()
-            ? "Installed: " + _steam.ResolveSteamCmdBinary()
-            : "Not installed";
+        IsSteamCmdInstalled = _steam.IsSteamCmdInstalled();
     }
 
     [RelayCommand]
