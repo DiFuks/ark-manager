@@ -3,8 +3,8 @@
 ASA (ARK: Survival Ascended) dedicated server manager для macOS. Аналог
 Windows-only ASADedicatedManager, написан под Mac. Цель — нативный mac-GUI
 для управления полным жизненным циклом сервера (install/config/mods/backup/
-start/stop/RCON), сам ASA-сервер крутится через **wine64** (brew cask
-`wine-stable`), потому что нативной mac-сборки сервера не существует.
+start/stop/RCON), сам ASA-сервер крутится через **wine64** (встроен в бандл),
+потому что нативной mac-сборки сервера не существует.
 
 ## Stack & commands
 
@@ -26,7 +26,6 @@ dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
   - `Services/Config/{IniFile,ConfigService}.cs`
   - `Services/Backups/{BackupService,AutoBackupWorker}.cs`
   - `Services/Mods/{ModsService,CurseForgeClient}.cs`
-  - `Services/Doctor/DoctorService.cs`
   - `Services/Launchers/{IServerLauncher,ServerCommandLine,WineLauncher}.cs`
   - `Services/Rcon/{RconClient,PlayerPoller}.cs`
   - `Util/ProcessRunner.cs`
@@ -45,7 +44,7 @@ dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
 
 `MainWindowViewModel` собирает nav:
 
-`Server → RCON → Install → Config → Mods → Backups → Doctor → Settings`
+`Server → RCON → Install → Config → Mods → Backups`
 
 (Стартовый таб — `Server`. Dashboard был, но удалён: единственное уникальное
 с него — players online / names — переехало в Server.)
@@ -59,7 +58,7 @@ Vendor-каталог приложения (соответствует прав�
 - Win:    `%APPDATA%/ArkManager/`
 
 Содержит: `settings.json`, `logs/`, `steamcmd/`, `backups/`, `server/` (default),
-`wineprefix/` (default WINEPREFIX).
+`server-runtime/` (WINEPREFIX, создаётся wine'ом при первом запуске).
 
 ## Подводные камни кода (не очевидно из исходников)
 
@@ -157,8 +156,9 @@ ember-янтарь, слэб-заголовки). Весь дизайн выне
   иначе откажет «invalid platform». Плюс **`+app_info_update 1`** — без него
   steamcmd падает с «Failed to install app — Missing configuration» (PICS-кэш
   не подтягивается).
-- **`.exe` запускается через wine64** (cask `wine-stable`). Других режимов
-  больше нет — Whisky-cask архивирован (Aug 2024), Parallels-launcher выпилен.
+- **`.exe` запускается через wine64** (встроен в бандл). Whisky-cask
+  архивирован (Aug 2024), Parallels-launcher выпилен; brew-cask wine-stable
+  тоже убран — wine теперь bundled.
 - **BattlEye под Wine не работает** → флаг **`-NoBattlEye`** обязателен, включён
   в `ServerLaunchOptions` по умолчанию.
 - **Моды через CurseForge** (не Steam Workshop). Передаются как
@@ -176,41 +176,23 @@ ember-янтарь, слэб-заголовки). Весь дизайн выне
 - **CurseForge API**: ASA gameId = 83374, endpoint `/v1/mods/{id}`, header
   `x-api-key`. Без ключа резолв имён не работает, но это не блокирует ничего.
 
-## Wine setup (cask `wine-stable`)
+## Wine (embedded)
 
-- wine64 path (искаем в этом порядке через `WineLauncher.EnumerateWineCandidates`):
-  - `/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64`
-  - `/Applications/Wine Staging.app/...` / `/Applications/Wine Devel.app/...`
-  - `/Applications/Game Porting Toolkit.app/...` (если ставился GPTK вручную)
-  - `/Applications/Wine Crossover.app/...` (старый gcenx, fallback)
-  - `/opt/homebrew/bin/wine64` / `/usr/local/bin/wine64`
-- WINEPREFIX = `~/Library/Application Support/ArkManager/wineprefix` (по умолчанию).
-  Wine инициализирует префикс автоматически при первом запуске сервера —
-  займёт ~30 сек, в логе будут «mountmgr/winemenubuilder» — это нормально.
+Wine идёт встроенным в бандл — юзер ничего не ставит, слова «wine» в UI нет.
 
-### Doctor → Install wine
+- macOS: `<App>.app/Contents/Resources/wine/bin/wine64` (Intel x86_64 от gcenx,
+  запускается под Rosetta 2 на Apple Silicon).
+- Linux: `<install-dir>/wine/bin/wine64` (Lutris-wine static build).
+- Windows: wine не используется — `NativeWindowsLauncher` запускает .exe нативно.
+- Источники пиним в `build/wine-sources.json` (URL + SHA256). `build.sh` качает,
+  проверяет хэш, кладёт в `~/.cache/ark-manager/wine/` и копирует в бандл.
 
-Brew в version ≥4.6 убрал `--no-quarantine`. Плюс cask `wine-stable` тянет
-`gstreamer-runtime` как .pkg-инсталлер, который **требует sudo**. Запускать
-brew как child-процесс ArkManager бесполезно: stdio редиректнут, sudo
-не видит tty → виснет.
+WINEPREFIX живёт в `<DataDir>/server-runtime/`, создаётся wine'ом при первом
+запуске сервера (slow first-run ~30s). Старая папка `<DataDir>/wineprefix/`
+от прежней brew-версии чистится автоматически на старте `AppPaths`.
 
-Решение в `DoctorService.InstallWineViaBrewAsync`: пишем скрипт в
-`/tmp/ark-manager-install-wine.sh` и запускаем `open -a Terminal <script>`.
-Скрипт:
-1. Проверяет Rosetta 2 (`arch -x86_64 /usr/bin/true`); ставит если нет
-   (`softwareupdate --install-rosetta --agree-to-license`). wine-stable —
-   Intel-only.
-2. `brew install --cask wine-stable`.
-3. `xattr -dr com.apple.quarantine "/Applications/Wine Stable.app"` — снимает
-   карантин (Gatekeeper иначе блокирует wine64).
-
-UI просит юзера дождаться окончания в Terminal и нажать `↻ Run checks`
-обратно в Doctor.
-
-**Важно:** cask wine-stable помечен deprecated с отключением **2026-09-01**.
-После этой даты `brew install --cask wine-stable` сломается — нужно будет
-переезжать на `gcenx/wine/game-porting-toolkit` (10 GB + Rosetta).
+В env-переменных запуска: `WINEDEBUG=-all`, `WINEDLLOVERRIDES=winemac.drv=`
+(без последнего wine на macOS рисует Server Console-окно с белым на белом).
 
 ## Автобэкап
 
@@ -237,6 +219,11 @@ linked CTS, новый интервал применяется немедлен�
   тонна других кастомизаций) — есть raw-редактор Game.ini как fallback.
 - Лимит RAM сервера. У ASA нет CLI-флага, на macOS нет cgroups, `ulimit -v`
   ломает wine. Workaround — `ScheduledRestartHours` (есть в Settings).
+- AppImage / .dmg / installers — дистрибуция пока только через прямой запуск.
+- Code signing / notarization — не подписано, Gatekeeper требует ручного разрешения.
+- Headless CLI — нет, только GUI.
+- ARM64 Linux — не тестировалось, wine-бандл x86_64.
+- Intel Mac — не тестировалось (только Apple Silicon + Rosetta).
 
 ## Code style
 
