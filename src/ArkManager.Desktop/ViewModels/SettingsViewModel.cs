@@ -9,8 +9,6 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly SettingsService? _settings;
     private readonly AppPaths? _paths;
 
-    [ObservableProperty] private string _backupsDirectory = "";
-    [ObservableProperty] private int _backupRotationKeep = 10;
     [ObservableProperty] private string _wineBinaryPath = "";
     [ObservableProperty] private string _winePrefixPath = "";
     [ObservableProperty] private string _dataDir = "";
@@ -28,8 +26,6 @@ public partial class SettingsViewModel : ViewModelBase
         _settings = settings;
         _paths = paths;
         var c = settings.Current;
-        BackupsDirectory = c.BackupsDirectory ?? "";
-        BackupRotationKeep = c.BackupRotationKeep;
         WineBinaryPath = c.WineBinaryPath ?? "";
         WinePrefixPath = c.WinePrefixPath ?? "";
         DataDir = paths.DataDir;
@@ -46,8 +42,6 @@ public partial class SettingsViewModel : ViewModelBase
         if (_settings == null) return;
         _settings.Update(s =>
         {
-            s.BackupsDirectory = NullIfEmpty(BackupsDirectory);
-            s.BackupRotationKeep = BackupRotationKeep;
             s.WineBinaryPath = NullIfEmpty(WineBinaryPath);
             s.WinePrefixPath = NullIfEmpty(WinePrefixPath);
             s.AutoRestartOnCrash = AutoRestartOnCrash;
@@ -61,13 +55,6 @@ public partial class SettingsViewModel : ViewModelBase
 
     [RelayCommand]
     public void OpenDataFolder() => App.OpenInFinder(DataDir);
-
-    [RelayCommand]
-    public async Task BrowseBackupsAsync()
-    {
-        var p = await Services.Browse.PickFolderAsync("Backups folder", BackupsDirectory);
-        if (!string.IsNullOrEmpty(p)) BackupsDirectory = p;
-    }
 
     [RelayCommand]
     public async Task BrowseWineBinaryAsync()

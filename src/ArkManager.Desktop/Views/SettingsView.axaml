@@ -26,21 +26,6 @@
 
                 <Border Classes="panel">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="section" Text="PATHS"/>
-                        <TextBlock Text="Backups directory" Foreground="{DynamicResource MutedBrush}"/>
-                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
-                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding BackupsDirectory}"/>
-                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseBackupsCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
-                        </Grid>
-                        <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
-                            <TextBlock Grid.Column="0" Text="Backups to keep (0 = no rotation)" VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border Classes="panel">
-                    <StackPanel Spacing="10">
                         <TextBlock Classes="section" Text="AUTO-MANAGEMENT"/>
                         <CheckBox IsChecked="{Binding AutoRestartOnCrash}" Content="Restart on non-zero exit / crash"/>
                         <Grid ColumnDefinitions="*,160" ColumnSpacing="12">

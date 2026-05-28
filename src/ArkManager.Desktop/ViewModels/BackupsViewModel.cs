@@ -36,6 +36,12 @@ public partial class BackupsViewModel : ViewModelBase
     [ObservableProperty] private string _autoBackupStatus = "Auto-backup off";
     [ObservableProperty] private string _summary = "";
 
+    // Бэкап-сторадж: путь и глубина ротации. Источник истины переехал сюда из Settings;
+    // меняется здесь — сразу пишем в settings.json (BackupService читает из _settings.Current
+    // на каждом тике, кэша нет).
+    [ObservableProperty] private string _backupsDirectory = "";
+    [ObservableProperty] private int _backupRotationKeep = 10;
+
     public bool HasSelection => Selected != null;
     public bool CanCreate => !Busy;
     public bool CanRestore => Selected != null && !Busy;
@@ -49,6 +55,8 @@ public partial class BackupsViewModel : ViewModelBase
         _auto = auto;
         _server = server;
         _settings = settings;
+        BackupsDirectory = settings.Current.BackupsDirectory ?? "";
+        BackupRotationKeep = settings.Current.BackupRotationKeep;
         Reload();
 
         _auto.BackupCreated += _ => App.UiThread(() => { Reload(); UpdateAutoStatus(); });
@@ -157,6 +165,34 @@ public partial class BackupsViewModel : ViewModelBase
     [RelayCommand]
     public void OpenFolder()
     {
-        if (Backups.Count > 0) App.OpenInFinder(Path.GetDirectoryName(Backups[0].FilePath)!);
+        // Если бэкапы уже есть — открываем их папку (учитывает кастомный path даже если
+        // он только что введён, но Reload ещё не успел подтянуть). Если нет — открываем
+        // настроенную BackupsDirectory, иначе и открывать нечего.
+        if (Backups.Count > 0)
+            App.OpenInFinder(Path.GetDirectoryName(Backups[0].FilePath)!);
+        else if (!string.IsNullOrWhiteSpace(BackupsDirectory))
+        {
+            Directory.CreateDirectory(BackupsDirectory);
+            App.OpenInFinder(BackupsDirectory);
+        }
+    }
+
+    [RelayCommand]
+    public async Task BrowseDirectoryAsync()
+    {
+        var p = await Services.Browse.PickFolderAsync("Backups folder", BackupsDirectory);
+        if (!string.IsNullOrEmpty(p)) BackupsDirectory = p;
+    }
+
+    partial void OnBackupsDirectoryChanged(string value)
+    {
+        _settings?.Update(s => s.BackupsDirectory = string.IsNullOrWhiteSpace(value) ? null : value);
+        // Список снэпшотов хранится в этой папке — перечитываем при смене.
+        Reload();
+    }
+
+    partial void OnBackupRotationKeepChanged(int value)
+    {
+        _settings?.Update(s => s.BackupRotationKeep = value);
     }
 }
