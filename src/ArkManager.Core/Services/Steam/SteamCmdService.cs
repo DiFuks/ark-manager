@@ -125,29 +125,6 @@ public sealed class SteamCmdService
     }
 
     /// <summary>
-    /// Читает «человеческую» версию игры (что-то вроде "40.55") из PE-ресурса
-    /// VS_VERSIONINFO у ArkAscendedServer.exe. Это то, что юзер видит в самой игре,
-    /// в отличие от Steam buildid (большое число вроде 23321173). exe не запускается,
-    /// .NET просто парсит ресурсную секцию PE — работает и на macOS.
-    /// Возвращает null, если файла нет либо версия не заполнена/тривиальная.
-    /// </summary>
-    public string? ReadInstalledFileVersion(string installDir)
-    {
-        if (string.IsNullOrWhiteSpace(installDir)) return null;
-        var exe = Path.Combine(installDir, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
-        if (!File.Exists(exe)) return null;
-        try
-        {
-            var vi = System.Diagnostics.FileVersionInfo.GetVersionInfo(exe);
-            var v = vi.FileVersion?.Trim();
-            if (string.IsNullOrEmpty(v)) return null;
-            if (v is "0.0.0.0" or "1.0.0.0") return null;
-            return v;
-        }
-        catch { return null; }
-    }
-
-    /// <summary>
     /// Читает локально установленную версию из steamapps/appmanifest_2430930.acf.
     /// Возвращает null, если манифест ещё не создан (сервер не установлен).
     /// </summary>

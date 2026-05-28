@@ -37,10 +37,6 @@ public partial class InstallViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerStatusText))]
-    private string? _installedFileVersion;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ServerStatusText))]
     [NotifyPropertyChangedFor(nameof(ServerStatusBrush))]
     private string _latestBuild = "—";
 
@@ -50,20 +46,19 @@ public partial class InstallViewModel : ViewModelBase
 
     public string ServerPrimaryActionLabel => IsServerInstalled ? "Update server" : "Install server";
 
-    // Текст статуса сервера. Для «installed/up to date» предпочитаем человеческую
-    // версию из PE (v40.55) — её же юзер видит в самой игре. Steam buildid (число вроде
-    // 23321173) — fallback, если FileVersion недоступен.
+    // Текст статуса сервера. Сравнение и отображение версии — по Steam buildid
+    // (число вроде 23321173). «Человеческая» игровая версия (v40.55) недоступна
+    // для latest-side, поэтому используем единый формат с обеих сторон.
     public string ServerStatusText
     {
         get
         {
             if (!IsServerInstalled) return "Not installed";
-            var current = InstalledFileVersion is { } fv ? $"v{fv}" : $"build {InstalledBuild}";
-            if (LatestBuild is "—") return $"Installed · {current}";
-            if (LatestBuild is "failed to parse") return $"Installed · {current} (update check failed)";
+            if (LatestBuild is "—") return $"Installed · build {InstalledBuild}";
+            if (LatestBuild is "failed to parse") return $"Installed · build {InstalledBuild} (update check failed)";
             return string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
-                ? $"Up to date · {current}"
-                : $"Update available · {current} → build {LatestBuild}";
+                ? $"Up to date · build {InstalledBuild}"
+                : $"Update available · build {InstalledBuild} → build {LatestBuild}";
         }
     }
 
@@ -191,12 +186,10 @@ public partial class InstallViewModel : ViewModelBase
         {
             IsServerInstalled = false;
             InstalledBuild = "—";
-            InstalledFileVersion = null;
             return;
         }
         IsServerInstalled = true;
         InstalledBuild = v.BuildId;
-        InstalledFileVersion = _steam.ReadInstalledFileVersion(ServerInstallPath);
     }
 
     [RelayCommand]
