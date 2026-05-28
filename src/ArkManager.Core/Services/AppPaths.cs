@@ -15,7 +15,7 @@ public sealed class AppPaths
     public string SteamCmdDir { get; }
     public string DefaultBackupsDir { get; }
     public string DefaultServerInstallDir { get; }
-    public string DefaultWinePrefixDir { get; }
+    public string ServerRuntimeDir { get; }
 
     public AppPaths()
     {
@@ -25,12 +25,20 @@ public sealed class AppPaths
         SteamCmdDir = Path.Combine(DataDir, "steamcmd");
         DefaultBackupsDir = Path.Combine(DataDir, "backups");
         DefaultServerInstallDir = Path.Combine(DataDir, "server");
-        DefaultWinePrefixDir = Path.Combine(DataDir, "wineprefix");
+        ServerRuntimeDir = Path.Combine(DataDir, "server-runtime");
 
         Directory.CreateDirectory(DataDir);
         Directory.CreateDirectory(LogsDir);
         Directory.CreateDirectory(SteamCmdDir);
         Directory.CreateDirectory(DefaultBackupsDir);
+
+        // Legacy cleanup: предыдущие версии держали wineprefix тут.
+        // Embedded wine — это «server runtime»; имени wine в UI больше нет.
+        var legacy = Path.Combine(DataDir, "wineprefix");
+        if (Directory.Exists(legacy))
+        {
+            try { Directory.Delete(legacy, recursive: true); } catch { /* ignore */ }
+        }
     }
 
     private static string ResolveDataDir()

@@ -5,8 +5,10 @@ using ArkManager.Core.Util;
 namespace ArkManager.Core.Services.Launchers;
 
 /// <summary>
-/// Запускает ArkAscendedServer.exe через wine64. В Phase 1 резолвит wine из системы;
-/// в Phase 2 будет искать только встроенный в бандл бинарь. WINEPREFIX живёт в DataDir.
+/// Запускает ArkAscendedServer.exe через wine64, встроенный в наш бандл.
+/// macOS: &lt;App&gt;.app/Contents/Resources/wine/bin/wine64 (x86_64 Intel-бинарь, идёт через Rosetta 2).
+/// Linux: &lt;publish-dir&gt;/wine/bin/wine64.
+/// WINEPREFIX — &lt;DataDir&gt;/server-runtime (создаётся wine'ом при первом запуске).
 /// </summary>
 public sealed class BundledWineLauncher : IServerLauncher
 {
@@ -17,26 +19,27 @@ public sealed class BundledWineLauncher : IServerLauncher
         _paths = paths;
     }
 
-    /// <summary>Стандартные пути, в которых ищем wine64. Первый найденный — используется.</summary>
-    public static IEnumerable<string> EnumerateWineCandidates()
+    internal static string ResolveEmbeddedWineBinary()
     {
-        // wine-stable / wine@staging / wine@devel ставятся как .app:
-        yield return "/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64";
-        yield return "/Applications/Wine Staging.app/Contents/Resources/wine/bin/wine64";
-        yield return "/Applications/Wine Devel.app/Contents/Resources/wine/bin/wine64";
-        // GPTK (gcenx) — fallback на случай ручной установки:
-        yield return "/Applications/Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64";
-        // Старый gcenx wine-crossover (если кто-то поставил вручную):
-        yield return "/Applications/Wine Crossover.app/Contents/Resources/wine/bin/wine64";
-        // Brew formula (не cask) — на всякий, для редких сборок:
-        yield return "/opt/homebrew/bin/wine64";
-        yield return "/usr/local/bin/wine64";
-        yield return "/opt/homebrew/bin/wine";
-        yield return "/usr/local/bin/wine";
-    }
+        var baseDir = AppContext.BaseDirectory;
+        string binDir;
+        if (OperatingSystem.IsMacOS())
+            // macOS apphost lives in *.app/Contents/MacOS; wine lives in *.app/Contents/Resources/wine.
+            binDir = Path.GetFullPath(Path.Combine(baseDir, "..", "Resources", "wine", "bin"));
+        else
+            // Linux: wine sits next to the apphost in a `wine/` subdir.
+            binDir = Path.Combine(baseDir, "wine", "bin");
 
-    public static string? FindWineBinary()
-        => EnumerateWineCandidates().FirstOrDefault(File.Exists);
+        // Современный wine (10+) использует unified wow64 — `wine` запускает и 32-, и 64-битные exe.
+        // Старые сборки (например, lutris-wine 7.2) разделяют `wine` (32-bit) и `wine64` (64-bit).
+        // ASA — 64-битный, поэтому пробуем wine64 первым, потом fallback на wine.
+        foreach (var name in new[] { "wine64", "wine" })
+        {
+            var candidate = Path.Combine(binDir, name);
+            if (File.Exists(candidate)) return candidate;
+        }
+        return Path.Combine(binDir, "wine64");
+    }
 
     public async Task<RunningServer> StartAsync(
         AppSettings settings,
@@ -45,16 +48,20 @@ public sealed class BundledWineLauncher : IServerLauncher
         Action<int> onExit,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(settings.ServerInstallPath) ||
-            !File.Exists(Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe")))
-        {
-            throw new InvalidOperationException("ArkAscendedServer.exe not found. Install the server on the Install tab.");
-        }
+        if (string.IsNullOrWhiteSpace(settings.ServerInstallPath))
+            throw new InvalidOperationException("Server install path is not set.");
 
-        var exe = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
-        var wine = FindWineBinary()
-                   ?? throw new InvalidOperationException("Server runtime missing — reinstall ArkManager.");
-        var prefix = _paths.DefaultWinePrefixDir;
+        var exe = Path.Combine(
+            settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
+        if (!File.Exists(exe))
+            throw new InvalidOperationException(
+                "ArkAscendedServer.exe not found. Install the server on the Install tab.");
+
+        var wine = ResolveEmbeddedWineBinary();
+        if (!File.Exists(wine))
+            throw new InvalidOperationException("Server runtime missing — reinstall ArkManager.");
+
+        var prefix = _paths.ServerRuntimeDir;
         Directory.CreateDirectory(prefix);
 
         var args = new List<string> { exe };
@@ -64,11 +71,8 @@ public sealed class BundledWineLauncher : IServerLauncher
         {
             ["WINEPREFIX"] = prefix,
             ["WINEDEBUG"] = "-all",
-            // Отключаем графический драйвер wine — ASA dedicated server headless, окно ему
-            // не нужно. Без этого wine рисует «Server Console»-окно, где текст нечитаемо
-            // бел-на-бел (фон строк = дефолтный белый GDI-bk, реестром не правится).
-            // Лог при этом идёт в stdout (-stdout -FullStdOutLogOutput) и виден в ArkManager.
-            // Проверено: сервер полностью стартует без дисплея.
+            // Отключаем wine-mac-driver: dedicated server headless, окно не нужно
+            // (без этого wine рисует Server Console-окно с белым-на-белом текстом).
             ["WINEDLLOVERRIDES"] = "winemac.drv=",
         };
 
@@ -120,5 +124,4 @@ public sealed class BundledWineLauncher : IServerLauncher
         }
         catch { return Task.FromResult(false); }
     }
-
 }
