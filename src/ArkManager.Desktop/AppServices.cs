@@ -29,7 +29,10 @@ public static class AppServices
         sc.AddSingleton<AutoBackupWorker>();
         sc.AddSingleton<CurseForgeClient>();
         sc.AddSingleton<ModsService>();
-        sc.AddSingleton<IServerLauncher, BundledWineLauncher>();
+        if (OperatingSystem.IsWindows())
+            sc.AddSingleton<IServerLauncher, NativeWindowsLauncher>();
+        else
+            sc.AddSingleton<IServerLauncher, BundledWineLauncher>();
         sc.AddSingleton<ServerManager>();
         sc.AddSingleton<PlayerPoller>();
         sc.AddSingleton<DoctorService>();
