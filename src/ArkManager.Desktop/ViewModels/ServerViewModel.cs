@@ -22,6 +22,8 @@ public partial class ServerViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]
     [NotifyPropertyChangedFor(nameof(StatusBrush))]
     [NotifyPropertyChangedFor(nameof(StatusText))]
+    [NotifyPropertyChangedFor(nameof(PlayersDisplay))]
+    [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private string _state = "Stopped";
 
     // Сервер закончил загрузку мира и принимает подключения (ARK-аналог зелёного кружка).
@@ -58,17 +60,24 @@ public partial class ServerViewModel : ViewModelBase
     [ObservableProperty] private string _filter = "";
     [ObservableProperty] private bool _autoScroll = true;
 
-    [ObservableProperty] private int _playersOnline;
+    // PlayersOnline-как-число валидно только когда сервер реально работает: «0 онлайн» — это
+    // конкретная информация, «0» при остановленном сервере — мусор. PlayersDisplay скрывает
+    // ноль за em-dash в любом состоянии кроме Running. PlayersDetail заодно скрывается тоже
+    // (был случай: остановили сервер с 5 игроками — стейл-имена продолжали висеть под нулём).
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlayersDisplay))]
+    private int _playersOnline;
 
-    // PlayersDetail — список ников или текст ошибки опроса. По дефолту «—» (нет данных).
-    // Под цифрой PlayersOnline такая строка визуального смысла не несёт (юзер ловил):
-    // показываем строку только когда есть содержимое.
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private string _playersDetail = "—";
 
+    public string PlayersDisplay => State == "Running" ? PlayersOnline.ToString() : "—";
+
     public bool HasPlayersDetail =>
-        !string.IsNullOrWhiteSpace(PlayersDetail) && PlayersDetail != "—";
+        State == "Running"
+        && !string.IsNullOrWhiteSpace(PlayersDetail)
+        && PlayersDetail != "—";
 
     [ObservableProperty] private string _lastSample = "—";
 

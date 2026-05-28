@@ -54,7 +54,7 @@
             <Border Grid.Column="3" Classes="tile">
                 <StackPanel Spacing="5">
                     <TextBlock Classes="section" Text="PLAYERS"/>
-                    <TextBlock Classes="stat" Text="{Binding PlayersOnline}"/>
+                    <TextBlock Classes="stat" Text="{Binding PlayersDisplay}"/>
                     <TextBlock Classes="meta" Text="{Binding PlayersDetail}" TextTrimming="CharacterEllipsis"
                                IsVisible="{Binding HasPlayersDetail}"/>
                 </StackPanel>
