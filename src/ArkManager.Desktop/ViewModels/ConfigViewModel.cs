@@ -205,10 +205,10 @@ public partial class ConfigViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(picked)) ClusterDirOverride = picked;
     }
 
-    // ASA сам дописывает кучу ключей в GameUserSettings.ini при первом старте, плюс
-    // правит Game.ini под маппинги. Чтобы юзеру не приходилось жать Reload — перечитываем
-    // raw-таб с диска при переходе на него. Несохранённые правки в raw-табе при свитче-туда
-    // теряются (этого юзер и просил — «без нажатий»).
+    // ASA на старте дописывает в GameUserSettings.ini кучу своих ключей и может
+    // переустановить значения, что мы туда положили. Чтобы юзеру не жать Reload —
+    // перечитываем актуальный sub-таб с диска при переключении на него.
+    // Несохранённые правки в текущем sub-табе при возврате теряются (юзер сам так просил).
     partial void OnSelectedTabIndexChanged(int value)
     {
         if (_config == null) return;
@@ -216,6 +216,7 @@ public partial class ConfigViewModel : ViewModelBase
         {
             switch (value)
             {
+                case 0: ReloadBasicFromIni(); break;
                 case 1:
                     if (File.Exists(_config.GameUserSettingsPath))
                         GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
@@ -227,6 +228,50 @@ public partial class ConfigViewModel : ViewModelBase
             }
         }
         catch { /* нет доступа / гонка — оставляем текущий буфер */ }
+    }
+
+    /// <summary>
+    /// Зовётся MainWindowViewModel, когда юзер переходит на Config-таб целиком (не sub-таб) —
+    /// освежает оба raw-буфера и Basic из ini за один проход. Без этого первый заход
+    /// на Config после старта сервера показывал бы stale-значения, пока юзер не дернул
+    /// другой sub-таб и обратно.
+    /// </summary>
+    public void RefreshFromDisk()
+    {
+        if (_config == null) return;
+        LoadIniFiles();
+        ReloadBasicFromIni();
+    }
+
+    // Перечитывает поля Basic из GameUserSettings.ini для тех ключей, что пишет
+    // ApplyLaunchOptionsToIni. Не-ini поля (Map, NoBattlEye, AutoManagedMods, ClusterId,
+    // ExtraCommandLineArgs/QueryString) трогать нечем — они только в settings.json/VM.
+    private void ReloadBasicFromIni()
+    {
+        if (_config == null || !File.Exists(_config.GameUserSettingsPath)) return;
+        var ini = _config.LoadGameUserSettings();
+
+        var server = ini.TryGetSection("ServerSettings");
+        if (server != null)
+        {
+            ServerPassword = server.GetSingle("ServerPassword") ?? ServerPassword;
+            AdminPassword = server.GetSingle("ServerAdminPassword") ?? AdminPassword;
+            SpectatorPassword = server.GetSingle("SpectatorPassword") ?? SpectatorPassword;
+            if (bool.TryParse(server.GetSingle("RCONEnabled"), out var rconEnabled)) RconEnabled = rconEnabled;
+            if (int.TryParse(server.GetSingle("RCONPort"), out var rconPort)) RconPort = rconPort;
+        }
+
+        var session = ini.TryGetSection("SessionSettings");
+        if (session != null)
+        {
+            SessionName = session.GetSingle("SessionName") ?? SessionName;
+            if (int.TryParse(session.GetSingle("Port"), out var port)) Port = port;
+            if (int.TryParse(session.GetSingle("QueryPort"), out var queryPort)) QueryPort = queryPort;
+        }
+
+        var gameSession = ini.TryGetSection("/Script/Engine.GameSession");
+        if (gameSession != null && int.TryParse(gameSession.GetSingle("MaxPlayers"), out var maxPlayers))
+            MaxPlayers = maxPlayers;
     }
 
     partial void OnSelectedMapPresetChanged(MapPreset? value)

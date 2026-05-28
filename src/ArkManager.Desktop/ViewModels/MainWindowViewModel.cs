@@ -27,6 +27,9 @@ public partial class MainWindowViewModel : ViewModelBase
         // На Mods-табе нет кнопки «Resolve names» — резолвим имена сами при открытии.
         // Уже закэшированные ID ModsService пропустит, лишних запросов не будет.
         if (value.ViewModel is ModsViewModel mods) _ = mods.AutoResolveNamesAsync();
+        // На Config-табе ASA может дописать/перезаписать ini в фоне (старт сервера, ручные правки).
+        // Освежаем raw-буферы и Basic-поля из ini при открытии — без нужды жать Reload.
+        if (value.ViewModel is ConfigViewModel config) config.RefreshFromDisk();
     }
 
     public MainWindowViewModel(
