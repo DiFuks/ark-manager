@@ -5,15 +5,14 @@ using ArkManager.Core.Util;
 namespace ArkManager.Core.Services.Launchers;
 
 /// <summary>
-/// Запуск ArkAscendedServer.exe через wine64 (любая брю-сборка: gcenx wine-crossover,
-/// wine-stable, gptk и т.п.). WINEPREFIX — отдельная папка в data-dir приложения;
-/// wine сам инициализирует префикс при первом запуске (slow first-run, ~30 сек).
+/// Запускает ArkAscendedServer.exe через wine64. В Phase 1 резолвит wine из системы;
+/// в Phase 2 будет искать только встроенный в бандл бинарь. WINEPREFIX живёт в DataDir.
 /// </summary>
-public sealed class WineLauncher : IServerLauncher
+public sealed class BundledWineLauncher : IServerLauncher
 {
     private readonly AppPaths _paths;
 
-    public WineLauncher(AppPaths paths)
+    public BundledWineLauncher(AppPaths paths)
     {
         _paths = paths;
     }
@@ -54,8 +53,7 @@ public sealed class WineLauncher : IServerLauncher
 
         var exe = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
         var wine = FindWineBinary()
-                   ?? throw new InvalidOperationException(
-                       "wine not found. Install via Doctor → \"Install wine\".");
+                   ?? throw new InvalidOperationException("Server runtime missing — reinstall ArkManager.");
         var prefix = _paths.DefaultWinePrefixDir;
         Directory.CreateDirectory(prefix);
 

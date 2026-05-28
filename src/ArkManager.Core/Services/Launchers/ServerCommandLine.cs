@@ -35,7 +35,7 @@ public static class ServerCommandLine
 
         var queryString = string.Join("?", queryParts);
 
-        // Сервер запускается headless (winemac.drv отключён в WineLauncher → окна нет).
+        // Сервер запускается headless (winemac.drv отключён в BundledWineLauncher → окна нет).
         // -stdout -FullStdOutLogOutput гонят ПОЛНЫЙ UE-лог в stdout (иначе он уходит только
         // в окно/ShooterGame.log и не виден в ArkManager). -unattended убирает диалоги.
         var list = new List<string> { queryString, "-server", "-log", "-stdout", "-FullStdOutLogOutput", "-unattended" };

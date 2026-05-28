@@ -29,7 +29,7 @@ public static class AppServices
         sc.AddSingleton<AutoBackupWorker>();
         sc.AddSingleton<CurseForgeClient>();
         sc.AddSingleton<ModsService>();
-        sc.AddSingleton<IServerLauncher, WineLauncher>();
+        sc.AddSingleton<IServerLauncher, BundledWineLauncher>();
         sc.AddSingleton<ServerManager>();
         sc.AddSingleton<PlayerPoller>();
         sc.AddSingleton<DoctorService>();
