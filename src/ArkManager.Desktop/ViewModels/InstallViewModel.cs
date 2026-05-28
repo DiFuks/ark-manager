@@ -63,7 +63,7 @@ public partial class InstallViewModel : ViewModelBase
             if (LatestBuild is "failed to parse") return $"Installed · {current} (update check failed)";
             return string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
                 ? $"Up to date · {current}"
-                : "Update available";
+                : $"Update available · {current} → build {LatestBuild}";
         }
     }
 
