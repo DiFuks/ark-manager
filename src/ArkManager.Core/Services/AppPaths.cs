@@ -4,8 +4,8 @@ namespace ArkManager.Core.Services;
 
 /// <summary>
 /// Все пути приложения. По правилам пользователя: user-wide state живёт в одном vendor-каталоге.
-/// Используем ~/Library/Application Support/ArkManager на macOS (стандарт), $XDG_DATA_HOME/ArkManager на Linux,
-/// %APPDATA%/ArkManager на Windows.
+/// macOS: ~/Library/Application Support/ArkManager. Linux: $XDG_DATA_HOME/ArkManager.
+/// Windows: %LOCALAPPDATA%/ArkManager (а не Roaming — у нас 25GB ASA-сервера).
 /// </summary>
 public sealed class AppPaths
 {
@@ -50,6 +50,6 @@ public sealed class AppPaths
             }
             return Path.Combine(xdg, "ArkManager");
         }
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ArkManager");
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ArkManager");
     }
 }
