@@ -31,8 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ModsViewModel mods,
         BackupsViewModel backups,
         ServerViewModel server,
-        RconViewModel rcon,
-        DoctorViewModel doctor)
+        RconViewModel rcon)
     {
         NavItems = new ObservableCollection<NavItem>
         {
@@ -42,7 +41,6 @@ public partial class MainWindowViewModel : ViewModelBase
             new("Config",   G("M3 6 H21 V8 H3 Z M3 11 H21 V13 H3 Z M3 16 H15 V18 H3 Z"), config),
             new("Mods",     G("M12 3 L20 7 V17 L12 21 L4 17 V7 Z M12 8 L16 10 V14 L12 16 L8 14 V10 Z"), mods),
             new("Backups",  G("M4 4 H20 V8 H4 Z M5 9 H19 V20 H5 Z M9 12 H15 V14 H9 Z"), backups),
-            new("Doctor",   G("M10 3 H14 V9 H20 V13 H14 V21 H10 V13 H4 V9 H10 Z"), doctor),
         };
         _selected = NavItems[0];
 
@@ -62,8 +60,7 @@ public partial class MainWindowViewModel : ViewModelBase
         new ModsViewModel(),
         new BackupsViewModel(),
         new ServerViewModel(),
-        new RconViewModel(),
-        new DoctorViewModel())
+        new RconViewModel())
     {
     }
 }
