@@ -12,6 +12,11 @@ namespace ArkManager.Core.Services.Steam;
 public sealed record InstalledServerVersion(string BuildId, DateTimeOffset? LastUpdated);
 
 /// <summary>
+/// ОС-хост для bootstrap steamcmd (используется в тестах и в runtime-определении).
+/// </summary>
+public enum SteamCmdHostOs { MacOS, Linux, Windows }
+
+/// <summary>
 /// Установка/обновление ASA Dedicated Server (Steam App ID 2430930) через steamcmd.
 /// Под macOS требуется trick: +@sSteamCmdForcePlatformType windows (нет native билда).
 /// </summary>
@@ -20,6 +25,41 @@ public sealed class SteamCmdService
     public const int AsaDedicatedServerAppId = 2430930;
     private const string SteamCmdMacUrl = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_osx.tar.gz";
     private const string SteamCmdLinuxUrl = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
+    private const string SteamCmdWindowsUrl = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip";
+
+    internal static SteamCmdHostOs DetectHostOs()
+        => OperatingSystem.IsWindows() ? SteamCmdHostOs.Windows
+         : OperatingSystem.IsMacOS()   ? SteamCmdHostOs.MacOS
+         :                               SteamCmdHostOs.Linux;
+
+    public static string SelectBootstrapUrl(SteamCmdHostOs os) => os switch
+    {
+        SteamCmdHostOs.MacOS   => SteamCmdMacUrl,
+        SteamCmdHostOs.Linux   => SteamCmdLinuxUrl,
+        SteamCmdHostOs.Windows => SteamCmdWindowsUrl,
+        _ => throw new ArgumentOutOfRangeException(nameof(os)),
+    };
+
+    public static IReadOnlyList<string> BuildInstallArgs(string installDir, SteamCmdHostOs os)
+    {
+        var args = new List<string>();
+        // На mac/linux заставляем steamcmd качать Windows-сборку (нативного билда ASA нет).
+        // На Windows-хосте этот флаг не нужен и не применяется.
+        if (os != SteamCmdHostOs.Windows)
+        {
+            args.Add("+@sSteamCmdForcePlatformType");
+            args.Add("windows");
+        }
+        args.AddRange(new[]
+        {
+            "+force_install_dir", installDir,
+            "+login", "anonymous",
+            "+app_info_update", "1",
+            "+app_update", AsaDedicatedServerAppId.ToString(), "validate",
+            "+quit",
+        });
+        return args;
+    }
 
     private readonly AppPaths _paths;
     private readonly SettingsService _settings;
@@ -35,15 +75,21 @@ public sealed class SteamCmdService
         if (!string.IsNullOrWhiteSpace(_settings.Current.SteamCmdPath) && File.Exists(_settings.Current.SteamCmdPath))
             return _settings.Current.SteamCmdPath;
 
-        var bundled = Path.Combine(_paths.SteamCmdDir, "steamcmd.sh");
+        var bundledName = OperatingSystem.IsWindows() ? "steamcmd.exe" : "steamcmd.sh";
+        var bundled = Path.Combine(_paths.SteamCmdDir, bundledName);
         if (File.Exists(bundled)) return bundled;
 
         // Если в PATH есть steamcmd
-        var p = Environment.GetEnvironmentVariable("PATH") ?? "";
-        foreach (var dir in p.Split(Path.PathSeparator))
+        var pathVar = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (var dir in pathVar.Split(Path.PathSeparator))
         {
-            var c = Path.Combine(dir, "steamcmd");
+            var c = Path.Combine(dir, bundledName);
             if (File.Exists(c)) return c;
+            if (!OperatingSystem.IsWindows())
+            {
+                var bare = Path.Combine(dir, "steamcmd");
+                if (File.Exists(bare)) return bare;
+            }
         }
         return bundled; // пусть зовущий проверит наличие через File.Exists.
     }
@@ -56,36 +102,46 @@ public sealed class SteamCmdService
     /// </summary>
     public async Task InstallSteamCmdAsync(Action<string> onLog, CancellationToken ct = default)
     {
+        var os = DetectHostOs();
+        var url = SelectBootstrapUrl(os);
         onLog("Downloading steamcmd...");
-        var url = OperatingSystem.IsMacOS() ? SteamCmdMacUrl : SteamCmdLinuxUrl;
-        var tarGzPath = Path.Combine(_paths.SteamCmdDir, "steamcmd.tar.gz");
+        var ext = os == SteamCmdHostOs.Windows ? ".zip" : ".tar.gz";
+        var archive = Path.Combine(_paths.SteamCmdDir, "steamcmd" + ext);
 
         using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
         await using (var resp = await http.GetStreamAsync(url, ct))
-        await using (var fs = File.Create(tarGzPath))
+        await using (var fs = File.Create(archive))
         {
             await resp.CopyToAsync(fs, ct);
         }
         onLog("Downloaded. Extracting...");
 
-        await using (var fs = File.OpenRead(tarGzPath))
-        await using (var gz = new GZipStream(fs, CompressionMode.Decompress))
+        if (os == SteamCmdHostOs.Windows)
         {
+            ZipFile.ExtractToDirectory(archive, _paths.SteamCmdDir, overwriteFiles: true);
+        }
+        else
+        {
+            await using var fs = File.OpenRead(archive);
+            await using var gz = new GZipStream(fs, CompressionMode.Decompress);
             await TarFile.ExtractToDirectoryAsync(gz, _paths.SteamCmdDir, overwriteFiles: true, cancellationToken: ct);
         }
 
-        // chmod +x для steamcmd.sh
-        var sh = Path.Combine(_paths.SteamCmdDir, "steamcmd.sh");
-        if (File.Exists(sh))
+        // chmod +x только на Unix — на Windows execute-бита нет.
+        if (os != SteamCmdHostOs.Windows)
         {
-            await ProcessRunner.RunCaptureAsync("/bin/chmod", new[] { "+x", sh }, ct: ct);
-            // ещё бинарник steamcmd внутри (бывает называется steamcmd или steamcmd.exe)
-            foreach (var f in Directory.EnumerateFiles(_paths.SteamCmdDir, "steamcmd", SearchOption.AllDirectories))
-                await ProcessRunner.RunCaptureAsync("/bin/chmod", new[] { "+x", f }, ct: ct);
+            var sh = Path.Combine(_paths.SteamCmdDir, "steamcmd.sh");
+            if (File.Exists(sh))
+            {
+                await ProcessRunner.RunCaptureAsync("/bin/chmod", new[] { "+x", sh }, ct: ct);
+                foreach (var f in Directory.EnumerateFiles(_paths.SteamCmdDir, "steamcmd", SearchOption.AllDirectories))
+                    await ProcessRunner.RunCaptureAsync("/bin/chmod", new[] { "+x", f }, ct: ct);
+            }
         }
 
-        try { File.Delete(tarGzPath); } catch { /* ignore */ }
-        onLog("steamcmd ready: " + sh);
+        try { File.Delete(archive); } catch { /* ignore */ }
+        var binary = ResolveSteamCmdBinary();
+        onLog("steamcmd ready: " + binary);
     }
 
     /// <summary>
@@ -102,19 +158,7 @@ public sealed class SteamCmdService
         Directory.CreateDirectory(installDir);
         var bin = ResolveSteamCmdBinary();
 
-        var args = new List<string>
-        {
-            // Под mac/linux — заставляем качать Windows-сборку.
-            "+@sSteamCmdForcePlatformType", "windows",
-            "+force_install_dir", installDir,
-            "+login", "anonymous",
-            // Без этого SteamCMD на маке с принудительной windows-платформой падает
-            // с «Failed to install app '2430930' (Missing configuration)» — манифест
-            // не подтягивается, кэш пустой. app_info_update 1 форсит refresh.
-            "+app_info_update", "1",
-            "+app_update", AsaDedicatedServerAppId.ToString(), "validate",
-            "+quit",
-        };
+        var args = BuildInstallArgs(installDir, DetectHostOs());
 
         onOutput($"$ {bin} {string.Join(" ", args)}");
         return await ProcessRunner.RunStreamingAsync(
@@ -163,14 +207,20 @@ public sealed class SteamCmdService
         if (!IsSteamCmdInstalled())
             throw new InvalidOperationException("steamcmd is not installed.");
         var bin = ResolveSteamCmdBinary();
-        var args = new[]
+        var os = DetectHostOs();
+        var args = new List<string>();
+        if (os != SteamCmdHostOs.Windows)
         {
-            "+@sSteamCmdForcePlatformType", "windows",
+            args.Add("+@sSteamCmdForcePlatformType");
+            args.Add("windows");
+        }
+        args.AddRange(new[]
+        {
             "+login", "anonymous",
             "+app_info_update", "1",
             "+app_info_print", AsaDedicatedServerAppId.ToString(),
             "+quit",
-        };
+        });
 
         var buf = new StringBuilder();
         onLog?.Invoke($"$ {bin} +app_info_print {AsaDedicatedServerAppId}");
