@@ -16,8 +16,8 @@ public partial class BackupsViewModel : ViewModelBase
 
     public ObservableCollection<BackupInfo> Backups { get; } = new();
 
-    // Restore/Delete работают только с выделенным снэпшотом, Create — только когда не Busy.
-    // Без CanExecute кнопки активны но молча ничего не делают (юзер ловил).
+    // Restore/Delete only work with a selected snapshot, Create only when not Busy.
+    // Without CanExecute the buttons stay active but silently do nothing (the user hit this).
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RestoreCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
@@ -36,9 +36,9 @@ public partial class BackupsViewModel : ViewModelBase
     [ObservableProperty] private string _autoBackupStatus = "Auto-backup off";
     [ObservableProperty] private string _summary = "";
 
-    // Бэкап-сторадж: путь, глубина ротации, интервал авто-бэкапа. Источник истины переехал
-    // сюда из Settings; меняется здесь — сразу пишем в settings.json (BackupService и
-    // AutoBackupWorker читают из _settings.Current каждый тик, кэша нет).
+    // Backup storage: path, rotation depth, auto-backup interval. The source of truth moved
+    // here from Settings; changing it here writes straight to settings.json (BackupService and
+    // AutoBackupWorker read from _settings.Current every tick, no caching).
     [ObservableProperty] private string _backupsDirectory = "";
     [ObservableProperty] private int _backupRotationKeep = 10;
     [ObservableProperty] private int _autoBackupIntervalMinutes;
@@ -63,8 +63,8 @@ public partial class BackupsViewModel : ViewModelBase
 
         _auto.BackupCreated += _ => App.UiThread(() => { Reload(); UpdateAutoStatus(); });
         _auto.Log          += msg => App.UiThread(() => { Status = msg; UpdateAutoStatus(); });
-        // Старт/стоп сервера переключает таймер между «paused» и тикающим — обновляем сразу,
-        // не дожидаясь 5-секундного poll'а.
+        // Server start/stop toggles the timer between "paused" and ticking — refresh immediately
+        // instead of waiting for the 5-second poll.
         _server.StateChanged += _ => App.UiThread(UpdateAutoStatus);
         _settings.Changed += _ => App.UiThread(UpdateAutoStatus);
 
@@ -88,9 +88,9 @@ public partial class BackupsViewModel : ViewModelBase
             return;
         }
 
-        // Сервер не Running → воркер всё равно крутит NextRunUtc, но тик пропустит:
-        // бэкап idle-сервера бесполезен. Показываем явный paused, иначе тикающий
-        // таймер вводит в заблуждение.
+        // Server not Running → the worker still ticks NextRunUtc but skips the tick:
+        // backing up an idle server is pointless. Show an explicit paused state, otherwise
+        // a ticking timer is misleading.
         if (_server is { State: not ServerState.Running })
         {
             AutoBackupStatus = "Auto-backup paused (server idle)";
@@ -166,9 +166,9 @@ public partial class BackupsViewModel : ViewModelBase
     [RelayCommand]
     public void OpenFolder()
     {
-        // Если бэкапы уже есть — открываем их папку (учитывает кастомный path даже если
-        // он только что введён, но Reload ещё не успел подтянуть). Если нет — открываем
-        // настроенную BackupsDirectory, иначе и открывать нечего.
+        // If backups already exist — open their folder (this respects a custom path even
+        // when it was just entered and Reload has not picked it up yet). Otherwise open
+        // the configured BackupsDirectory; if that's empty too, there's nothing to open.
         if (Backups.Count > 0)
             App.OpenInFinder(Path.GetDirectoryName(Backups[0].FilePath)!);
         else if (!string.IsNullOrWhiteSpace(BackupsDirectory))
@@ -188,7 +188,7 @@ public partial class BackupsViewModel : ViewModelBase
     partial void OnBackupsDirectoryChanged(string value)
     {
         _settings?.Update(s => s.BackupsDirectory = string.IsNullOrWhiteSpace(value) ? null : value);
-        // Список снэпшотов хранится в этой папке — перечитываем при смене.
+        // The snapshot list lives in this folder — re-read it on change.
         Reload();
     }
 
@@ -200,9 +200,9 @@ public partial class BackupsViewModel : ViewModelBase
     partial void OnAutoBackupIntervalMinutesChanged(int value)
     {
         _settings?.Update(s => s.AutoBackupIntervalMinutes = value);
-        // AutoBackupWorker сам подхватит через SettingsService.Changed (cancel sleep),
-        // pill сверху обновится из периодического тика UpdateAutoStatus, но дернём сразу
-        // чтобы юзер увидел реакцию мгновенно.
+        // AutoBackupWorker will pick this up itself via SettingsService.Changed (cancel sleep);
+        // the pill above refreshes on the periodic UpdateAutoStatus tick, but kick it now
+        // so the user sees the reaction instantly.
         UpdateAutoStatus();
     }
 }

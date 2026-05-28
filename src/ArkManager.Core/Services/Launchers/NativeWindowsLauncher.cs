@@ -5,8 +5,8 @@ using ArkManager.Core.Util;
 namespace ArkManager.Core.Services.Launchers;
 
 /// <summary>
-/// Запуск ArkAscendedServer.exe нативно на Windows — без wine, без WINEPREFIX.
-/// Используется DI только когда OperatingSystem.IsWindows().
+/// Launches ArkAscendedServer.exe natively on Windows — no wine, no WINEPREFIX.
+/// Used by DI only when OperatingSystem.IsWindows().
 /// </summary>
 public sealed class NativeWindowsLauncher : IServerLauncher
 {
@@ -63,7 +63,7 @@ public sealed class NativeWindowsLauncher : IServerLauncher
             using var p = Process.GetProcessById(pid);
             if (!p.HasExited) p.Kill(entireProcessTree: true);
         }
-        catch (ArgumentException) { /* уже мёртв */ }
+        catch (ArgumentException) { /* already dead */ }
         return Task.CompletedTask;
     }
 

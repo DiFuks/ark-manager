@@ -9,7 +9,7 @@ public partial class RconViewModel : ViewModelBase
 {
     private const int MaxLogChars = 200_000;
 
-    // Локальный wine-сервер всегда слушает 127.0.0.1; remote-сценариев у менеджера нет.
+    // The local wine server always listens on 127.0.0.1; the manager has no remote scenarios.
     private const string LocalHost = "127.0.0.1";
 
     private readonly SettingsService? _settings;
@@ -57,9 +57,9 @@ public partial class RconViewModel : ViewModelBase
         _settings = settings;
         _server = server;
 
-        // Auto-connect когда мир догрузился (Ready), auto-disconnect при выходе из Running.
-        // Ready ≠ просто Running: сервер может быть «жив» но ещё грузить мир — RCON-порт
-        // в этот момент ещё не открыт. Привязываемся к Ready, чтобы не плодить failed connect.
+        // Auto-connect once the world has finished loading (Ready), auto-disconnect when leaving Running.
+        // Ready ≠ just Running: the server may be "alive" yet still loading the world — at that point
+        // the RCON port is not open. Hook onto Ready so we don't spawn failed connect attempts.
         _server.ReadyChanged += _ => App.UiThread(SyncWithServer);
         _server.StateChanged += _ => App.UiThread(SyncWithServer);
         _settings.Changed += _ => App.UiThread(() =>
@@ -86,7 +86,7 @@ public partial class RconViewModel : ViewModelBase
         await ConnectAsync();
     }
 
-    // Reconnect имеет смысл только когда сервер уже принимает подключения.
+    // Reconnect only makes sense once the server is accepting connections.
     public bool CanReconnect => _server is { State: ServerState.Running, IsReady: true };
 
     private async Task ConnectAsync()

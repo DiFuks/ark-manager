@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace ArkManager.Core.Util;
 
-/// <summary>Чистые форматтеры для UI: человекочитаемые размер/время. Без зависимостей от UI.</summary>
+/// <summary>Pure formatters for the UI: human-readable size/time. No UI dependencies.</summary>
 public static class DisplayFormat
 {
     private static readonly string[] Units = { "B", "KB", "MB", "GB", "TB" };
@@ -16,7 +16,7 @@ public static class DisplayFormat
         return string.Create(CultureInfo.InvariantCulture, $"{v:0.0} {Units[u]}");
     }
 
-    /// <summary>"today, 23:28" / "yesterday, 22:55" / "3 days ago". Локальное время для отображения.</summary>
+    /// <summary>"today, 23:28" / "yesterday, 22:55" / "3 days ago". Local time for display.</summary>
     public static string RelativeTime(DateTime valueUtc, DateTime nowUtc)
     {
         var local = valueUtc.ToLocalTime();

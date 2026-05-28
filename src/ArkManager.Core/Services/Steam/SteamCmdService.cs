@@ -7,18 +7,18 @@ using ArkManager.Core.Util;
 namespace ArkManager.Core.Services.Steam;
 
 /// <summary>
-/// Слепок локально установленной версии ASA сервера (из appmanifest_*.acf).
+/// Snapshot of the locally installed ASA server version (from appmanifest_*.acf).
 /// </summary>
 public sealed record InstalledServerVersion(string BuildId, DateTimeOffset? LastUpdated);
 
 /// <summary>
-/// ОС-хост для bootstrap steamcmd (используется в тестах и в runtime-определении).
+/// Host OS for the steamcmd bootstrap (used in tests and runtime detection).
 /// </summary>
 public enum SteamCmdHostOs { MacOS, Linux, Windows }
 
 /// <summary>
-/// Установка/обновление ASA Dedicated Server (Steam App ID 2430930) через steamcmd.
-/// Под macOS требуется trick: +@sSteamCmdForcePlatformType windows (нет native билда).
+/// Installs/updates the ASA Dedicated Server (Steam App ID 2430930) via steamcmd.
+/// On macOS the trick is required: +@sSteamCmdForcePlatformType windows (no native build).
 /// </summary>
 public sealed class SteamCmdService
 {
@@ -43,8 +43,8 @@ public sealed class SteamCmdService
     public static IReadOnlyList<string> BuildInstallArgs(string installDir, SteamCmdHostOs os)
     {
         var args = new List<string>();
-        // На mac/linux заставляем steamcmd качать Windows-сборку (нативного билда ASA нет).
-        // На Windows-хосте этот флаг не нужен и не применяется.
+        // On mac/linux we force steamcmd to download the Windows build (no native ASA build exists).
+        // On a Windows host this flag isn't needed and isn't applied.
         if (os != SteamCmdHostOs.Windows)
         {
             args.Add("+@sSteamCmdForcePlatformType");
@@ -79,7 +79,7 @@ public sealed class SteamCmdService
         var bundled = Path.Combine(_paths.SteamCmdDir, bundledName);
         if (File.Exists(bundled)) return bundled;
 
-        // Если в PATH есть steamcmd
+        // If PATH contains steamcmd
         var pathVar = Environment.GetEnvironmentVariable("PATH") ?? "";
         foreach (var dir in pathVar.Split(Path.PathSeparator))
         {
@@ -91,14 +91,14 @@ public sealed class SteamCmdService
                 if (File.Exists(bare)) return bare;
             }
         }
-        return bundled; // пусть зовущий проверит наличие через File.Exists.
+        return bundled; // let the caller check existence via File.Exists.
     }
 
     public bool IsSteamCmdInstalled()
         => File.Exists(ResolveSteamCmdBinary());
 
     /// <summary>
-    /// Скачивает и распаковывает steamcmd в DataDir/steamcmd. Прогресс не считается — пакет маленький.
+    /// Downloads and extracts steamcmd into DataDir/steamcmd. Progress isn't tracked — the package is small.
     /// </summary>
     public async Task InstallSteamCmdAsync(Action<string> onLog, CancellationToken ct = default)
     {
@@ -127,7 +127,7 @@ public sealed class SteamCmdService
             await TarFile.ExtractToDirectoryAsync(gz, _paths.SteamCmdDir, overwriteFiles: true, cancellationToken: ct);
         }
 
-        // chmod +x только на Unix — на Windows execute-бита нет.
+        // chmod +x only on Unix — there is no execute bit on Windows.
         if (os != SteamCmdHostOs.Windows)
         {
             var sh = Path.Combine(_paths.SteamCmdDir, "steamcmd.sh");
@@ -145,7 +145,7 @@ public sealed class SteamCmdService
     }
 
     /// <summary>
-    /// Запускает app_update 2430930 validate. Поток вывода — построчно в onOutput.
+    /// Runs app_update 2430930 validate. Output is streamed line-by-line to onOutput.
     /// </summary>
     public async Task<int> InstallOrUpdateServerAsync(
         string installDir,
@@ -169,8 +169,8 @@ public sealed class SteamCmdService
     }
 
     /// <summary>
-    /// Читает локально установленную версию из steamapps/appmanifest_2430930.acf.
-    /// Возвращает null, если манифест ещё не создан (сервер не установлен).
+    /// Reads the locally installed version from steamapps/appmanifest_2430930.acf.
+    /// Returns null if the manifest has not been created yet (server not installed).
     /// </summary>
     public InstalledServerVersion? ReadInstalledVersion(string installDir)
     {
@@ -184,7 +184,7 @@ public sealed class SteamCmdService
     }
 
     /// <summary>
-    /// Парсер VDF-манифеста — нам достаточно вытащить top-level "buildid" и "LastUpdated".
+    /// VDF manifest parser — we only need to extract the top-level "buildid" and "LastUpdated".
     /// </summary>
     internal static InstalledServerVersion? ParseManifest(string text)
     {
@@ -198,9 +198,9 @@ public sealed class SteamCmdService
     }
 
     /// <summary>
-    /// Спрашивает у Steam актуальный buildid для public-ветки через
-    /// steamcmd app_info_print. Делает app_info_update 1 для свежего PICS-кэша.
-    /// Медленно (steamcmd сам по себе медленный) — вызывать только по явной кнопке.
+    /// Asks Steam for the current buildid of the public branch via
+    /// steamcmd app_info_print. Does app_info_update 1 to refresh the PICS cache.
+    /// Slow (steamcmd itself is slow) — call only on an explicit button press.
     /// </summary>
     public async Task<string?> QueryLatestBuildIdAsync(Action<string>? onLog = null, CancellationToken ct = default)
     {
@@ -233,8 +233,8 @@ public sealed class SteamCmdService
     }
 
     /// <summary>
-    /// Ищет в выводе app_info_print билд public-ветки.
-    /// Формат: "branches" { "public" { "buildid" "23321173" ... } ... }.
+    /// Finds the public branch build in app_info_print output.
+    /// Format: "branches" { "public" { "buildid" "23321173" ... } ... }.
     /// </summary>
     internal static string? ParseLatestBuildId(string output)
     {

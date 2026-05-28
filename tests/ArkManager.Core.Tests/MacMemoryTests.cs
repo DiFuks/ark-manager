@@ -11,7 +11,7 @@ public class MacMemoryTests
     [Fact]
     public void PhysFootprint_ParsesGb_AndIgnoresPeak()
     {
-        // Реальный вывод `footprint <pid>`: берём phys_footprint, НЕ phys_footprint_peak.
+        // Real output of `footprint <pid>`: take phys_footprint, NOT phys_footprint_peak.
         var s = "wine [31714]: 64-bit (translated)    Footprint: 10 GB (4096 bytes per page)\n" +
                 "    phys_footprint: 10 GB\n" +
                 "    phys_footprint_peak: 12 GB\n";

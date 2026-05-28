@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ArkManager.App;
 
-/// <summary>Сервис-локатор-обёртка над DI. Поднимается один раз в App.OnFrameworkInitializationCompleted.</summary>
+/// <summary>Service-locator wrapper over DI. Bootstrapped once in App.OnFrameworkInitializationCompleted.</summary>
 public static class AppServices
 {
     public static IServiceProvider Provider { get; private set; } = default!;

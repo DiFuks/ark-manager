@@ -23,8 +23,8 @@ public class ServerCommandLineTests
     [Fact]
     public void Build_RoutesFullLogToStdout()
     {
-        // Сервер запускается headless (без winemac.drv → нет окна), поэтому полный UE-лог
-        // нужно гнать в stdout, иначе он уходит только в окно/файл и не виден в ArkManager.
+        // The server runs headless (no winemac.drv → no window), so the full UE log
+        // must be routed to stdout — otherwise it only goes to a window/file and is invisible to ArkManager.
         var s = new AppSettings();
         var args = ServerCommandLine.Build(s, Array.Empty<string>());
         Assert.Contains("-stdout", args);
@@ -43,8 +43,8 @@ public class ServerCommandLineTests
     [Fact]
     public void Build_Passwords_NotInUrlQuery()
     {
-        // Пароли пишутся ТОЛЬКО в ini (через ConfigService.ApplyLaunchOptionsToIni),
-        // в URL не кладём — иначе ASA склеивает хвост строки в значение пароля.
+        // Passwords are written ONLY to the ini (via ConfigService.ApplyLaunchOptionsToIni),
+        // never into the URL — otherwise ASA glues the rest of the string into the password value.
         var s = new AppSettings();
         s.LaunchOptions.ServerPassword = "srv";
         s.LaunchOptions.AdminPassword = "adm";
@@ -79,7 +79,7 @@ public class ServerCommandLineTests
     [Fact]
     public void Build_Rcon_NotInUrlQuery()
     {
-        // RCONEnabled/RCONPort идут только в GameUserSettings.ini.
+        // RCONEnabled/RCONPort go only into GameUserSettings.ini.
         var s = new AppSettings();
         s.LaunchOptions.RconEnabled = true;
         s.LaunchOptions.RconPort = 27042;

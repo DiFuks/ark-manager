@@ -5,7 +5,7 @@ namespace ArkManager.Core.Tests;
 
 public class ServerDiscoveryTests
 {
-    // Формат = `ps -axww -o pid=,etime=,command=`: pid, etime, полная командная строка.
+    // Format = `ps -axww -o pid=,etime=,command=`: pid, etime, full command line.
     private const string Exe =
         "/Users/difuks/Library/Application Support/ArkManager/server/ShooterGame/Binaries/Win64/ArkAscendedServer.exe";
 

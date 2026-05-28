@@ -12,8 +12,8 @@ public partial class ModsViewModel : ViewModelBase
     public ObservableCollection<ModEntry> Mods { get; } = new();
     [ObservableProperty] private string _newModId = "";
 
-    // Команды ниже работают только с выделенным модом → дизейблятся, когда выделения нет
-    // (иначе кнопки выглядят активными, но молча ничего не делают).
+    // The commands below operate only on the selected mod → disabled when there is no selection
+    // (otherwise the buttons look active but silently do nothing).
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
     [NotifyCanExecuteChangedFor(nameof(MoveUpCommand))]
@@ -43,9 +43,9 @@ public partial class ModsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Тихо подтягивает имена непрорезолвенных модов через CurseForge-прокси.
-    /// Вызывается автоматически при активации Mods-таба (MainWindowVM) и после Add —
-    /// отдельной кнопки нет. Уже закэшированные ID `ModsService` сам пропустит.
+    /// Silently fetches names of unresolved mods via the CurseForge proxy.
+    /// Called automatically when the Mods tab is activated (MainWindowVM) and after Add —
+    /// there is no dedicated button. `ModsService` will skip IDs that are already cached.
     /// </summary>
     public async Task AutoResolveNamesAsync()
     {
@@ -67,12 +67,12 @@ public partial class ModsViewModel : ViewModelBase
         if (_mods == null) return;
         try
         {
-            // Принимаем и через запятую, и одиночные.
+            // Accept both comma-separated lists and single IDs.
             var parts = NewModId.Split(new[] { ',', ' ', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
             _mods.AddMany(parts);
             NewModId = "";
             Reload();
-            // Сразу резолвим имена только что добавленных — кнопки «Resolve names» больше нет.
+            // Resolve names of the just-added mods right away — the "Resolve names" button is gone.
             await AutoResolveNamesAsync();
         }
         catch (Exception ex) { Status = ex.Message; }
@@ -114,8 +114,8 @@ public partial class ModsViewModel : ViewModelBase
     public void OpenInCurseForge()
     {
         if (Selected == null) return;
-        // Если уже резолвили — открываем конкретную страницу мода (точный URL из API).
-        // Если нет — фолбек на поиск по ID, чтобы юзер хотя бы попал в каталог.
+        // If already resolved — open the specific mod page (exact URL from the API).
+        // Otherwise fall back to a search by ID so the user at least lands in the catalogue.
         var url = !string.IsNullOrWhiteSpace(Selected.Url)
             ? Selected.Url
             : $"https://www.curseforge.com/ark-survival-ascended/search?q={Selected.Id}";

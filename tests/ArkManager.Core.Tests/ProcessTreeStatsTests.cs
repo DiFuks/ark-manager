@@ -5,13 +5,13 @@ namespace ArkManager.Core.Tests;
 
 public class ProcessTreeStatsTests
 {
-    // Формат строк = вывод `ps -axo pid=,ppid=,rss=,%cpu=`: pid, ppid, rss(KB), %cpu.
+    // Line format = output of `ps -axo pid=,ppid=,rss=,%cpu=`: pid, ppid, rss(KB), %cpu.
     private const string Ps =
         "  1     0    2000  0.0\n" +
-        "100     1  500000 50.0\n" +   // корень
-        "200   100  300000 25.0\n" +   // ребёнок 100
-        "300   200  100000  5.0\n" +   // внук (ребёнок 200)
-        "400     1   10000  1.0\n";    // чужой процесс
+        "100     1  500000 50.0\n" +   // root
+        "200   100  300000 25.0\n" +   // child of 100
+        "300   200  100000  5.0\n" +   // grandchild (child of 200)
+        "400     1   10000  1.0\n";    // unrelated process
 
     [Fact]
     public void Sum_AggregatesWholeSubtree()
@@ -32,7 +32,7 @@ public class ProcessTreeStatsTests
     [Fact]
     public void Sum_HandlesCommaDecimal()
     {
-        // На системах с русской локалью ps печатает %cpu через запятую: "12,5".
+        // On systems with a Russian locale `ps` prints %cpu with a comma: "12,5".
         var st = ProcessTreeStats.Sum("100 1 1234 12,5\n", 100);
         Assert.Equal(1234, st.RssKb);
         Assert.Equal(12.5, st.CpuPercent, 3);

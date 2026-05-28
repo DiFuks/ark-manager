@@ -7,7 +7,7 @@ public sealed record RunningServer(int Pid, DateTime StartedAt);
 public interface IServerLauncher
 {
     /// <summary>
-    /// Запускает ArkAscendedServer.exe. stdout/stderr идут в коллбеки.
+    /// Launches ArkAscendedServer.exe. stdout/stderr are routed to the callbacks.
     /// </summary>
     Task<RunningServer> StartAsync(
         AppSettings settings,

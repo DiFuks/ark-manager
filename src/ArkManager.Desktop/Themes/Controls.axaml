@@ -1,8 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Единая высота input-row: Button/TextBox/NumericUpDown/ComboBox = 36px. Fluent дефолты:
-         Button ≈27, TextBox ≈32 — поэтому в одном ряду кнопки «садились» относительно
-         TextBox. Фиксируем общий MinHeight, padding контента в каждом контроле остаётся свой. -->
+    <!-- Uniform input-row height: Button/TextBox/NumericUpDown/ComboBox = 36px. Fluent defaults:
+         Button ≈27, TextBox ≈32 — which made buttons "sit lower" than TextBox in the same row.
+         We pin a shared MinHeight; content padding inside each control stays its own. -->
     <!-- ===== Buttons ===== -->
     <Style Selector="Button">
         <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
@@ -18,16 +18,16 @@
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
     </Style>
-    <!-- Hover политика:
-         - Secondary (ghost): фон при hover должен ЯВНО отличаться от родителя (Panel2 был
-           почти неотличим от Bg — кнопка «гасла» при наведении). Берём LineBrush — светлее
-           обоих, плюс подсвечиваем бордер до AccentGlow.
-         - Primary: Fluent дефолтный :pointerover перебивал Foreground на свой светлый цвет —
-           тёмный текст AccentOn становился белым на оранжевом, читалось плохо. Явно фиксируем
-           Foreground=AccentOn в hover. Background при hover делаем слегка темнее accent
-           (а не светлее) — на ярком оранжевом тёмный текст уже хорошо контрастирует, а ярче
-           ink-вариант светлил фон сильнее, чем нужно.
-         - Danger: тёплый красный hover вместо тёмного. -->
+    <!-- Hover policy:
+         - Secondary (ghost): the hover background must DEFINITELY differ from the parent
+           (Panel2 was almost indistinguishable from Bg — the button "faded" on hover). We use
+           LineBrush — lighter than both — plus brighten the border to AccentGlow.
+         - Primary: Fluent's default :pointerover overrode Foreground with its own light colour —
+           the dark AccentOn text became white on orange, which read poorly. We explicitly pin
+           Foreground=AccentOn on hover. The hover Background goes slightly darker than accent
+           (not lighter) — dark text already contrasts well on bright orange, and the brighter
+           ink variant lit the background up more than needed.
+         - Danger: warm red hover instead of dark. -->
     <Style Selector="Button:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource LineBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource AccentGlowBrush}"/>
@@ -144,20 +144,20 @@
     <Style Selector="TextBox.mono">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
     </Style>
-    <!-- Многострочные «лог»-боксы (console на Server/RCON/Install): снимаем фиксированную
-         Height=36 (она затирала растягивание в Grid.Row="*") и центрирование контента,
-         чтобы строки шли сверху, а текстбокс расползался на всю доступную высоту. -->
+    <!-- Multi-line "log" boxes (console on Server/RCON/Install): drop the fixed Height=36
+         (it suppressed stretching inside Grid.Row="*") and the content centring, so lines
+         start at the top and the textbox expands across all available height. -->
     <Style Selector="TextBox.log">
         <Setter Property="Height" Value="NaN"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Top"/>
     </Style>
-    <!-- NumericUpDown: поверхность = внутренний TextBox (рисуется обычным стилем TextBox выше →
-         тот же фон/бордер/скругление, что у текст-полей). ButtonSpinner прозрачный и накладывает
-         шевроны поверх справа (Themes/ControlThemes.axaml). Здесь лишь резервируем правый отступ
-         внутри TextBox, чтобы цифры не залезали под шевроны. -->
-    <!-- NumericUpDown полностью ретемплейтится в Themes/ControlThemes.axaml (там же его «коробка»
-         через AppButtonSpinner). Здесь стилей для него не держим. -->
+    <!-- NumericUpDown: surface = the inner TextBox (drawn by the regular TextBox style above →
+         same background/border/corner-radius as text fields). ButtonSpinner is transparent and
+         overlays the chevrons on the right (Themes/ControlThemes.axaml). Here we only reserve
+         right-side padding inside the TextBox so the digits don't run under the chevrons. -->
+    <!-- NumericUpDown is fully retemplated in Themes/ControlThemes.axaml (its "box" also lives
+         there via AppButtonSpinner). We don't keep any styles for it here. -->
     <Style Selector="ComboBox">
         <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
@@ -201,10 +201,10 @@
     </Style>
 
     <!-- ===== Generic list rows (Backups/Mods) =====
-         Гасим Fluent дефолт hover/selected на самом ListBoxItem — иначе серый/синий
-         фон шаблона торчал «ушками» по углам tile (CornerRadius у tile 10,
-         у Fluent ListBoxItem прямые углы → радиусные просветы по углам).
-         Реакцию hover/selected переносим на Border.tile внутри ItemTemplate. -->
+         Suppress the Fluent default hover/selected on the ListBoxItem itself — otherwise the
+         grey/blue template background poked out as "ears" at the tile corners (tile has
+         CornerRadius 10, Fluent ListBoxItem has square corners → radius gaps in the corners).
+         The hover/selected reaction is moved onto Border.tile inside the ItemTemplate. -->
     <Style Selector="ListBox.rows">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -235,8 +235,8 @@
     </Style>
 
     <!-- ===== Config tab strip (segmented look) =====
-         Полностью переопределяем шаблон TabItem: убираем Fluent-пипку (синее
-         подчёркивание) и делаем «таблетку» с мягким акцентным фоном на активном. -->
+         Fully override the TabItem template: remove the Fluent "nub" (blue underline)
+         and turn it into a "pill" with a soft accent background on the active item. -->
     <Style Selector="TabControl.seg">
         <Setter Property="Background" Value="Transparent"/>
     </Style>

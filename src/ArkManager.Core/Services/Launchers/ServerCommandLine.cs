@@ -4,19 +4,19 @@ using ArkManager.Core.Models;
 namespace ArkManager.Core.Services.Launchers;
 
 /// <summary>
-/// Формирует CLI ASA-сервера: первый аргумент — quoted map?key=value?... строка,
-/// дальше идут «голые» флаги: -server -log -port=N -QueryPort=M -mods=... -NoBattlEye и т.д.
+/// Builds the ASA server CLI: first argument is a quoted map?key=value?... string,
+/// followed by "bare" flags: -server -log -port=N -QueryPort=M -mods=... -NoBattlEye etc.
 /// </summary>
 public static class ServerCommandLine
 {
     public static IReadOnlyList<string> Build(AppSettings settings, IReadOnlyList<string> modIds)
     {
         var o = settings.LaunchOptions;
-        // Пароли и RCON НЕ кладём в URL-query. Причина: ASA URL-парсер при наличии
-        // нескольких параметров после ServerAdminPassword= может склеить хвост строки
-        // в значение пароля и сохранить так в GameUserSettings.ini — RCON-аутентификация
-        // потом ломается. Эти ключи пишутся в ini через ConfigService.ApplyLaunchOptionsToIni,
-        // оттуда сервер их и читает.
+        // Passwords and RCON are NOT put into the URL query. Reason: with multiple parameters
+        // after ServerAdminPassword= the ASA URL parser may glue the tail of the string into
+        // the password value and save it that way to GameUserSettings.ini — RCON auth then
+        // breaks. These keys are written to ini via ConfigService.ApplyLaunchOptionsToIni,
+        // and that's where the server reads them from.
         var queryParts = new List<string>
         {
             o.Map,
@@ -35,9 +35,9 @@ public static class ServerCommandLine
 
         var queryString = string.Join("?", queryParts);
 
-        // Сервер запускается headless (winemac.drv отключён в BundledWineLauncher → окна нет).
-        // -stdout -FullStdOutLogOutput гонят ПОЛНЫЙ UE-лог в stdout (иначе он уходит только
-        // в окно/ShooterGame.log и не виден в ArkManager). -unattended убирает диалоги.
+        // Server runs headless (winemac.drv disabled in BundledWineLauncher → no window).
+        // -stdout -FullStdOutLogOutput pipe the FULL UE log to stdout (otherwise it only
+        // goes to the window/ShooterGame.log and isn't visible in ArkManager). -unattended suppresses dialogs.
         var list = new List<string> { queryString, "-server", "-log", "-stdout", "-FullStdOutLogOutput", "-unattended" };
 
         if (modIds.Count > 0)
@@ -65,11 +65,11 @@ public static class ServerCommandLine
 
     private static string Escape(string value)
     {
-        // В ASA query-string специальные символы — '?' и пробел. Простейшая защита: заменяем пробелы на _ и режем '?'.
+        // In ASA query strings the special characters are '?' and space. Simplest guard: replace spaces with _ and strip '?'.
         return value.Replace("?", "").Trim();
     }
 
-    /// <summary>Самый базовый shell-like tokenize: кавычки сохраняют пробелы.</summary>
+    /// <summary>Most basic shell-like tokenize: quotes preserve spaces.</summary>
     private static IEnumerable<string> Tokenize(string s)
     {
         var sb = new StringBuilder();

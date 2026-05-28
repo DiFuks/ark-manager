@@ -11,8 +11,8 @@ public sealed record BackupInfo(string FilePath, DateTime CreatedUtc, long SizeB
 }
 
 /// <summary>
-/// Бэкапит ShooterGame/Saved/SavedArks (+ Config + Profiles) в zip-файл с таймстампом.
-/// Ротация по count.
+/// Backs up ShooterGame/Saved/SavedArks (+ Config + Profiles) into a timestamped zip file.
+/// Rotation by count.
 /// </summary>
 public sealed class BackupService
 {
@@ -73,7 +73,7 @@ public sealed class BackupService
 
         if (wipeFirst && Directory.Exists(savedDir))
         {
-            // Перед удалением — на всякий случай делаем quick-snapshot текущего Saved.
+            // Before deleting — just in case, take a quick snapshot of the current Saved.
             await CreateBackupAsync(note: "pre-restore-auto", progress: null, ct: ct);
             Directory.Delete(savedDir, recursive: true);
         }
@@ -135,7 +135,7 @@ public sealed class BackupService
             }
             catch (IOException)
             {
-                // Файл может быть залочен (например, текущий лог). Пробуем скопировать через стрим с share-read.
+                // The file may be locked (e.g. the current log). Try to copy via a stream with share-read.
                 try
                 {
                     var entry = zip.CreateEntry(entryName, CompressionLevel.Fastest);
@@ -143,7 +143,7 @@ public sealed class BackupService
                     using var src = new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                     src.CopyTo(dst);
                 }
-                catch { /* пропускаем недоступный файл */ }
+                catch { /* skip inaccessible file */ }
             }
             if (files.Count > 0) progress?.Report((i + 1.0) / files.Count);
         }

@@ -6,9 +6,9 @@ namespace ArkManager.Core.Services.Mods;
 public sealed record CurseForgeModInfo(string Id, string Name, string? Summary, string? WebsiteUrl);
 
 /// <summary>
-/// Резолвер имён модов для ASA — через публичный community-прокси <c>api.cfwidget.com</c>.
-/// Прокси сам ходит в CurseForge и кэширует, на нашей стороне ключ не нужен.
-/// Тот же подход у ASADedicatedManager и большинства open-source ASA-менеджеров.
+/// ASA mod-name resolver — via the public community proxy <c>api.cfwidget.com</c>.
+/// The proxy itself hits CurseForge and caches; no key is needed on our side.
+/// Same approach used by ASADedicatedManager and most open-source ASA managers.
 /// </summary>
 public sealed class CurseForgeClient
 {
@@ -25,8 +25,8 @@ public sealed class CurseForgeClient
 
     public async Task<CurseForgeModInfo?> GetModAsync(string id, CancellationToken ct = default)
     {
-        // cfwidget возвращает 202 «accepted, scrape in progress», если запрашиваемый
-        // проект ещё не был в его кеше — тогда нужно дёрнуть повторно через пару секунд.
+        // cfwidget returns 202 "accepted, scrape in progress" if the requested project
+        // wasn't in its cache yet — in that case we need to hit it again in a couple of seconds.
         for (var attempt = 0; attempt < 2; attempt++)
         {
             using var resp = await _http.GetAsync(id, ct);

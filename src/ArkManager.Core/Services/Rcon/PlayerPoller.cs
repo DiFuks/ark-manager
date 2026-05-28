@@ -5,8 +5,8 @@ namespace ArkManager.Core.Services.Rcon;
 public sealed record PlayerSample(int Count, IReadOnlyList<string> Names, DateTime SampledUtc, string? Error = null);
 
 /// <summary>
-/// Бэкграунд-воркер, который при запущенном сервере раз в N секунд делает
-/// ListPlayers по локальному RCON и парсит счётчик/имена.
+/// Background worker that, while the server is running, calls ListPlayers via local RCON
+/// every N seconds and parses the count/names.
 /// </summary>
 public sealed class PlayerPoller : IAsyncDisposable
 {
@@ -45,7 +45,7 @@ public sealed class PlayerPoller : IAsyncDisposable
 
     private async Task LoopAsync(CancellationToken ct)
     {
-        // Дать серверу прогреться перед первым опросом.
+        // Give the server time to warm up before the first poll.
         try { await Task.Delay(TimeSpan.FromSeconds(20), ct); } catch { return; }
 
         while (!ct.IsCancellationRequested)
@@ -77,9 +77,9 @@ public sealed class PlayerPoller : IAsyncDisposable
     }
 
     /// <summary>
-    /// ASA ListPlayers возвращает строки вида:
+    /// ASA ListPlayers returns lines like:
     ///   "0. Nickname, 1234567890123456789"   (steam id)
-    ///   либо "No Players Connected"
+    ///   or "No Players Connected"
     /// </summary>
     public static PlayerSample ParseListPlayers(string raw)
     {

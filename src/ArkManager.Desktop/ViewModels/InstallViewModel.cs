@@ -54,9 +54,9 @@ public partial class InstallViewModel : ViewModelBase
 
     public string ServerPrimaryActionLabel => IsServerInstalled ? "Update server" : "Install server";
 
-    // Текст статуса сервера. Сравнение и отображение версии — по Steam buildid
-    // (число вроде 23321173). «Человеческая» игровая версия (v40.55) недоступна
-    // для latest-side, поэтому используем единый формат с обеих сторон.
+    // Server status text. Version comparison and display use the Steam buildid
+    // (a number like 23321173). A "human" game version (v40.55) is unavailable
+    // on the latest side, so we use a single format on both sides.
     public string ServerStatusText
     {
         get
@@ -100,9 +100,9 @@ public partial class InstallViewModel : ViewModelBase
         UpdateSteamState();
         RefreshInstalledVersion();
 
-        // Авточек последней версии при старте — фоном. Запускается на UI-потоке,
-        // тяжёлый I/O steamcmd уходит off-thread внутри QueryLatestBuildIdAsync,
-        // continuation возвращается на UI через захваченный SyncContext.
+        // Auto-check for the latest version at startup — in the background. Kicked off on the UI thread,
+        // the heavy steamcmd I/O is moved off-thread inside QueryLatestBuildIdAsync,
+        // the continuation returns to the UI via the captured SyncContext.
         if (IsServerInstalled) _ = CheckForUpdatesAsync();
     }
 
@@ -122,10 +122,10 @@ public partial class InstallViewModel : ViewModelBase
         finally { Busy = false; }
     }
 
-    // Install/Update сервера требует:
-    //  - не быть busy уже;
-    //  - наличия steamcmd (иначе бросит исключение из ProcessRunner);
-    //  - непустого пути установки (Directory.CreateDirectory("") крашится).
+    // Install/Update of the server requires:
+    //  - not being busy already;
+    //  - steamcmd present (otherwise ProcessRunner will throw);
+    //  - a non-empty install path (Directory.CreateDirectory("") crashes).
     private bool CanInstallOrUpdateServer()
         => !Busy && IsSteamCmdInstalled && !string.IsNullOrWhiteSpace(ServerInstallPath);
 
@@ -138,9 +138,9 @@ public partial class InstallViewModel : ViewModelBase
         {
             _settings.Update(s => s.ServerInstallPath = ServerInstallPath);
 
-            // Update-сценарий: если уже есть свежий результат чека (после автостарта или
-            // ручной кнопки) — доверяем ему, не гоняем steamcmd ещё раз. Чекаем только
-            // когда LatestBuild ещё не подтверждён (null/failed).
+            // Update scenario: if we already have a fresh check result (from auto-start or
+            // the manual button) — trust it, don't run steamcmd again. Re-check only
+            // when LatestBuild has not been confirmed yet (null/failed).
             if (IsServerInstalled)
             {
                 if (LatestBuild is "—" or "failed to parse")
@@ -187,11 +187,11 @@ public partial class InstallViewModel : ViewModelBase
 
     partial void OnServerInstallPathChanged(string value)
     {
-        // Источник истины для ServerInstallPath переехал на этот таб (поле в Settings убрали).
-        // Сохраняем сразу на изменение, чтобы не терять при переключении вкладок.
+        // The source of truth for ServerInstallPath moved to this tab (the field in Settings was dropped).
+        // Save on every change so it isn't lost when switching tabs.
         _settings?.Update(s => s.ServerInstallPath = string.IsNullOrWhiteSpace(value) ? null : value);
         RefreshInstalledVersion();
-        // После смены пути latest-чек по предыдущему пути уже не релевантен.
+        // After a path change the latest-check against the previous path is no longer relevant.
         LatestBuild = "—";
     }
 
@@ -239,7 +239,7 @@ public partial class InstallViewModel : ViewModelBase
     private void Append(string line) => App.UiThread(() =>
     {
         Log += line + Environment.NewLine;
-        // Не даём строке расти бесконечно — режем «голову» по границе строки.
+        // Prevent the string from growing forever — trim the "head" at a line boundary.
         if (Log.Length > MaxLogChars)
         {
             var cut = Log.IndexOf('\n', Log.Length - MaxLogChars);

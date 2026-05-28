@@ -3,8 +3,8 @@ using ArkManager.Core.Models;
 namespace ArkManager.Core.Services.Config;
 
 /// <summary>
-/// Чтение/запись GameUserSettings.ini и Game.ini.
-/// Папка: <ServerInstallPath>/ShooterGame/Saved/Config/WindowsServer/.
+/// Reads/writes GameUserSettings.ini and Game.ini.
+/// Folder: <ServerInstallPath>/ShooterGame/Saved/Config/WindowsServer/.
 /// </summary>
 public sealed class ConfigService
 {
@@ -40,7 +40,7 @@ public sealed class ConfigService
     }
 
     /// <summary>
-    /// Применяет основные настройки из ServerLaunchOptions в [ServerSettings] и [SessionSettings] GameUserSettings.ini.
+    /// Applies the main settings from ServerLaunchOptions into [ServerSettings] and [SessionSettings] of GameUserSettings.ini.
     /// </summary>
     public void ApplyLaunchOptionsToIni(ServerLaunchOptions o)
     {
@@ -64,7 +64,7 @@ public sealed class ConfigService
         SaveGameUserSettings(ini);
     }
 
-    /// <summary>Перезаписать список ActiveMods= в [ModInstaller] (новый ASA-формат через automanagedmods).</summary>
+    /// <summary>Rewrites the ActiveMods= list in [ModInstaller] (new ASA format via automanagedmods).</summary>
     public void WriteActiveMods(IReadOnlyList<string> modIds)
     {
         var ini = LoadGameUserSettings();

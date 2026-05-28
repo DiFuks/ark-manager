@@ -1,11 +1,11 @@
 namespace ArkManager.Core.Util;
 
-/// <summary>Найденный уже-запущенный сервер (для «усыновления» после краша/Force Quit менеджера).</summary>
+/// <summary>An already-running server we found (for "adoption" after a crash / Force Quit of the manager).</summary>
 public readonly record struct DiscoveredServer(int Pid, TimeSpan Uptime);
 
 /// <summary>
-/// Поиск работающего ArkAscendedServer.exe в выводе `ps -axww -o pid=,etime=,command=`
-/// по полному пути к exe. UI-агностично и тестируемо без процессов.
+/// Locates a running ArkAscendedServer.exe in the output of `ps -axww -o pid=,etime=,command=`
+/// by the full exe path. UI-agnostic and testable without real processes.
 /// </summary>
 public static class ServerDiscovery
 {
@@ -33,7 +33,7 @@ public static class ServerDiscovery
         return null;
     }
 
-    /// <summary>etime из ps: [[DD-]HH:]MM:SS.</summary>
+    /// <summary>etime from ps: [[DD-]HH:]MM:SS.</summary>
     internal static TimeSpan ParseEtime(string s)
     {
         s = s.Trim();

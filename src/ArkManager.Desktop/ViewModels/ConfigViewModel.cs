@@ -13,11 +13,11 @@ public partial class ConfigViewModel : ViewModelBase
 
     public IReadOnlyList<MapPreset> KnownMaps { get; } = Maps.Known;
 
-    // BattlEye под wine/proton не работает, поэтому на не-Windows хосте флаг
-    // -NoBattlEye обязателен и в UI зафиксирован.
+    // BattlEye does not work under wine/proton, so on a non-Windows host the
+    // -NoBattlEye flag is mandatory and pinned in the UI.
     public bool IsNoBattlEyeEditable => OperatingSystem.IsWindows();
 
-    // Базовые настройки запуска (мапятся в ini + CLI).
+    // Basic launch settings (mapped into ini + CLI).
     [ObservableProperty] private string _map = "TheIsland_WP";
     [ObservableProperty] private MapPreset? _selectedMapPreset;
     [ObservableProperty] private string _sessionName = "My ASA Server";
@@ -36,14 +36,14 @@ public partial class ConfigViewModel : ViewModelBase
     [ObservableProperty] private string _extraCommandLineArgs = "";
     [ObservableProperty] private string _extraQueryString = "";
 
-    // Raw-просмотр и редактирование ini.
+    // Raw view and editing of ini files.
     [ObservableProperty] private string _gameUserSettingsRaw = "";
     [ObservableProperty] private string _gameIniRaw = "";
 
     [ObservableProperty] private string _status = "";
 
-    // Активный под-таб (Основное / GameUserSettings.ini / Game.ini / Preview CLI).
-    // От него зависит, что делает единственная кнопка Save.
+    // Active sub-tab (Basic / GameUserSettings.ini / Game.ini / Preview CLI).
+    // Determines what the single Save button does.
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveContextCommand))]
     [NotifyPropertyChangedFor(nameof(SaveButtonText))]
@@ -94,16 +94,16 @@ public partial class ConfigViewModel : ViewModelBase
             o.ExtraQueryString = ExtraQueryString;
             if (s.Profiles.Count > 0) s.Profiles[0].Options = o;
         });
-        // Зеркало в ini (если папка существует — иначе будет применено после первого запуска).
+        // Mirror into ini (if the folder exists — otherwise it will be applied after the first launch).
         try
         {
             _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
-            // Форма пишет [ServerSettings] прямо в GameUserSettings.ini — перечитываем raw-таб,
-            // чтобы он не показывал устаревший текст и потом не затёр только что записанное.
+            // The form writes [ServerSettings] straight into GameUserSettings.ini — re-read the raw tab
+            // so it doesn't show stale text and then overwrite what we just saved.
             if (File.Exists(_config.GameUserSettingsPath))
                 GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
         }
-        catch { /* server папка ещё не создана */ }
+        catch { /* server folder not created yet */ }
 
         Status = "Saved to settings.json";
         OnPropertyChanged(nameof(CommandLinePreview));
@@ -120,8 +120,8 @@ public partial class ConfigViewModel : ViewModelBase
 
     private bool CanSaveContext() => SelectedTabIndex is 0 or 1 or 2;
 
-    // Единственная кнопка Save: действие зависит от активного под-таба.
-    // На «Preview CLI» сохранять нечего — команда дизейблится через CanSaveContext.
+    // Single Save button: the action depends on the active sub-tab.
+    // On "Preview CLI" there is nothing to save — the command is disabled via CanSaveContext.
     [RelayCommand(CanExecute = nameof(CanSaveContext))]
     public void SaveContext()
     {
@@ -156,7 +156,7 @@ public partial class ConfigViewModel : ViewModelBase
         AdminPassword = o.AdminPassword ?? "";
         SpectatorPassword = o.SpectatorPassword ?? "";
         MaxPlayers = o.MaxPlayers;
-        // На не-Windows -NoBattlEye обязателен — игнорируем сохранённое значение.
+        // On non-Windows -NoBattlEye is mandatory — ignore the stored value.
         NoBattlEye = !OperatingSystem.IsWindows() || o.NoBattlEye;
         AutoManagedMods = o.AutoManagedMods;
         ClusterId = o.ClusterId ?? "";
@@ -177,7 +177,7 @@ public partial class ConfigViewModel : ViewModelBase
     private IReadOnlyList<string> BuildCli()
     {
         if (_settings == null) return Array.Empty<string>();
-        // Берём текущий снимок из VM (даже до Save) для preview.
+        // Take the current snapshot from the VM (even before Save) for the preview.
         var s = new AppSettings { LaunchOptions = new ServerLaunchOptions
         {
             Map = Map, SessionName = SessionName, Port = Port, QueryPort = QueryPort,
@@ -205,10 +205,10 @@ public partial class ConfigViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(picked)) ClusterDirOverride = picked;
     }
 
-    // ASA на старте дописывает в GameUserSettings.ini кучу своих ключей и может
-    // переустановить значения, что мы туда положили. Чтобы юзеру не жать Reload —
-    // перечитываем актуальный sub-таб с диска при переключении на него.
-    // Несохранённые правки в текущем sub-табе при возврате теряются (юзер сам так просил).
+    // ASA appends a bunch of its own keys into GameUserSettings.ini at startup and may
+    // overwrite the values we put there. To spare the user from pressing Reload —
+    // re-read the active sub-tab from disk whenever it is switched to.
+    // Unsaved edits in the current sub-tab are lost on return (the user explicitly asked for this).
     partial void OnSelectedTabIndexChanged(int value)
     {
         if (_config == null) return;
@@ -227,14 +227,14 @@ public partial class ConfigViewModel : ViewModelBase
                     break;
             }
         }
-        catch { /* нет доступа / гонка — оставляем текущий буфер */ }
+        catch { /* no access / race — keep the current buffer */ }
     }
 
     /// <summary>
-    /// Зовётся MainWindowViewModel, когда юзер переходит на Config-таб целиком (не sub-таб) —
-    /// освежает оба raw-буфера и Basic из ini за один проход. Без этого первый заход
-    /// на Config после старта сервера показывал бы stale-значения, пока юзер не дернул
-    /// другой sub-таб и обратно.
+    /// Called by MainWindowViewModel when the user switches to the Config tab as a whole (not a sub-tab) —
+    /// refreshes both raw buffers and Basic from ini in a single pass. Without this, the first visit
+    /// to Config after starting the server would show stale values until the user toggled
+    /// to another sub-tab and back.
     /// </summary>
     public void RefreshFromDisk()
     {
@@ -243,9 +243,9 @@ public partial class ConfigViewModel : ViewModelBase
         ReloadBasicFromIni();
     }
 
-    // Перечитывает поля Basic из GameUserSettings.ini для тех ключей, что пишет
-    // ApplyLaunchOptionsToIni. Не-ini поля (Map, NoBattlEye, AutoManagedMods, ClusterId,
-    // ExtraCommandLineArgs/QueryString) трогать нечем — они только в settings.json/VM.
+    // Re-reads the Basic fields from GameUserSettings.ini for keys written by
+    // ApplyLaunchOptionsToIni. Non-ini fields (Map, NoBattlEye, AutoManagedMods, ClusterId,
+    // ExtraCommandLineArgs/QueryString) aren't touched — they live only in settings.json/VM.
     private void ReloadBasicFromIni()
     {
         if (_config == null || !File.Exists(_config.GameUserSettingsPath)) return;
@@ -279,7 +279,7 @@ public partial class ConfigViewModel : ViewModelBase
         if (value != null) Map = value.Map;
     }
 
-    // Любое изменение свойства обновляет preview.
+    // Any property change refreshes the preview.
     partial void OnMapChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
     partial void OnSessionNameChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
     partial void OnPortChanged(int value) => OnPropertyChanged(nameof(CommandLinePreview));

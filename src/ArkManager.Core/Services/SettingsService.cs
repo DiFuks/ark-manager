@@ -39,7 +39,7 @@ public sealed class SettingsService
         }
         catch
         {
-            // Корраптнутый settings — не валим приложение, пересохраняем дефолт.
+            // Corrupted settings — don't crash the app, rewrite defaults.
             var bak = _paths.SettingsFile + ".broken-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             try { File.Copy(_paths.SettingsFile, bak, overwrite: true); } catch { /* ignore */ }
             Current = Defaults();

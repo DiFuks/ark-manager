@@ -4,13 +4,13 @@ using System.Text;
 namespace ArkManager.Core.Services.Rcon;
 
 /// <summary>
-/// Минимальная реализация Source RCON (Valve). ARK использует тот же протокол на RCONPort.
-/// Формат пакета (little-endian):
-///   int32 size      — размер пакета без поля size
-///   int32 id        — клиентский ID запроса
+/// Minimal Source RCON (Valve) implementation. ARK uses the same protocol on RCONPort.
+/// Packet format (little-endian):
+///   int32 size      — packet size excluding the size field
+///   int32 id        — client request ID
 ///   int32 type      — 3=AUTH, 2=AUTH_RESPONSE, 2=EXECCOMMAND, 0=RESPONSE_VALUE
 ///   string body     — null-terminated ASCII
-///   byte 0          — пустой terminator
+///   byte 0          — empty terminator
 /// </summary>
 public sealed class RconClient : IAsyncDisposable
 {
@@ -32,8 +32,8 @@ public sealed class RconClient : IAsyncDisposable
         var authId = _nextId++;
         await WritePacketAsync(authId, SERVERDATA_AUTH, password, ct);
 
-        // Первым придёт пустой RESPONSE_VALUE (echo), затем AUTH_RESPONSE.
-        // На некоторых серверах echo отсутствует — обрабатываем оба сценария.
+        // First we receive an empty RESPONSE_VALUE (echo), then AUTH_RESPONSE.
+        // Some servers don't send the echo — we handle both scenarios.
         while (true)
         {
             var (id, type, body) = await ReadPacketAsync(ct);
@@ -54,11 +54,11 @@ public sealed class RconClient : IAsyncDisposable
         var id = _nextId++;
         await WritePacketAsync(id, SERVERDATA_EXECCOMMAND, command, ct);
 
-        // ASA эхо-ит id команды в ответном пакете. Читаем до пакета с нашим id,
-        // игнорируя служебные (периодический "Keep Alive" приходит с id=0 и любым
-        // чужим id). ВАЖНО: не полагаемся на эхо пустого RESPONSE_VALUE-маркера —
-        // ASA его НЕ зеркалит для коротких ответов, из-за чего старый код висел
-        // (и попутно копил тело "Keep Alive" в ответ).
+        // ASA echoes the command id in the response packet. Read until a packet with our id,
+        // ignoring service ones (the periodic "Keep Alive" arrives with id=0 and any other
+        // foreign id). IMPORTANT: do NOT rely on echoing an empty RESPONSE_VALUE marker —
+        // ASA does NOT mirror it for short responses, which made the old code hang
+        // (while accumulating the "Keep Alive" body into the response).
         var sb = new StringBuilder();
         string first;
         while (true)
@@ -70,9 +70,9 @@ public sealed class RconClient : IAsyncDisposable
             break;
         }
 
-        // Один пакет вмещает ~4096 байт. Если ответ упёрся в лимит — он
-        // многосегментный: шлём пустой EXECCOMMAND-маркер (на него ASA ОТВЕЧАЕТ)
-        // и дочитываем сегменты с нашим id до пакета-маркера.
+        // A single packet holds ~4096 bytes. If the response hit the limit — it's
+        // multi-segment: send an empty EXECCOMMAND marker (which ASA DOES respond to)
+        // and read the remaining segments with our id until the marker packet.
         if (first.Length >= 4000)
         {
             var markerId = _nextId++;
@@ -96,7 +96,7 @@ public sealed class RconClient : IAsyncDisposable
         BitConverter.GetBytes(id).CopyTo(buf, 4);
         BitConverter.GetBytes(type).CopyTo(buf, 8);
         bodyBytes.CopyTo(buf, 12);
-        // последние два байта уже нули.
+        // last two bytes are already zero.
         await _stream!.WriteAsync(buf, ct);
         await _stream.FlushAsync(ct);
     }

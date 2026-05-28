@@ -5,10 +5,10 @@ using ArkManager.Core.Util;
 namespace ArkManager.Core.Services.Launchers;
 
 /// <summary>
-/// Запускает ArkAscendedServer.exe через wine64, встроенный в наш бандл.
-/// macOS: &lt;App&gt;.app/Contents/Resources/wine/bin/wine64 (x86_64 Intel-бинарь, идёт через Rosetta 2).
+/// Launches ArkAscendedServer.exe via wine64 embedded in our bundle.
+/// macOS: &lt;App&gt;.app/Contents/Resources/wine/bin/wine64 (x86_64 Intel binary, runs via Rosetta 2).
 /// Linux: &lt;publish-dir&gt;/wine/bin/wine64.
-/// WINEPREFIX — &lt;DataDir&gt;/server-runtime (создаётся wine'ом при первом запуске).
+/// WINEPREFIX — &lt;DataDir&gt;/server-runtime (created by wine on first launch).
 /// </summary>
 public sealed class BundledWineLauncher : IServerLauncher
 {
@@ -21,12 +21,12 @@ public sealed class BundledWineLauncher : IServerLauncher
 
     internal static string ResolveEmbeddedWineBinary()
     {
-        // Dev escape hatch: при `dotnet run`/Rider AppContext.BaseDirectory указывает в
-        // bin.noindex/Debug/..., где рядом нет wine. ARKMANAGER_WINE_PATH=<file> позволяет
-        // ткнуть в кэш билд-скрипта (~/.cache/ark-manager/wine/<sha>/.../bin/wine) и работать
-        // без пересборки бандла. В релизе env не задают, идём embedded-путём ниже.
-        // Если env задан — возвращаем именно его (даже если файла нет), чтобы ошибка
-        // показала тот самый путь и юзер сразу понял что не так.
+        // Dev escape hatch: under `dotnet run`/Rider AppContext.BaseDirectory points into
+        // bin.noindex/Debug/..., which has no wine next to it. ARKMANAGER_WINE_PATH=<file>
+        // lets you point at the build-script cache (~/.cache/ark-manager/wine/<sha>/.../bin/wine)
+        // and work without rebuilding the bundle. In release env isn't set, we fall through
+        // to the embedded path below. If env is set — return it as-is (even if the file is
+        // missing) so the error message shows that exact path and the user immediately knows what's wrong.
         var envOverride = Environment.GetEnvironmentVariable("ARKMANAGER_WINE_PATH");
         if (!string.IsNullOrWhiteSpace(envOverride))
             return envOverride;
@@ -40,18 +40,19 @@ public sealed class BundledWineLauncher : IServerLauncher
             // Linux: wine sits next to the apphost in a `wine/` subdir.
             binDir = Path.Combine(baseDir, "wine", "bin");
 
-        // Современный wine (10+) использует unified wow64 — `wine` запускает и 32-, и 64-битные exe.
-        // Старые сборки (например, lutris-wine 7.2) разделяют `wine` (32-bit) и `wine64` (64-bit).
-        // ASA — 64-битный, поэтому пробуем wine64 первым, потом fallback на wine.
+        // Modern wine (10+) uses unified wow64 — `wine` runs both 32- and 64-bit exes.
+        // Older builds (e.g. lutris-wine 7.2) split `wine` (32-bit) and `wine64` (64-bit).
+        // ASA is 64-bit, so we try wine64 first and fall back to wine.
         foreach (var name in new[] { "wine64", "wine" })
         {
             var candidate = Path.Combine(binDir, name);
             if (File.Exists(candidate)) return candidate;
         }
 
-        // Dev fallback: бандл-путь пуст (`dotnet run` из репо), но build-скрипт скачивал
-        // wine в `~/.cache/ark-manager/wine/` — берём оттуда. Прод-юзер этой папки не имеет,
-        // поэтому код тихо сваливается в return ниже и в ошибку с подсказкой.
+        // Dev fallback: the bundle path is empty (`dotnet run` from the repo), but the
+        // build script downloaded wine into `~/.cache/ark-manager/wine/` — take it from there.
+        // A prod user does not have this folder, so the code quietly falls through to the
+        // return below and produces an error with a hint.
         var cached = TryFindCachedWine();
         if (cached != null) return cached;
 
@@ -65,9 +66,9 @@ public sealed class BundledWineLauncher : IServerLauncher
             ".cache", "ark-manager", "wine");
         if (!Directory.Exists(cache)) return null;
 
-        // Структура: <cache>/<sha-prefix>/<extracted-dir>/.../bin/{wine64,wine}.
-        // На маке extracted-dir — это .app-бандл, в нём bin лежит в Contents/Resources/wine.
-        // На Linux extracted-dir — обычная папка с bin/ сразу внутри.
+        // Layout: <cache>/<sha-prefix>/<extracted-dir>/.../bin/{wine64,wine}.
+        // On mac extracted-dir is a .app bundle, where bin lives at Contents/Resources/wine.
+        // On Linux extracted-dir is a regular folder with bin/ directly inside.
         foreach (var shaDir in Directory.EnumerateDirectories(cache))
         {
             foreach (var topDir in Directory.EnumerateDirectories(shaDir))
@@ -104,7 +105,7 @@ public sealed class BundledWineLauncher : IServerLauncher
         var wine = ResolveEmbeddedWineBinary();
         if (!File.Exists(wine))
         {
-            // Подсказка для dev: видим ли мы ARKMANAGER_WINE_PATH или резолвили из бандла.
+            // Hint for dev: did we see ARKMANAGER_WINE_PATH or resolve from the bundle.
             var envOverride = Environment.GetEnvironmentVariable("ARKMANAGER_WINE_PATH");
             var source = string.IsNullOrWhiteSpace(envOverride)
                 ? $"embedded path: {wine}"
@@ -123,8 +124,8 @@ public sealed class BundledWineLauncher : IServerLauncher
         {
             ["WINEPREFIX"] = prefix,
             ["WINEDEBUG"] = "-all",
-            // Отключаем wine-mac-driver: dedicated server headless, окно не нужно
-            // (без этого wine рисует Server Console-окно с белым-на-белом текстом).
+            // Disable wine-mac-driver: dedicated server is headless, no window needed
+            // (without this wine draws a Server Console window with white-on-white text).
             ["WINEDLLOVERRIDES"] = "winemac.drv=",
         };
 
@@ -163,7 +164,7 @@ public sealed class BundledWineLauncher : IServerLauncher
             using var p = Process.GetProcessById(pid);
             if (!p.HasExited) p.Kill(entireProcessTree: true);
         }
-        catch (ArgumentException) { /* уже мёртв */ }
+        catch (ArgumentException) { /* already dead */ }
         return Task.CompletedTask;
     }
 

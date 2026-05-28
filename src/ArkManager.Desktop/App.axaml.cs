@@ -12,7 +12,7 @@ namespace ArkManager.App;
 
 public partial class App : Application
 {
-    // Держим регистрации сигналов живыми (иначе соберёт GC и хук не сработает).
+    // Keep signal registrations alive (otherwise GC collects them and the hook does not fire).
     private static PosixSignalRegistration? _sigInt, _sigTerm, _sigQuit;
     private static int _shutdownDone;
     public override void Initialize()
@@ -23,7 +23,7 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         AppServices.Build();
-        // Запускаем синглтон-воркер, чтобы он подписался на StateChanged.
+        // Resolve the singleton worker so it subscribes to StateChanged.
         _ = AppServices.Get<ArkManager.Core.Services.Rcon.PlayerPoller>();
         _ = AppServices.Get<ArkManager.Core.Services.Backups.AutoBackupWorker>();
 
@@ -33,16 +33,16 @@ public partial class App : Application
             desktop.MainWindow = window;
             Services.Browse.Owner = window;
 
-            // Закрытие окна / Quit — гасим сервер, чтобы он не остался осиротевшим.
+            // Window close / Quit — shut the server down so it doesn't get orphaned.
             desktop.ShutdownRequested += (_, _) => StopServerOnExit();
         }
 
-        // Уведомления о жизненном цикле сервера (независимо от открытой вкладки).
+        // Server lifecycle notifications (independent of the currently open tab).
         var server = AppServices.Get<ServerManager>();
         var settings = AppServices.Get<SettingsService>();
         string Name() => settings.Current.LaunchOptions.SessionName;
 
-        // «Зелёный» = мир загружен и сервер принимает игроков (а не просто стартовал процесс).
+        // "Green" = world loaded and server accepting players (not merely that the process started).
         server.ReadyChanged += ready =>
         {
             if (ready) Notify("ArkManager", $"Server \"{Name()}\" is up and accepting players");
@@ -54,17 +54,17 @@ public partial class App : Application
                 ServerState.Starting => $"Server \"{Name()}\" is starting…",
                 ServerState.Stopped  => $"Server \"{Name()}\" stopped",
                 ServerState.Crashed  => $"Server \"{Name()}\" crashed",
-                _ => null, // Running ловим через ReadyChanged; Stopping — транзитный, пропускаем
+                _ => null, // Running is caught via ReadyChanged; Stopping is transient, skip it
             };
             if (msg != null) Notify("ArkManager", msg);
         };
 
-        // Если прошлый менеджер убили жёстко (Force Quit/SIGKILL/краш) и сервер остался жив —
-        // подхватываем его, чтобы показать Running и дать остановить, а не плодить второй.
+        // If the previous manager was killed hard (Force Quit/SIGKILL/crash) and the server is still alive —
+        // adopt it, so we can show Running and let the user stop it instead of spawning a second one.
         _ = server.AdoptIfRunningAsync();
 
-        // Ctrl+C (SIGINT) и kill (SIGTERM/SIGQUIT) в режиме `dotnet run`: перехватываем,
-        // gracefully гасим сервер и выходим. Без этого процесс сервера переживает менеджер.
+        // Ctrl+C (SIGINT) and kill (SIGTERM/SIGQUIT) under `dotnet run`: intercept,
+        // gracefully shut the server down and exit. Without this the server process outlives the manager.
         RegisterShutdownSignal(PosixSignal.SIGINT, ref _sigInt);
         RegisterShutdownSignal(PosixSignal.SIGTERM, ref _sigTerm);
         RegisterShutdownSignal(PosixSignal.SIGQUIT, ref _sigQuit);
@@ -78,25 +78,25 @@ public partial class App : Application
         {
             slot = PosixSignalRegistration.Create(sig, ctx =>
             {
-                ctx.Cancel = true;          // отменяем дефолтное завершение, чтобы успеть погасить сервер
+                ctx.Cancel = true;          // cancel the default termination so we can shut the server down first
                 StopServerOnExit();
                 Environment.Exit(0);
             });
         }
-        catch { /* платформа без POSIX-сигналов — не критично */ }
+        catch { /* platform without POSIX signals — not critical */ }
     }
 
-    /// <summary>Идемпотентно: один раз gracefully гасит сервер с общим таймаутом (saveworld + kill).</summary>
+    /// <summary>Idempotent: gracefully shuts the server down once with a combined timeout (saveworld + kill).</summary>
     private static void StopServerOnExit()
     {
         if (Interlocked.Exchange(ref _shutdownDone, 1) != 0) return;
         try
         {
             var server = AppServices.Get<ServerManager>();
-            // Блокируемся, но ограниченно — иначе процесс выйдет раньше, чем сервер убит.
+            // Block, but with a cap — otherwise the process exits before the server is killed.
             server.ShutdownAsync().Wait(TimeSpan.FromSeconds(45));
         }
-        catch { /* DI ещё не поднят / уже остановлен — игнор */ }
+        catch { /* DI not yet built / already stopped — ignore */ }
     }
 
     public static void UiThread(Action action)
@@ -105,7 +105,7 @@ public partial class App : Application
         else Dispatcher.UIThread.Post(action);
     }
 
-    /// <summary>Нативное уведомление macOS через osascript. На других платформах — no-op.</summary>
+    /// <summary>Native macOS notification via osascript. No-op on other platforms.</summary>
     public static void Notify(string title, string body)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
@@ -117,15 +117,15 @@ public partial class App : Application
             psi.ArgumentList.Add($"display notification \"{Esc(body)}\" with title \"{Esc(title)}\"");
             Process.Start(psi);
         }
-        catch { /* уведомление — не критично */ }
+        catch { /* notification — not critical */ }
     }
 
     public static void OpenInFinder(string path)
     {
         try
         {
-            // ArgumentList корректно квотит путь с пробелами ("Application Support").
-            // Process.Start("open", path) сплитит по пробелам и ломается.
+            // ArgumentList correctly quotes paths with spaces ("Application Support").
+            // Process.Start("open", path) splits on spaces and breaks.
             var psi = new ProcessStartInfo
             {
                 FileName = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "open"

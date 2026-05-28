@@ -6,9 +6,9 @@ namespace ArkManager.Core.Services.Mods;
 public sealed record ModEntry(string Id, string? DisplayName = null, string? Note = null, string? Url = null);
 
 /// <summary>
-/// Управление модами для ASA. ASA использует свой каталог модов (CurseForge-based, через automanagedmods).
-/// Мы храним список ID в settings.json (по профилю) и зеркалим его в GameUserSettings.ini → ActiveMods.
-/// При запуске сервера тот же список передаётся как -mods=id1,id2,...
+/// Mod management for ASA. ASA uses its own mod catalog (CurseForge-based, via automanagedmods).
+/// We keep the ID list in settings.json (per profile) and mirror it into GameUserSettings.ini → ActiveMods.
+/// At server start the same list is passed as -mods=id1,id2,...
 /// </summary>
 public sealed class ModsService
 {
@@ -103,12 +103,12 @@ public sealed class ModsService
     private void Persist()
     {
         _settings.Save();
-        // Зеркалим в ini, если сервер уже установлен и существует папка конфигов.
+        // Mirror to ini if the server is already installed and a config folder exists.
         try
         {
             if (Directory.Exists(_config.ConfigDir) || File.Exists(_config.GameUserSettingsPath))
                 _config.WriteActiveMods(DefaultProfile.ModIds);
         }
-        catch { /* конфиг может ещё не существовать — это ок */ }
+        catch { /* config may not exist yet — that's fine */ }
     }
 }

@@ -6,9 +6,9 @@ namespace ArkManager.Core.Tests;
 
 public class ServerManagerTests
 {
-    // Перед hard-kill сервер пытается graceful-сейв по RCON (saveworld+DoExit),
-    // иначе ASA теряет прогресс с последнего автосейва. Условие — RCON включён
-    // и задан admin-пароль (без него RCON-auth невозможна).
+    // Before a hard-kill the server attempts a graceful save via RCON (saveworld+DoExit),
+    // otherwise ASA loses progress since the last autosave. Conditions: RCON is enabled
+    // and an admin password is set (without it RCON auth is impossible).
 
     [Fact]
     public void ShouldAttemptGracefulSave_True_WhenRconEnabledAndPasswordSet()
@@ -34,8 +34,8 @@ public class ServerManagerTests
         Assert.False(ServerManager.ShouldAttemptGracefulSave(o));
     }
 
-    // «Зелёный» индикатор готовности = строка лога, которую ASA печатает, когда мир загружен
-    // и сервер начал принимать подключения. До неё процесс жив, но это ещё «жёлтая» загрузка.
+    // The "green" readiness indicator = the log line ASA prints once the world is loaded
+    // and the server starts accepting connections. Before it the process is alive but still in "yellow" loading.
     [Theory]
     [InlineData("[2026.05.26-22.43.10:834][232]Server has completed startup and is now advertising for join. (2.07GB Mem)", true)]
     [InlineData("Server has completed startup and is now ADVERTISING FOR JOIN.", true)]

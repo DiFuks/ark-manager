@@ -5,12 +5,12 @@ using Avalonia.Platform.Storage;
 namespace ArkManager.App.Services;
 
 /// <summary>
-/// Тонкая обёртка над Avalonia StorageProvider — чтобы вьюмодели могли
-/// вызывать file/folder picker без прямой зависимости от Avalonia.Controls.
+/// Thin wrapper over Avalonia StorageProvider so view models can call the
+/// file/folder picker without a direct dependency on Avalonia.Controls.
 /// </summary>
 public static class Browse
 {
-    /// <summary>Главное окно. Выставляется в App.OnFrameworkInitializationCompleted.</summary>
+    /// <summary>The main window. Set in App.OnFrameworkInitializationCompleted.</summary>
     public static TopLevel? Owner { get; set; }
 
     public static async Task<string?> PickFolderAsync(string title, string? startPath = null)

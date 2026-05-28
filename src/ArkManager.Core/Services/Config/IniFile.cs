@@ -3,12 +3,12 @@ using System.Text;
 namespace ArkManager.Core.Services.Config;
 
 /// <summary>
-/// Простой парсер ini-файлов в стиле UE/ARK.
-/// Особенности ARK:
-///  - в [/Script/ShooterGame.ShooterGameMode] и [ServerSettings] часто встречаются повторяющиеся ключи
-///    (например, OverrideEngramEntries=) — нужно сохранять как многозначные.
-///  - комментарии (; ... и # ...) и пустые строки сохраняем для round-trip read-modify-write.
-///  - регистр ключей сохраняем как есть; lookup case-insensitive.
+/// Simple UE/ARK-style ini parser.
+/// ARK specifics:
+///  - in [/Script/ShooterGame.ShooterGameMode] and [ServerSettings] repeated keys are common
+///    (e.g. OverrideEngramEntries=) — must be preserved as multi-valued.
+///  - comments (; ... and # ...) and blank lines are preserved for round-trip read-modify-write.
+///  - key casing is preserved as-is; lookup is case-insensitive.
 /// </summary>
 public sealed class IniFile
 {

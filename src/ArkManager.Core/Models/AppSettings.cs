@@ -4,27 +4,27 @@ namespace ArkManager.Core.Models;
 
 public sealed class AppSettings
 {
-    /// <summary>Где лежит установленный ASA Dedicated Server (директория с ArkAscendedServer.exe).</summary>
+    /// <summary>Where the installed ASA Dedicated Server lives (directory containing ArkAscendedServer.exe).</summary>
     public string? ServerInstallPath { get; set; }
 
-    /// <summary>Путь к steamcmd-бинарю. Если null — пользоваться встроенным, скачанным в DataDir/steamcmd.</summary>
+    /// <summary>Path to the steamcmd binary. If null — use the bundled one downloaded to DataDir/steamcmd.</summary>
     public string? SteamCmdPath { get; set; }
 
-    /// <summary>Каталог для backup-архивов.</summary>
+    /// <summary>Directory for backup archives.</summary>
     public string? BackupsDirectory { get; set; }
 
-    /// <summary>Сколько последних бэкапов хранить (0 = без ротации).</summary>
+    /// <summary>How many most recent backups to keep (0 = no rotation).</summary>
     public int BackupRotationKeep { get; set; } = 10;
 
-    /// <summary>Аргументы запуска. Map+опции попадают в начало; -mods / -NoBattlEye добавляются автоматически.</summary>
+    /// <summary>Launch arguments. Map+options go first; -mods / -NoBattlEye are appended automatically.</summary>
     public ServerLaunchOptions LaunchOptions { get; set; } = new();
 
-    /// <summary>Список профилей серверов (мульти-инстанс) — для будущего расширения. Пока используется только Default.</summary>
+    /// <summary>List of server profiles (multi-instance) — for future expansion. Only Default is used for now.</summary>
     [JsonPropertyName("profiles")]
     public List<ServerProfile> Profiles { get; set; } = new();
 
-    /// <summary>Автобэкап раз в N минут (0 = выкл). Ротация — через BackupRotationKeep.</summary>
-    /// <remarks>Тик всегда пропускается при не-Running сервере: idle-снимки бессмысленны.</remarks>
+    /// <summary>Auto-backup every N minutes (0 = off). Rotation — via BackupRotationKeep.</summary>
+    /// <remarks>Tick is always skipped when the server is not Running: idle snapshots are pointless.</remarks>
     public int AutoBackupIntervalMinutes { get; set; } = 0;
 }
 
@@ -42,13 +42,13 @@ public sealed class ServerLaunchOptions
     public int MaxPlayers { get; set; } = 70;
     public bool NoBattlEye { get; set; } = true;
     public bool AutoManagedMods { get; set; } = true;
-    /// <summary>Cluster ID — серверы с одинаковым ID образуют кластер (трансфер существ/предметов).</summary>
+    /// <summary>Cluster ID — servers sharing the same ID form a cluster (creature/item transfers).</summary>
     public string? ClusterId { get; set; }
-    /// <summary>Папка для кластер-данных. Если задана — добавляется -ClusterDirOverride=...</summary>
+    /// <summary>Directory for cluster data. If set — appends -ClusterDirOverride=...</summary>
     public string? ClusterDirOverride { get; set; }
-    /// <summary>Дополнительные «голые» CLI-флаги, например "-ForceAllowCaveFlyers -ServerAllowAnsel".</summary>
+    /// <summary>Additional "bare" CLI flags, e.g. "-ForceAllowCaveFlyers -ServerAllowAnsel".</summary>
     public string ExtraCommandLineArgs { get; set; } = "";
-    /// <summary>Дополнительные QueryString-параметры после Map, разделённые ?.</summary>
+    /// <summary>Additional QueryString parameters after Map, separated by ?.</summary>
     public string ExtraQueryString { get; set; } = "";
 }
 

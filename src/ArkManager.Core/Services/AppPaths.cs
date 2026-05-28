@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 namespace ArkManager.Core.Services;
 
 /// <summary>
-/// Все пути приложения. По правилам пользователя: user-wide state живёт в одном vendor-каталоге.
+/// All application paths. Per user rules: user-wide state lives in a single vendor directory.
 /// macOS: ~/Library/Application Support/ArkManager. Linux: $XDG_DATA_HOME/ArkManager.
-/// Windows: %LOCALAPPDATA%/ArkManager (а не Roaming — у нас 25GB ASA-сервера).
+/// Windows: %LOCALAPPDATA%/ArkManager (not Roaming — we have a 25GB ASA server).
 /// </summary>
 public sealed class AppPaths
 {
@@ -32,8 +32,8 @@ public sealed class AppPaths
         Directory.CreateDirectory(SteamCmdDir);
         Directory.CreateDirectory(DefaultBackupsDir);
 
-        // Legacy cleanup: предыдущие версии держали wineprefix тут.
-        // Embedded wine — это «server runtime»; имени wine в UI больше нет.
+        // Legacy cleanup: previous versions kept the wineprefix here.
+        // Embedded wine is now the "server runtime"; the wine name is no longer in the UI.
         var legacy = Path.Combine(DataDir, "wineprefix");
         if (Directory.Exists(legacy))
         {

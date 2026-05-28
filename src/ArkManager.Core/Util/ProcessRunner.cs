@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace ArkManager.Core.Util;
 
 /// <summary>
-/// Лёгкий wrapper над Process с потоковым stdout/stderr-логом и удобными утилитами.
+/// Lightweight wrapper around Process with streaming stdout/stderr log and convenience utilities.
 /// </summary>
 public sealed class ProcessRunner
 {
@@ -39,7 +39,7 @@ public sealed class ProcessRunner
     }
 
     /// <summary>
-    /// Запуск с потоковым отдаванием каждой строки в коллбек.
+    /// Runs the process, streaming each line to a callback.
     /// </summary>
     public static async Task<int> RunStreamingAsync(
         string fileName,

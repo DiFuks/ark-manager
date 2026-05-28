@@ -11,8 +11,8 @@ namespace ArkManager.Core.Services;
 public enum ServerState { Stopped, Starting, Running, Stopping, Crashed }
 
 /// <summary>
-/// Координатор состояния запущенного сервера: PID, лог, переходы.
-/// Слой UI подписывается на StateChanged / LogLine.
+/// Coordinates the running server's state: PID, log, transitions.
+/// The UI layer subscribes to StateChanged / LogLine.
 /// </summary>
 public sealed class ServerManager
 {
@@ -31,8 +31,8 @@ public sealed class ServerManager
     public DateTime? StartedAt => _running?.StartedAt;
 
     /// <summary>
-    /// Сервер не просто запущен (процесс жив), а закончил загрузку мира и принимает подключения.
-    /// До этого State=Running, но это ещё «жёлтая» фаза. Определяется по строке лога.
+    /// Server is not just running (process alive) but has finished loading the world and accepts connections.
+    /// Before that State=Running, but it's still the "yellow" phase. Detected from a log line.
     /// </summary>
     public bool IsReady { get; private set; }
 
@@ -64,13 +64,13 @@ public sealed class ServerManager
 
         try
         {
-            // Синхронизируем GameUserSettings.ini c VM перед запуском.
-            // Пароли, RCONEnabled/RCONPort, SessionName, Port/QueryPort, MaxPlayers
-            // живут ТОЛЬКО в ini (см. CLAUDE.md: в URL их класть нельзя — ASA-парсер
-            // склеивает хвост в значение). Без этого первый запуск после установки
-            // подхватит ASA-defaults — RCON окажется выключен, даже если в settings.json
-            // RconEnabled=true. Save в Config-табе делает то же самое + ещё JSON-обновление,
-            // мы здесь лишь гарантируем что ini и settings.json не разъехались.
+            // Sync GameUserSettings.ini with the VM before starting.
+            // Passwords, RCONEnabled/RCONPort, SessionName, Port/QueryPort, MaxPlayers
+            // live ONLY in ini (see CLAUDE.md: they must not go into the URL — the ASA parser
+            // glues the tail into the value). Without this the first launch after install
+            // would pick up ASA defaults — RCON ends up disabled, even if settings.json says
+            // RconEnabled=true. Save in the Config tab does the same plus a JSON update;
+            // here we only make sure ini and settings.json haven't drifted apart.
             _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
@@ -85,8 +85,8 @@ public sealed class ServerManager
                     ServerState target;
                     lock (_lock)
                     {
-                        // При намеренной остановке (включая хард-кил fallback, дающий
-                        // ненулевой код) это НЕ краш — состояние Stopped.
+                        // On an intentional stop (including the hard-kill fallback which yields
+                        // a non-zero code) this is NOT a crash — state is Stopped.
                         target = (code == 0 || _stopRequested) ? ServerState.Stopped : ServerState.Crashed;
                         _running = null;
                     }
@@ -119,14 +119,14 @@ public sealed class ServerManager
 
         try
         {
-            // Graceful: сначала просим сервер сохранить мир и выйти через RCON.
-            // Без этого hard-kill (ниже и в ProcessRunner по ct) теряет весь прогресс
-            // с последнего автосейва — ASA флашит мир на диск только по saveworld/выходу.
+            // Graceful: first ask the server to save the world and exit via RCON.
+            // Without this the hard-kill (below and in ProcessRunner via ct) loses all progress
+            // since the last auto-save — ASA flushes the world to disk only on saveworld/exit.
             await TryGracefulSaveAndExitAsync(ct);
 
-            // Ждём, пока сервер сам завершится после DoExit (у ASA graceful-выход
-            // занимает ~20с). Не дождались за 60с — добиваем хард-килом (мир уже
-            // сохранён через saveworld выше, потери данных нет).
+            // Wait for the server to exit on its own after DoExit (ASA's graceful exit
+            // takes ~20s). If it doesn't exit within 60s — finish it with a hard-kill (the
+            // world is already saved by saveworld above, no data loss).
             if (pid is int p)
             {
                 if (!await WaitForExitAsync(p, TimeSpan.FromSeconds(60), ct))
@@ -144,9 +144,9 @@ public sealed class ServerManager
     }
 
     /// <summary>
-    /// Остановка при выходе менеджера (Ctrl+C / закрытие окна / SIGTERM). Делает best-effort
-    /// graceful-сейв по RCON, затем ГАРАНТИРОВАННО убивает процесс — чтобы не оставить
-    /// осиротевший сервер, который менеджер потом не видит. Блокируемо-ожидаемая короткая операция.
+    /// Shutdown on manager exit (Ctrl+C / window close / SIGTERM). Does a best-effort
+    /// graceful save via RCON, then GUARANTEES the process is killed — so we don't leave
+    /// an orphaned server the manager wouldn't see afterwards. A short, blocking-awaitable operation.
     /// </summary>
     public async Task ShutdownAsync()
     {
@@ -159,14 +159,14 @@ public sealed class ServerManager
         }
         SetState(ServerState.Stopping);
 
-        // Сохранить мир (saveworld + DoExit). Внутри свой таймаут, ошибки не критичны.
+        // Save the world (saveworld + DoExit). Has its own timeout inside; errors aren't critical.
         await TryGracefulSaveAndExitAsync(CancellationToken.None);
 
-        // Немного ждём добровольного выхода после DoExit, потом добиваем — kill обязателен.
+        // Wait briefly for a voluntary exit after DoExit, then finish it — kill is mandatory.
         if (pid is int p)
         {
             await WaitForExitAsync(p, TimeSpan.FromSeconds(10), CancellationToken.None);
-            try { await _launcher.StopAsync(p); } catch { /* уже мёртв */ }
+            try { await _launcher.StopAsync(p); } catch { /* already dead */ }
         }
         _cts?.Cancel();
 
@@ -176,9 +176,9 @@ public sealed class ServerManager
     }
 
     /// <summary>
-    /// «Усыновление»: если менеджер был убит (Force Quit / SIGKILL / краш) и оставил
-    /// работающий ArkAscendedServer.exe — подхватываем его на старте, чтобы показать Running,
-    /// дать Stop по RCON и не дать запустить второй сервер. Зовётся один раз при запуске.
+    /// "Adoption": if the manager was killed (Force Quit / SIGKILL / crash) and left a
+    /// running ArkAscendedServer.exe behind — we pick it up on startup to show Running,
+    /// allow Stop via RCON, and prevent launching a second server. Called once at startup.
     /// </summary>
     public async Task AdoptIfRunningAsync()
     {
@@ -195,23 +195,23 @@ public sealed class ServerManager
                 new[] { "-axww", "-o", "pid=,etime=,command=" });
             found = ServerDiscovery.Find(ps.StdOut, exe);
         }
-        catch { return; } // не macOS / ps недоступен
+        catch { return; } // not macOS / ps unavailable
 
         if (found is not DiscoveredServer d) return;
 
         lock (_lock)
         {
-            if (State != ServerState.Stopped) return; // успели запустить сами
+            if (State != ServerState.Stopped) return; // we started one ourselves in the meantime
             _running = new RunningServer(d.Pid, DateTime.UtcNow - d.Uptime);
             _stopRequested = false;
         }
-        SetReady(true); // уже работает и принимает игроков
+        SetReady(true); // already running and accepting players
         SetState(ServerState.Running);
         PushLog($"[adopted running server pid={d.Pid}, up {d.Uptime:hh\\:mm\\:ss}]");
         StartAdoptedMonitor(d.Pid);
     }
 
-    /// <summary>Лога у усыновлённого процесса нет (stdout чужой) — поллим, жив ли он.</summary>
+    /// <summary>No log for an adopted process (stdout belongs to someone else) — poll whether it's alive.</summary>
     private void StartAdoptedMonitor(int pid)
     {
         _ = Task.Run(async () =>
@@ -219,7 +219,7 @@ public sealed class ServerManager
             while (true)
             {
                 await Task.Delay(3000);
-                lock (_lock) { if (_running?.Pid != pid) return; } // остановили сами / заменили
+                lock (_lock) { if (_running?.Pid != pid) return; } // we stopped it / replaced it
                 if (await _launcher.IsRunningAsync(pid)) continue;
 
                 bool changed;
@@ -237,13 +237,13 @@ public sealed class ServerManager
         });
     }
 
-    /// <summary>Решает, имеет ли смысл пытаться graceful-сейв по RCON.</summary>
+    /// <summary>Decides whether it makes sense to attempt a graceful save via RCON.</summary>
     internal static bool ShouldAttemptGracefulSave(ServerLaunchOptions o)
         => o.RconEnabled && !string.IsNullOrWhiteSpace(o.AdminPassword);
 
     /// <summary>
-    /// saveworld (ждём флаш на диск) + DoExit через RCON. Любая ошибка —
-    /// просто логируется: hard-kill в StopAsync остаётся гарантированным fallback'ом.
+    /// saveworld (wait for disk flush) + DoExit via RCON. Any error is just
+    /// logged: the hard-kill in StopAsync remains a guaranteed fallback.
     /// </summary>
     private async Task TryGracefulSaveAndExitAsync(CancellationToken ct)
     {
@@ -267,10 +267,10 @@ public sealed class ServerManager
             var resp = await rcon.SendAsync("saveworld", timeout.Token);
             PushLog("[stop] " + (string.IsNullOrWhiteSpace(resp) ? "(saveworld ok)" : resp.Trim()));
 
-            // DoExit — best-effort: сервер при выходе часто закрывает RCON-соединение,
-            // не присылая ответ. Это НЕ ошибка — мир уже сохранён выше через saveworld.
+            // DoExit — best-effort: while exiting the server often closes the RCON connection
+            // without sending a response. That's NOT an error — the world is already saved by saveworld above.
             try { await rcon.SendAsync("DoExit", timeout.Token); }
-            catch { /* соединение закрыто в процессе выхода — ожидаемо */ }
+            catch { /* connection closed during exit — expected */ }
             PushLog("[stop] DoExit sent, waiting for graceful exit...");
         }
         catch (Exception ex)
@@ -279,7 +279,7 @@ public sealed class ServerManager
         }
     }
 
-    /// <summary>Поллит, пока процесс не завершится сам. true — завершился в срок.</summary>
+    /// <summary>Polls until the process exits on its own. true — exited within the deadline.</summary>
     private async Task<bool> WaitForExitAsync(int pid, TimeSpan timeout, CancellationToken ct)
     {
         var deadline = DateTime.UtcNow + timeout;
@@ -294,7 +294,7 @@ public sealed class ServerManager
     private void PushLog(string line)
     {
         _ringLog.Enqueue(line);
-        // Кольцо ~5000 строк
+        // Ring buffer ~5000 lines
         while (_ringLog.Count > 5000 && _ringLog.TryDequeue(out _)) { }
         if (!IsReady && IsServerReadyLine(line)) SetReady(true);
         LogLine?.Invoke(line);
@@ -308,9 +308,9 @@ public sealed class ServerManager
     }
 
     /// <summary>
-    /// Меняет состояние и шлёт StateChanged ТОЛЬКО при реальной смене. Без этого Stopped
-    /// прилетал дважды (из onExit процесса и из finally StopAsync) → дубль уведомлений.
-    /// Событие вызываем вне lock, чтобы обработчик не мог поймать дедлок/реентранси.
+    /// Changes state and fires StateChanged ONLY on an actual change. Without this Stopped
+    /// arrived twice (from the process onExit and from the StopAsync finally) → duplicate notifications.
+    /// The event is invoked outside the lock so the handler can't hit a deadlock/reentrancy.
     /// </summary>
     private void SetState(ServerState s)
     {
@@ -322,7 +322,7 @@ public sealed class ServerManager
         StateChanged?.Invoke(s);
     }
 
-    /// <summary>Строка лога, означающая, что мир загружен и сервер принимает подключения.</summary>
+    /// <summary>Log line meaning the world has loaded and the server is accepting connections.</summary>
     internal static bool IsServerReadyLine(string line)
         => line.Contains("advertising for join", StringComparison.OrdinalIgnoreCase);
 }

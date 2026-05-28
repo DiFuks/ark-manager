@@ -8,7 +8,7 @@ public class TextSearchTests
     [Fact]
     public void NextMatch_FindsFromGivenIndex()
     {
-        // "ab" встречается на 0 и 4; от индекса 1 ищем следующее → 4.
+        // "ab" appears at 0 and 4; searching for next from index 1 → 4.
         Assert.Equal(4, TextSearch.NextMatch("abxxabxx", "ab", 1));
     }
 
@@ -21,7 +21,7 @@ public class TextSearchTests
     [Fact]
     public void NextMatch_WrapsAroundWhenNothingAfter()
     {
-        // от индекса 5 после последнего "ab" совпадений нет → заворот к 0.
+        // from index 5 there are no matches after the last "ab" → wraps back to 0.
         Assert.Equal(0, TextSearch.NextMatch("abxxab", "ab", 5));
     }
 
@@ -40,7 +40,7 @@ public class TextSearchTests
     [Fact]
     public void NextMatch_ClampsOutOfRangeIndex()
     {
-        // fromIndex за пределами длины → заворачиваемся и находим с начала.
+        // fromIndex past the end of the string → wrap and find from the beginning.
         Assert.Equal(0, TextSearch.NextMatch("abc", "abc", 999));
     }
 }

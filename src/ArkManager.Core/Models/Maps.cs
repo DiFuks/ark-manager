@@ -1,8 +1,8 @@
 namespace ArkManager.Core.Models;
 
 /// <summary>
-/// Известные ASA-карты. Список можно дополнять; в UI всегда есть «Custom»
-/// (если введена не из списка — отображается как Custom, значение Map берётся как есть).
+/// Known ASA maps. The list can be extended; the UI always has a "Custom" entry
+/// (if the value isn't in the list it shows as Custom and Map is taken as-is).
 /// </summary>
 public static class Maps
 {

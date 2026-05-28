@@ -1,13 +1,13 @@
 namespace ArkManager.Core.Util;
 
-/// <summary>Поиск подстроки для find-next в текстовых редакторах (raw ini).</summary>
+/// <summary>Substring search for find-next in text editors (raw ini).</summary>
 public static class TextSearch
 {
     /// <summary>
-    /// Индекс следующего вхождения <paramref name="term"/> в <paramref name="text"/>,
-    /// начиная с <paramref name="fromIndex"/>, без учёта регистра. Если после fromIndex
-    /// совпадений нет — заворачивается к началу. Возвращает -1, если term пуст или
-    /// не встречается вовсе.
+    /// Index of the next occurrence of <paramref name="term"/> in <paramref name="text"/>,
+    /// starting at <paramref name="fromIndex"/>, case-insensitive. If there are no matches
+    /// after fromIndex, wraps to the beginning. Returns -1 if term is empty or does not
+    /// occur at all.
     /// </summary>
     public static int NextMatch(string text, string term, int fromIndex)
     {
@@ -17,7 +17,7 @@ public static class TextSearch
         var idx = text.IndexOf(term, start, StringComparison.OrdinalIgnoreCase);
         if (idx >= 0) return idx;
 
-        // Заворот к началу.
+        // Wrap to the beginning.
         return text.IndexOf(term, 0, StringComparison.OrdinalIgnoreCase);
     }
 }

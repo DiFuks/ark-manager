@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Плоская кнопка-спиннер: маленький прозрачный чип, hover = мягкий фон, шеврон-глиф. -->
+    <!-- Flat spinner button: a small transparent chip, hover = soft background, chevron glyph. -->
     <ControlTheme x:Key="SpinnerRepeatButton" TargetType="RepeatButton">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
@@ -19,10 +19,10 @@
         </Style>
     </ControlTheme>
 
-    <!-- Наш ButtonSpinner: рисует скруглённую коробку теми же токенами, что у текст-полей
-         (Panel2 + Line2 + radius 8), клипает по дуге (квадратные кнопки не стёсывают угол),
-         плоские line-шевроны. Назначается ЯВНО по ключу из ControlTheme NumericUpDown ниже —
-         implicit `{x:Type ButtonSpinner}` шаблон NumericUpDown перебивает своим Theme. -->
+    <!-- Our ButtonSpinner: draws a rounded box using the same tokens as text fields
+         (Panel2 + Line2 + radius 8), clips along the arc (square buttons don't chip off the corner),
+         flat line chevrons. Assigned EXPLICITLY by key from the NumericUpDown ControlTheme below —
+         an implicit `{x:Type ButtonSpinner}` template is overridden by NumericUpDown's own Theme. -->
     <ControlTheme x:Key="AppButtonSpinner" TargetType="ButtonSpinner">
         <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Line2Brush}"/>
@@ -63,15 +63,15 @@
         </Setter>
     </ControlTheme>
 
-    <!-- Ретемплейт NumericUpDown: повторяем стандартную структуру (PART_Spinner + PART_TextBox),
-         но ЯВНО вешаем наш AppButtonSpinner на спиннер. Внутренний TextBox прозрачный/без рамки —
-         «коробку» рисует ButtonSpinner. Логику инкремента/редактирования NumericUpDown вешает
-         на части по имени, так что поведение сохраняется. -->
+    <!-- NumericUpDown retemplate: we replicate the standard structure (PART_Spinner + PART_TextBox)
+         but EXPLICITLY hang our AppButtonSpinner on the spinner. The inner TextBox is transparent /
+         borderless — the "box" is drawn by ButtonSpinner. NumericUpDown wires increment/edit logic
+         to the parts by name, so behaviour is preserved. -->
     <ControlTheme x:Key="{x:Type NumericUpDown}" TargetType="NumericUpDown">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <!-- Целочисленный формат: все наши числовые поля — целые (порты, игроки, часы, минуты).
-             Без этого спиннер показывал "7777,0" (лишний десятичный знак + локальная запятая). -->
+        <!-- Integer format: all our numeric fields are integers (ports, players, hours, minutes).
+             Without this the spinner showed "7777,0" (extra decimal + locale comma). -->
         <Setter Property="FormatString" Value="0"/>
         <Setter Property="Template">
             <ControlTemplate>

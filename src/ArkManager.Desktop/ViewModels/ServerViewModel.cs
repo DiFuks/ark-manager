@@ -26,15 +26,15 @@ public partial class ServerViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private string _state = "Stopped";
 
-    // Сервер закончил загрузку мира и принимает подключения (ARK-аналог зелёного кружка).
+    // Server finished loading the world and is accepting connections (the ARK "green dot" equivalent).
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusBrush))]
     [NotifyPropertyChangedFor(nameof(StatusText))]
     private bool _ready;
 
-    // Кружок статуса как в окне ARK: серый stopped → жёлтый загрузка → зелёный готов → красный краш.
-    // Цвета берём из дизайн-токенов (Themes/Tokens.axaml), а не из Brushes.*, чтобы оттенок
-    // совпадал с остальным OK/Warn/Danger в UI.
+    // Status dot like in the ARK window: grey stopped → yellow loading → green ready → red crash.
+    // Colours come from design tokens (Themes/Tokens.axaml) rather than Brushes.*, so the hue
+    // matches the rest of the OK/Warn/Danger across the UI.
     public IBrush StatusBrush => State switch
     {
         "Running"  => Ready ? Tok("OkBrush") : Tok("WarnBrush"),
@@ -52,7 +52,7 @@ public partial class ServerViewModel : ViewModelBase
         return Brushes.Gray;
     }
 
-    // Пока процесс жив, но мир ещё грузится — честнее показать «Loading…», а не «Running».
+    // While the process is alive but the world is still loading — it's more honest to show "Loading…" than "Running".
     public string StatusText => State == "Running" && !Ready ? "Loading…" : State;
 
     [ObservableProperty] private int? _pid;
@@ -60,10 +60,10 @@ public partial class ServerViewModel : ViewModelBase
     [ObservableProperty] private string _filter = "";
     [ObservableProperty] private bool _autoScroll = true;
 
-    // PlayersOnline-как-число валидно только когда сервер реально работает: «0 онлайн» — это
-    // конкретная информация, «0» при остановленном сервере — мусор. PlayersDisplay скрывает
-    // ноль за em-dash в любом состоянии кроме Running. PlayersDetail заодно скрывается тоже
-    // (был случай: остановили сервер с 5 игроками — стейл-имена продолжали висеть под нулём).
+    // PlayersOnline-as-a-number is only meaningful while the server is actually running: "0 online"
+    // is concrete info, but "0" with the server stopped is noise. PlayersDisplay hides the zero
+    // behind an em-dash in any state other than Running. PlayersDetail is hidden too
+    // (we hit a case: server stopped with 5 players — stale names kept hanging under the zero).
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayersDisplay))]
     private int _playersOnline;
@@ -94,8 +94,8 @@ public partial class ServerViewModel : ViewModelBase
         foreach (var l in server.Snapshot()) AppendLine(l);
         server.StateChanged += s => App.UiThread(() => { State = s.ToString(); Pid = server.Pid; });
         server.ReadyChanged += r => App.UiThread(() => Ready = r);
-        // Инициализируемся из текущего состояния — на случай, что сервер уже идёт
-        // (усыновлён при старте, либо таб открыт во время работы).
+        // Initialise from the current state — in case the server is already running
+        // (adopted at startup, or the tab was opened while it was running).
         State = server.State.ToString();
         Pid = server.Pid;
         Ready = server.IsReady;
@@ -120,14 +120,14 @@ public partial class ServerViewModel : ViewModelBase
             {
                 await Task.Delay(1000);
                 App.UiThread(UpdateUptime);
-                if (tick++ % 2 == 0) await SampleResourcesAsync(); // CPU/RAM раз в ~2с
+                if (tick++ % 2 == 0) await SampleResourcesAsync(); // CPU/RAM roughly every 2s
             }
         });
     }
 
     /// <summary>
-    /// CPU/RAM сервера = сумма по всему дереву процессов от PID (под wine это exe + wineserver + хелперы).
-    /// CPU нормализуем на число ядер → «процент загрузки ЦП» 0..100. RAM — % от физической + ГБ.
+    /// Server CPU/RAM = sum across the whole process tree rooted at PID (under wine that's exe + wineserver + helpers).
+    /// CPU is normalised by core count → "CPU load percent" 0..100. RAM — % of physical + GB.
     /// </summary>
     private async Task SampleResourcesAsync()
     {
@@ -140,14 +140,14 @@ public partial class ServerViewModel : ViewModelBase
         {
             var lcC = new Dictionary<string, string> { ["LC_ALL"] = "C" };
 
-            // CPU — сумма %cpu по дереву процессов (ps; %cpu с точкой благодаря LC_ALL=C).
+            // CPU — sum of %cpu over the process tree (ps; %cpu uses a dot thanks to LC_ALL=C).
             var ps = await ProcessRunner.RunCaptureAsync("/bin/ps",
                 new[] { "-axo", "pid=,ppid=,rss=,%cpu=" }, env: lcC);
             var st = ProcessTreeStats.Sum(ps.StdOut, pid);
             var cpu = st.CpuPercent / Math.Max(1, Environment.ProcessorCount);
 
-            // RAM — phys_footprint (как Activity Monitor): под wine RSS на порядок занижен,
-            // т.к. macOS компрессит память. Фолбэк на RSS, если footprint недоступен.
+            // RAM — phys_footprint (like Activity Monitor): under wine RSS is understated by an order
+            // of magnitude because macOS compresses memory. Fall back to RSS if footprint is unavailable.
             long memBytes = st.RssKb * 1024;
             try
             {
@@ -155,7 +155,7 @@ public partial class ServerViewModel : ViewModelBase
                     new[] { pid.ToString() }, env: lcC);
                 if (MacMemory.PhysFootprintBytes(fp.StdOut) is long b && b > 0) memBytes = b;
             }
-            catch { /* footprint недоступен — остаётся RSS-фолбэк */ }
+            catch { /* footprint unavailable — RSS fallback remains */ }
 
             _totalRamGb ??= await ReadTotalRamGbAsync();
             var gb = memBytes / 1024.0 / 1024.0 / 1024.0;
@@ -168,7 +168,7 @@ public partial class ServerViewModel : ViewModelBase
                     : $"{gb:0.0} GB";
             });
         }
-        catch { /* ps недоступен — не критично */ }
+        catch { /* ps unavailable — not critical */ }
     }
 
     private static async Task<double?> ReadTotalRamGbAsync()
@@ -179,7 +179,7 @@ public partial class ServerViewModel : ViewModelBase
             if (long.TryParse(r.StdOut.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var bytes))
                 return bytes / 1024.0 / 1024.0 / 1024.0;
         }
-        catch { /* не macOS / нет sysctl — покажем только ГБ */ }
+        catch { /* not macOS / no sysctl — show GB only */ }
         return null;
     }
 

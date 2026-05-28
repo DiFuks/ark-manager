@@ -37,7 +37,7 @@ public class IniFileTests
         var ini = IniFile.Parse("[A]\nfoo=1\nfoo=2\nfoo=3\n");
         var a = ini.TryGetSection("A")!;
         Assert.Equal(new[] { "1", "2", "3" }, a.GetAll("foo"));
-        // GetSingle берёт последнее объявление.
+        // GetSingle takes the last declaration.
         Assert.Equal("3", a.GetSingle("foo"));
     }
 

@@ -24,11 +24,11 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedChanged(NavItem value)
     {
         OnPropertyChanged(nameof(CurrentPage));
-        // На Mods-табе нет кнопки «Resolve names» — резолвим имена сами при открытии.
-        // Уже закэшированные ID ModsService пропустит, лишних запросов не будет.
+        // The Mods tab has no "Resolve names" button — resolve them ourselves on open.
+        // ModsService will skip already-cached IDs, no extra requests will be made.
         if (value.ViewModel is ModsViewModel mods) _ = mods.AutoResolveNamesAsync();
-        // На Config-табе ASA может дописать/перезаписать ini в фоне (старт сервера, ручные правки).
-        // Освежаем raw-буферы и Basic-поля из ini при открытии — без нужды жать Reload.
+        // On the Config tab ASA may append to / overwrite the ini in the background (server start, manual edits).
+        // Refresh the raw buffers and Basic fields from ini on open — no need to press Reload.
         if (value.ViewModel is ConfigViewModel config) config.RefreshFromDisk();
     }
 
@@ -51,14 +51,14 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("Backups",  G("M4 4 H20 V8 H4 Z M5 9 H19 V20 H5 Z M9 12 H15 V14 H9 Z"), backups),
         };
 
-        // Пока сервер не установлен — в nav только Install (всё остальное бессмысленно
-        // и провоцирует юзера сохранять/запускать в пустоту). Как только InstallViewModel
-        // выставит IsServerInstalled=true (после steamcmd-инсталла или при загрузке готового
-        // каталога) — нав раскрывается до полного, тек. таб сохраняется по возможности.
+        // While the server isn't installed — the nav shows only Install (everything else is
+        // pointless and lures the user into saving/launching into nothing). As soon as InstallViewModel
+        // flips IsServerInstalled=true (after a steamcmd install or on loading an existing
+        // directory) — the nav expands to the full set, preserving the current tab where possible.
         _install.PropertyChanged += OnInstallPropertyChanged;
         RecomputeNav();
 
-        // Deep-link на стартовый таб через env (для тестов/скриншотов; по умолчанию выключено).
+        // Deep-link to a start tab via env (for tests/screenshots; off by default).
         var startTab = Environment.GetEnvironmentVariable("ARKMANAGER_START_TAB");
         if (!string.IsNullOrWhiteSpace(startTab))
         {
@@ -75,30 +75,30 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void RecomputeNav()
     {
-        // In-place мутация коллекции: Clear() слал бы CollectionChanged(Reset),
-        // ListBox терял бы визуальное выделение, а CommunityToolkit на reference-equal
-        // переустановке Selected не фаерит PropertyChanged → выделение бы не вернулось.
+        // In-place collection mutation: Clear() would emit CollectionChanged(Reset),
+        // the ListBox would lose its visual selection, and CommunityToolkit doesn't fire
+        // PropertyChanged on a reference-equal Selected reassignment → selection would not return.
         var target = _allItems
             .Where(i => _install.IsServerInstalled || i.Title == "Install")
             .ToList();
 
-        // Снести то, чего не должно быть, по одному (Remove → CollectionChanged(Remove)).
+        // Drop entries that shouldn't be there one by one (Remove → CollectionChanged(Remove)).
         for (var i = NavItems.Count - 1; i >= 0; i--)
             if (!target.Contains(NavItems[i])) NavItems.RemoveAt(i);
 
-        // Вставить недостающее в правильную позицию.
+        // Insert missing entries at the correct position.
         for (var i = 0; i < target.Count; i++)
         {
             if (i >= NavItems.Count) NavItems.Add(target[i]);
             else if (!ReferenceEquals(NavItems[i], target[i])) NavItems.Insert(i, target[i]);
         }
 
-        // Если предыдущий Selected исчез из nav — откатываемся на первый видимый.
+        // If the previous Selected has disappeared from the nav — fall back to the first visible one.
         if (Selected == null || !NavItems.Contains(Selected))
             Selected = NavItems[0];
     }
 
-    // Параметрless конструктор нужен только для XAML-дизайнера.
+    // Parameterless constructor exists solely for the XAML designer.
     public MainWindowViewModel() : this(
         new InstallViewModel(),
         new ConfigViewModel(),

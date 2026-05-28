@@ -1,11 +1,11 @@
 namespace ArkManager.Core.Services.Backups;
 
 /// <summary>
-/// Фоновый воркер автоматических бэкапов с настраиваемым интервалом.
-/// Подписывается на SettingsService.Changed — при смене интервала
-/// текущий sleep немедленно прерывается, новый интервал применяется сразу.
-/// При остановленном сервере тик пропускается всегда: бэкап имеет смысл
-/// только когда мир активно меняется (Saved/* не растёт у idle-сервера).
+/// Background worker for automatic backups with a configurable interval.
+/// Subscribes to SettingsService.Changed — when the interval changes
+/// the current sleep is cancelled immediately and the new interval applies at once.
+/// When the server isn't running the tick is always skipped: backups only make sense
+/// when the world is actively changing (Saved/* doesn't grow on an idle server).
 /// </summary>
 public sealed class AutoBackupWorker : IDisposable
 {
@@ -14,7 +14,7 @@ public sealed class AutoBackupWorker : IDisposable
     private readonly BackupService _backups;
     private readonly CancellationTokenSource _shutdown = new();
 
-    // Кенселим только sleep, не всю работу. На каждой итерации создаём новый linked token.
+    // We only cancel the sleep, not the whole work. Each iteration creates a new linked token.
     private CancellationTokenSource? _sleepCts;
     private readonly object _sleepLock = new();
 
@@ -38,7 +38,7 @@ public sealed class AutoBackupWorker : IDisposable
 
     private void OnSettingsChanged(Models.AppSettings _)
     {
-        // Прервать текущий sleep, чтобы новые значения применились немедленно.
+        // Cancel the current sleep so the new values apply immediately.
         lock (_sleepLock) { _sleepCts?.Cancel(); }
     }
 
@@ -50,7 +50,7 @@ public sealed class AutoBackupWorker : IDisposable
             if (minutes <= 0)
             {
                 NextRunUtc = null;
-                await SleepAsync(TimeSpan.FromMinutes(1)); // опрашиваем настройки раз в минуту
+                await SleepAsync(TimeSpan.FromMinutes(1)); // poll settings once a minute
                 continue;
             }
 
@@ -62,7 +62,7 @@ public sealed class AutoBackupWorker : IDisposable
 
             if (_shutdown.IsCancellationRequested) return;
 
-            // Re-check settings после пробуждения (могли поменяться).
+            // Re-check settings after waking (they might have changed).
             if (_settings.Current.AutoBackupIntervalMinutes <= 0) continue;
 
             if (_server.State != ServerState.Running)
@@ -101,7 +101,7 @@ public sealed class AutoBackupWorker : IDisposable
             _sleepCts = cts;
         }
         try { await Task.Delay(duration, cts.Token); }
-        catch (OperationCanceledException) { /* settings changed или shutdown — нормально */ }
+        catch (OperationCanceledException) { /* settings changed or shutdown — that's fine */ }
         finally
         {
             lock (_sleepLock)
