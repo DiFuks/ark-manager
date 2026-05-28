@@ -25,8 +25,10 @@ public sealed class BundledWineLauncher : IServerLauncher
         // bin.noindex/Debug/..., где рядом нет wine. ARKMANAGER_WINE_PATH=<file> позволяет
         // ткнуть в кэш билд-скрипта (~/.cache/ark-manager/wine/<sha>/.../bin/wine) и работать
         // без пересборки бандла. В релизе env не задают, идём embedded-путём ниже.
+        // Если env задан — возвращаем именно его (даже если файла нет), чтобы ошибка
+        // показала тот самый путь и юзер сразу понял что не так.
         var envOverride = Environment.GetEnvironmentVariable("ARKMANAGER_WINE_PATH");
-        if (!string.IsNullOrWhiteSpace(envOverride) && File.Exists(envOverride))
+        if (!string.IsNullOrWhiteSpace(envOverride))
             return envOverride;
 
         var baseDir = AppContext.BaseDirectory;
@@ -67,7 +69,15 @@ public sealed class BundledWineLauncher : IServerLauncher
 
         var wine = ResolveEmbeddedWineBinary();
         if (!File.Exists(wine))
-            throw new InvalidOperationException("Server runtime missing — reinstall ArkManager.");
+        {
+            // Подсказка для dev: видим ли мы ARKMANAGER_WINE_PATH или резолвили из бандла.
+            var envOverride = Environment.GetEnvironmentVariable("ARKMANAGER_WINE_PATH");
+            var source = string.IsNullOrWhiteSpace(envOverride)
+                ? $"embedded path: {wine}"
+                : $"ARKMANAGER_WINE_PATH: {wine}";
+            throw new InvalidOperationException(
+                $"Server runtime missing — reinstall ArkManager. ({source})");
+        }
 
         var prefix = _paths.ServerRuntimeDir;
         Directory.CreateDirectory(prefix);
