@@ -12,8 +12,23 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
     </Style>
+    <!-- Hover политика:
+         - Secondary (ghost): фон при hover должен ЯВНО отличаться от родителя (Panel2 был
+           почти неотличим от Bg — кнопка «гасла» при наведении). Берём LineBrush — светлее
+           обоих, плюс подсвечиваем бордер до AccentGlow.
+         - Primary: Fluent дефолтный :pointerover перебивал Foreground на свой светлый цвет —
+           тёмный текст AccentOn становился белым на оранжевом, читалось плохо. Явно фиксируем
+           Foreground=AccentOn в hover. Background при hover делаем слегка темнее accent
+           (а не светлее) — на ярком оранжевом тёмный текст уже хорошо контрастирует, а ярче
+           ink-вариант светлил фон сильнее, чем нужно.
+         - Danger: тёплый красный hover вместо тёмного. -->
     <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource LineBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentGlowBrush}"/>
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
     </Style>
     <Style Selector="Button.primary">
         <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
@@ -22,6 +37,16 @@
     </Style>
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource AccentInkBrush}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AccentOnBrush}"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource AccentOnBrush}"/>
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AccentOnBrush}"/>
     </Style>
     <Style Selector="Button.icon">
         <Setter Property="Padding" Value="0"/>
@@ -29,9 +54,19 @@
         <Setter Property="Height" Value="38"/>
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
     </Style>
+    <Style Selector="Button.icon:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}"/>
+    </Style>
     <Style Selector="Button.danger">
         <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
         <Setter Property="BorderBrush" Value="#4cd9685a"/>
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#1ed9685a"/>
+        <Setter Property="BorderBrush" Value="#80d9685a"/>
+    </Style>
+    <Style Selector="Button.danger:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
     </Style>
     <Style Selector="Button.chip">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
