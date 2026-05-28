@@ -35,7 +35,9 @@ public partial class InstallViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(ServerStatusBrush))]
     private string _installedBuild = "—";
 
-    [ObservableProperty] private string _installedAt = "—";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerStatusText))]
+    private string? _installedFileVersion;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerStatusText))]
@@ -48,18 +50,20 @@ public partial class InstallViewModel : ViewModelBase
 
     public string ServerPrimaryActionLabel => IsServerInstalled ? "Update server" : "Install server";
 
-    // Текст статуса сервера: «Not installed» → «Installed · build X» (не чекали) →
-    // «Up to date · build X» / «Update available · X → Y».
+    // Текст статуса сервера. Для «installed/up to date» предпочитаем человеческую
+    // версию из PE (v40.55) — её же юзер видит в самой игре. Steam buildid (число вроде
+    // 23321173) — fallback, если FileVersion недоступен.
     public string ServerStatusText
     {
         get
         {
             if (!IsServerInstalled) return "Not installed";
-            if (LatestBuild is "—") return $"Installed · build {InstalledBuild}";
-            if (LatestBuild is "failed to parse") return $"Installed · build {InstalledBuild} (update check failed)";
+            var current = InstalledFileVersion is { } fv ? $"v{fv}" : $"build {InstalledBuild}";
+            if (LatestBuild is "—") return $"Installed · {current}";
+            if (LatestBuild is "failed to parse") return $"Installed · {current} (update check failed)";
             return string.Equals(InstalledBuild, LatestBuild, StringComparison.Ordinal)
-                ? $"Up to date · build {InstalledBuild}"
-                : $"Update available · {InstalledBuild} → {LatestBuild}";
+                ? $"Up to date · {current}"
+                : "Update available";
         }
     }
 
@@ -122,14 +126,20 @@ public partial class InstallViewModel : ViewModelBase
         {
             _settings.Update(s => s.ServerInstallPath = ServerInstallPath);
 
-            // Update-сценарий: сначала чекаем, нужно ли вообще обновляться,
-            // чтобы не гонять steamcmd 5+ минут впустую.
+            // Update-сценарий: если уже есть свежий результат чека (после автостарта или
+            // ручной кнопки) — доверяем ему, не гоняем steamcmd ещё раз. Чекаем только
+            // когда LatestBuild ещё не подтверждён (null/failed).
             if (IsServerInstalled)
             {
-                Append("Checking for updates...");
-                var latest = await _steam.QueryLatestBuildIdAsync(Append);
-                LatestBuild = latest ?? "failed to parse";
-                if (latest != null && string.Equals(latest, InstalledBuild, StringComparison.Ordinal))
+                if (LatestBuild is "—" or "failed to parse")
+                {
+                    Append("Checking for updates...");
+                    var latest = await _steam.QueryLatestBuildIdAsync(Append);
+                    LatestBuild = latest ?? "failed to parse";
+                }
+
+                if (LatestBuild is not ("—" or "failed to parse")
+                    && string.Equals(LatestBuild, InstalledBuild, StringComparison.Ordinal))
                 {
                     Append($"[ok] Already on the latest build ({InstalledBuild}).");
                     return;
@@ -181,12 +191,12 @@ public partial class InstallViewModel : ViewModelBase
         {
             IsServerInstalled = false;
             InstalledBuild = "—";
-            InstalledAt = "—";
+            InstalledFileVersion = null;
             return;
         }
         IsServerInstalled = true;
         InstalledBuild = v.BuildId;
-        InstalledAt = v.LastUpdated?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "—";
+        InstalledFileVersion = _steam.ReadInstalledFileVersion(ServerInstallPath);
     }
 
     [RelayCommand]
