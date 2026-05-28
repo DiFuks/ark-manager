@@ -98,10 +98,12 @@ rid_of() {
 publish_for() {
   local target="$1" rid; rid=$(rid_of "$target")
   echo "==> dotnet publish ($CONFIG / $rid / self-contained)" >&2
+  # Use -p: (not /p:) so the args survive MSYS / Git Bash on Windows runners,
+  # which otherwise rewrites /-prefixed tokens as Unix paths and strips them.
   dotnet publish "$PROJECT" -c "$CONFIG" -r "$rid" \
     --self-contained true \
-    /p:PublishSingleFile=false \
-    /p:PublishTrimmed=false >&2
+    -p:PublishSingleFile=false \
+    -p:PublishTrimmed=false >&2
   echo "$ROOT/src/ArkManager.Desktop/bin.noindex/$CONFIG/net10.0/$rid/publish"
 }
 
