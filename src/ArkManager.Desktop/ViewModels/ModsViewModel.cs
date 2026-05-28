@@ -110,6 +110,11 @@ public partial class ModsViewModel : ViewModelBase
     public void OpenInCurseForge()
     {
         if (Selected == null) return;
-        App.OpenInBrowser($"https://www.curseforge.com/ark-survival-ascended/search?q={Selected.Id}");
+        // Если уже резолвили — открываем конкретную страницу мода (точный URL из API).
+        // Если нет — фолбек на поиск по ID, чтобы юзер хотя бы попал в каталог.
+        var url = !string.IsNullOrWhiteSpace(Selected.Url)
+            ? Selected.Url
+            : $"https://www.curseforge.com/ark-survival-ascended/search?q={Selected.Id}";
+        App.OpenInBrowser(url);
     }
 }

@@ -3,7 +3,7 @@ using ArkManager.Core.Services.Config;
 
 namespace ArkManager.Core.Services.Mods;
 
-public sealed record ModEntry(string Id, string? DisplayName = null, string? Note = null);
+public sealed record ModEntry(string Id, string? DisplayName = null, string? Note = null, string? Url = null);
 
 /// <summary>
 /// Управление модами для ASA. ASA использует свой каталог модов (CurseForge-based, через automanagedmods).
@@ -44,7 +44,9 @@ public sealed class ModsService
     public async Task ResolveNamesAsync(Action<ModEntry> onUpdate, CancellationToken ct = default)
     {
         var key = _settings.Current.CurseForgeApiKey;
-        if (string.IsNullOrWhiteSpace(key)) return;
+        if (string.IsNullOrWhiteSpace(key))
+            throw new InvalidOperationException(
+                "Set CurseForge API key in Settings → CurseForge API key first.");
         foreach (var id in DefaultProfile.ModIds.ToArray())
         {
             ct.ThrowIfCancellationRequested();
@@ -53,7 +55,7 @@ public sealed class ModsService
             {
                 var info = await _cf.GetModAsync(id, key, ct);
                 var entry = info != null
-                    ? new ModEntry(id, info.Name, info.Summary)
+                    ? new ModEntry(id, info.Name, info.Summary, info.WebsiteUrl)
                     : new ModEntry(id, "(not found on CurseForge)");
                 _resolvedCache[id] = entry;
                 onUpdate(entry);
