@@ -42,7 +42,7 @@ public partial class RconViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Ошибка: " + ex.Message;
+            Status = "Error: " + ex.Message;
             Append("[connect failed] " + ex.Message);
             await _client.DisposeAsync(); _client = null;
             Connected = false;

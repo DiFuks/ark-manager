@@ -48,10 +48,10 @@ public partial class ConfigViewModel : ViewModelBase
 
     public string SaveButtonText => SelectedTabIndex switch
     {
-        0 => "💾 Save settings",
-        1 => "💾 Save GameUserSettings.ini",
-        2 => "💾 Save Game.ini",
-        _ => "💾 Save"
+        0 => "Save settings",
+        1 => "Save GameUserSettings.ini",
+        2 => "Save Game.ini",
+        _ => "Save"
     };
 
     public string CommandLinePreview => string.Join(" ", Quote(BuildCli()));
@@ -102,7 +102,7 @@ public partial class ConfigViewModel : ViewModelBase
         }
         catch { /* server папка ещё не создана */ }
 
-        Status = "Сохранено в settings.json";
+        Status = "Saved to settings.json";
         OnPropertyChanged(nameof(CommandLinePreview));
     }
 
@@ -111,7 +111,7 @@ public partial class ConfigViewModel : ViewModelBase
     {
         LoadFromSettings();
         LoadIniFiles();
-        Status = "Перечитано";
+        Status = "Reloaded";
         OnPropertyChanged(nameof(CommandLinePreview));
     }
 
@@ -136,9 +136,9 @@ public partial class ConfigViewModel : ViewModelBase
         try
         {
             File.WriteAllText(path, content);
-            Status = label + " сохранён";
+            Status = label + " saved";
         }
-        catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; }
     }
 
     partial void OnSelectedMapChanged(MapPreset? value)

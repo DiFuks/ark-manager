@@ -1,0 +1,102 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Плоская кнопка-спиннер: маленький прозрачный чип, hover = мягкий фон, шеврон-глиф. -->
+    <ControlTheme x:Key="SpinnerRepeatButton" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="r" Background="{TemplateBinding Background}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^:pointerover /template/ Border#r">
+            <Setter Property="Background" Value="{DynamicResource Line2Brush}"/>
+        </Style>
+    </ControlTheme>
+
+    <!-- Наш ButtonSpinner: рисует скруглённую коробку теми же токенами, что у текст-полей
+         (Panel2 + Line2 + radius 8), клипает по дуге (квадратные кнопки не стёсывают угол),
+         плоские line-шевроны. Назначается ЯВНО по ключу из ControlTheme NumericUpDown ниже —
+         implicit `{x:Type ButtonSpinner}` шаблон NumericUpDown перебивает своим Theme. -->
+    <ControlTheme x:Key="AppButtonSpinner" TargetType="ButtonSpinner">
+        <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line2Brush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        ClipToBounds="True">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <ContentPresenter Name="PART_ContentPresenter" Grid.Column="0"
+                                          Content="{TemplateBinding Content}"
+                                          HorizontalContentAlignment="Stretch"
+                                          VerticalContentAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,3,0"
+                                    IsVisible="{TemplateBinding ShowButtonSpinner}">
+                            <RepeatButton Name="PART_IncreaseButton" Theme="{StaticResource SpinnerRepeatButton}">
+                                <Path Width="11" Height="7" Stretch="Uniform"
+                                      Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.5"
+                                      StrokeLineCap="Round" StrokeJoin="Round" Data="M1,6 L6,1 L11,6"/>
+                            </RepeatButton>
+                            <RepeatButton Name="PART_DecreaseButton" Theme="{StaticResource SpinnerRepeatButton}">
+                                <Path Width="11" Height="7" Stretch="Uniform"
+                                      Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.5"
+                                      StrokeLineCap="Round" StrokeJoin="Round" Data="M1,1 L6,6 L11,1"/>
+                            </RepeatButton>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- Ретемплейт NumericUpDown: повторяем стандартную структуру (PART_Spinner + PART_TextBox),
+         но ЯВНО вешаем наш AppButtonSpinner на спиннер. Внутренний TextBox прозрачный/без рамки —
+         «коробку» рисует ButtonSpinner. Логику инкремента/редактирования NumericUpDown вешает
+         на части по имени, так что поведение сохраняется. -->
+    <ControlTheme x:Key="{x:Type NumericUpDown}" TargetType="NumericUpDown">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <!-- Целочисленный формат: все наши числовые поля — целые (порты, игроки, часы, минуты).
+             Без этого спиннер показывал "7777,0" (лишний десятичный знак + локальная запятая). -->
+        <Setter Property="FormatString" Value="0"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DataValidationErrors>
+                    <ButtonSpinner Name="PART_Spinner"
+                                   Theme="{StaticResource AppButtonSpinner}"
+                                   MinHeight="34"
+                                   HorizontalContentAlignment="Stretch"
+                                   VerticalContentAlignment="Center"
+                                   AllowSpin="{TemplateBinding AllowSpin}"
+                                   ShowButtonSpinner="{TemplateBinding ShowButtonSpinner}"
+                                   ButtonSpinnerLocation="{TemplateBinding ButtonSpinnerLocation}">
+                        <TextBox Name="PART_TextBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="{DynamicResource TextBrush}"
+                                 Padding="9,8,4,8"
+                                 MinWidth="40"
+                                 Watermark="{TemplateBinding Watermark}"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}"
+                                 AcceptsReturn="False"
+                                 TextWrapping="NoWrap"
+                                 VerticalContentAlignment="Center"/>
+                    </ButtonSpinner>
+                </DataValidationErrors>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

@@ -4,32 +4,30 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
-        Width="1100" Height="720"
-        MinWidth="900" MinHeight="600"
+        Width="1100" Height="720" MinWidth="900" MinHeight="600"
         x:Class="ArkManager.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/AppIcon.png"
         Title="ArkManager — ASA Server Manager">
-    <Window.Styles>
-        <Style Selector="ListBoxItem">
-            <Setter Property="Padding" Value="12,8"/>
-        </Style>
-    </Window.Styles>
-    <Grid ColumnDefinitions="220,*">
-        <Border Grid.Column="0" Background="#1f2230" Padding="0,12,0,0">
+    <Grid ColumnDefinitions="216,*">
+        <Border Grid.Column="0" Background="{DynamicResource RailBrush}"
+                BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0" Padding="12,18">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="16,0,16,16">
-                    <TextBlock Text="🦖 ArkManager" Foreground="White" FontSize="18" FontWeight="SemiBold"/>
-                    <TextBlock Text="ASA Server Manager" Foreground="#9aa1b0" FontSize="11" Margin="0,2,0,0"/>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="6,0,6,18">
+                    <PathIcon Data="{DynamicResource IconMods}" Width="26" Height="26"
+                              Foreground="{DynamicResource AccentBrush}"/>
+                    <StackPanel>
+                        <TextBlock Text="ArkManager" FontFamily="{DynamicResource DisplayFont}"
+                                   FontWeight="Bold" FontSize="17" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Text="ASA CONTROL" Classes="meta" FontSize="9" LetterSpacing="2"/>
+                    </StackPanel>
                 </StackPanel>
-                <ListBox ItemsSource="{Binding NavItems}"
-                         SelectedItem="{Binding Selected, Mode=TwoWay}"
-                         Background="Transparent"
-                         BorderThickness="0">
+                <ListBox Classes="nav" ItemsSource="{Binding NavItems}"
+                         SelectedItem="{Binding Selected, Mode=TwoWay}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:NavItem">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="{Binding Icon}" FontSize="16"/>
+                            <StackPanel Orientation="Horizontal" Spacing="11">
+                                <PathIcon Data="{Binding Icon}" Width="17" Height="17"/>
                                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
@@ -37,6 +35,6 @@
                 </ListBox>
             </DockPanel>
         </Border>
-        <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Margin="16"/>
+        <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Margin="22"/>
     </Grid>
 </Window>

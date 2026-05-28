@@ -1,12 +1,16 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ArkManager.App.ViewModels;
 
-public sealed record NavItem(string Title, string Icon, ViewModelBase ViewModel);
+public sealed record NavItem(string Title, Geometry Icon, ViewModelBase ViewModel);
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    // Solid glyph paths (mirror Themes/Icons.axaml). 24x24 space.
+    private static Geometry G(string path) => Geometry.Parse(path);
+
     public ObservableCollection<NavItem> NavItems { get; }
 
     [ObservableProperty] private NavItem _selected = null!;
@@ -27,16 +31,24 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         NavItems = new ObservableCollection<NavItem>
         {
-            new("Server",      "▶️", server),
-            new("RCON",        "🛰️", rcon),
-            new("Install",     "⬇️", install),
-            new("Config",      "🧰", config),
-            new("Mods",        "🧩", mods),
-            new("Backups",     "💾", backups),
-            new("Doctor",      "🩺", doctor),
-            new("Settings",    "🔧", settings),
+            new("Server",   G("M7 5 L19 12 L7 19 Z"), server),
+            new("RCON",     G("M3 5 H21 V19 H3 Z M6 9 L10 12 L6 15 V13 L8 12 L6 11 Z M12 14 H17 V16 H12 Z"), rcon),
+            new("Install",  G("M11 4 H13 V11 H16 L12 16 L8 11 H11 Z M5 18 H19 V20 H5 Z"), install),
+            new("Config",   G("M3 6 H21 V8 H3 Z M3 11 H21 V13 H3 Z M3 16 H15 V18 H3 Z"), config),
+            new("Mods",     G("M12 3 L20 7 V17 L12 21 L4 17 V7 Z M12 8 L16 10 V14 L12 16 L8 14 V10 Z"), mods),
+            new("Backups",  G("M4 4 H20 V8 H4 Z M5 9 H19 V20 H5 Z M9 12 H15 V14 H9 Z"), backups),
+            new("Doctor",   G("M10 3 H14 V9 H20 V13 H14 V21 H10 V13 H4 V9 H10 Z"), doctor),
+            new("Settings", G("M12 2 L14 4 H16.5 L17 6.5 L19.5 7.5 L19 10 L21 12 L19 14 L19.5 16.5 L17 17.5 L16.5 20 L14 20 L12 22 L10 20 L7.5 20 L7 17.5 L4.5 16.5 L5 14 L3 12 L5 10 L4.5 7.5 L7 6.5 L7.5 4 L10 4 Z M12 8 A4 4 0 1 0 12 16 A4 4 0 1 0 12 8 Z"), settings),
         };
         _selected = NavItems[0];
+
+        // Deep-link на стартовый таб через env (для тестов/скриншотов; по умолчанию выключено).
+        var startTab = Environment.GetEnvironmentVariable("ARKMANAGER_START_TAB");
+        if (!string.IsNullOrWhiteSpace(startTab))
+        {
+            var match = NavItems.FirstOrDefault(n => string.Equals(n.Title, startTab, StringComparison.OrdinalIgnoreCase));
+            if (match != null) _selected = match;
+        }
     }
 
     // Параметрless конструктор нужен только для XAML-дизайнера.

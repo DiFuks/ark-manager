@@ -107,13 +107,35 @@ Pattern: `[NotifyCanExecuteChangedFor(nameof(StartCommand))]` на поле
   нужен `TopLevel` (= MainWindow). У нас он сохраняется в `Services.Browse.Owner`
   в `App.OnFrameworkInitializationCompleted`.
 
-### Dark theme — захардкожен
+### Дизайн-система «Field Manual» (слой темы)
 
-`App.axaml`: `RequestedThemeVariant="Dark"`. Кастомные фоны в Views
-(`#1f2230`, `#2a2f44`, `#11141d`, `#0d0f17`, `#262a3a`, `#181c28`) рассчитаны
-на белый текст. Если переключить на `Default`/`Light` — будет «чёрное
-на чёрном». Чтобы сделать theme-aware: заменить hex на `{DynamicResource ...}`
-из FluentTheme.
+UI переведён на единый визуальный язык C1 «Field Manual» (тёплый уголь +
+ember-янтарь, слэб-заголовки). Весь дизайн вынесен в `src/ArkManager.Desktop/Themes/`:
+
+- `Tokens.axaml` — `SolidColorBrush`-токены (`BgBrush`, `PanelBrush`, `AccentBrush`,
+  `MutedBrush`, `OkBrush`, `DangerBrush`, …). **Хардкод-хексов в Views больше нет** —
+  только `{DynamicResource …}`/`Classes`.
+- `Icons.axaml` — `StreamGeometry`-глифы (solid, под `PathIcon`). Эмодзи в UI запрещены.
+- `Resources.axaml` — мёрджит Tokens+Icons+ControlThemes, плюс `FontFamily` ключи
+  (`DisplayFont`=Zilla Slab, `UiFont`=IBM Plex Sans, `MonoFont`=IBM Plex Mono;
+  ttf вшиты в `Assets/Fonts/`, `avares://…/#Family`). Подключён в `App.axaml` как
+  `<Application.Resources>`.
+- `TextStyles.axaml` — классы `TextBlock` (`h1`/`stat`/`section`/`meta`).
+- `Controls.axaml` — стили: `Button` (база = ghost, `.primary`/`.icon`/`.danger`/`.chip`),
+  `Border.panel`/`.tile`/`.console`/`.chip`/`.pill`, инпуты, `ListBox.nav`/`.rows`,
+  `TabControl.seg` (сегмент-табы через **полный ретемплейт TabItem** — иначе лезет
+  синяя Fluent-пипка).
+- `ControlThemes.axaml` — `ControlTheme` для `ButtonSpinner` (NumericUpDown): Fluent-дефолт
+  «стёсывает» скруглённый угол квадратными кнопками; внутренний бордер недостижим
+  app-level стилями (двойной `/template/` не резолвится), поэтому переопределён целиком
+  (скруглённый бордер + `ClipToBounds` + плоские шеврон-кнопки). `NumericUpDown /template/
+  TextBox` гасится, чтобы не было двойного бордера.
+
+`App.axaml`: `RequestedThemeVariant="Dark"` (токены dark-only). UI — **английский**
+(копирайт VM/Core переведён; единственная кириллица в репо — комментарии Core).
+
+`MainWindowViewModel`: env `ARKMANAGER_START_TAB=<TabTitle>` открывает приложение
+сразу на нужном табе (для тестов/скриншотов; по умолчанию выключено).
 
 ### .NET 10 + Avalonia template
 
@@ -209,7 +231,8 @@ linked CTS, новый интервал применяется немедлен�
 
 - Multi-instance UI (модель `Profiles` готова, GUI работает только с первым).
 - CurseForge browser/search (только resolve ID → имя).
-- GUI локализация (микс ru/en).
+- GUI i18n / переключение языка в рантайме (resx/ResourceManager). UI сейчас
+  статически английский; мультиязычность отложена.
 - ARK Game.ini secondary settings (OverrideEngramEntries, EngramOverrides и
   тонна других кастомизаций) — есть raw-редактор Game.ini как fallback.
 - Лимит RAM сервера. У ASA нет CLI-флага, на macOS нет cgroups, `ulimit -v`

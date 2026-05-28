@@ -1,88 +1,94 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ArkManager.App.ViewModels"
-             xmlns:m="using:ArkManager.Core.Models"
              x:Class="ArkManager.App.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
-    <ScrollViewer>
-        <StackPanel Spacing="14">
-            <TextBlock Text="Settings" FontSize="22" FontWeight="SemiBold"/>
+    <Grid RowDefinitions="auto,*,auto" RowSpacing="14">
+        <TextBlock Grid.Row="0" Classes="h1" Text="Settings"/>
 
-            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Wine" FontWeight="SemiBold"/>
-                    <TextBlock Text="wine64 binary (опционально — пусто = авто-детект brew)"/>
-                    <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseWineBinaryCommand}"/>
-                        <TextBox Text="{Binding WineBinaryPath}"/>
-                    </DockPanel>
-                    <TextBlock Text="WINEPREFIX (директория, куда wine кладёт C:\)"/>
-                    <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseWinePrefixCommand}"/>
-                        <TextBox Text="{Binding WinePrefixPath}"/>
-                    </DockPanel>
-                </StackPanel>
-            </Border>
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="12">
+                <Border Classes="panel">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section" Text="WINE"/>
+                        <TextBlock Text="wine64 binary (optional — empty = auto-detect)" Foreground="{DynamicResource MutedBrush}"/>
+                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding WineBinaryPath}"/>
+                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseWineBinaryCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
+                        </Grid>
+                        <TextBlock Text="WINEPREFIX (directory where wine keeps C:\)" Foreground="{DynamicResource MutedBrush}"/>
+                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding WinePrefixPath}"/>
+                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseWinePrefixCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
-            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Пути" FontWeight="SemiBold"/>
-                    <TextBlock Text="Server install path"/>
-                    <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseServerInstallCommand}"/>
-                        <TextBox Text="{Binding ServerInstallPath}"/>
-                    </DockPanel>
-                    <TextBlock Text="Backups directory"/>
-                    <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseBackupsCommand}"/>
-                        <TextBox Text="{Binding BackupsDirectory}"/>
-                    </DockPanel>
-                    <TextBlock Text="SteamCMD path (опционально)"/>
-                    <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="📁..." Command="{Binding BrowseSteamCmdCommand}"/>
-                        <TextBox Text="{Binding SteamCmdPath}"/>
-                    </DockPanel>
-                    <TextBlock Text="CurseForge API key (для резолва имён модов)"/>
-                    <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="•"/>
-                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
-                        <TextBlock Grid.Column="0" Text="Сколько последних бэкапов хранить (0 = без ротации)" VerticalAlignment="Center"/>
-                        <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
+                <Border Classes="panel">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section" Text="PATHS"/>
+                        <TextBlock Text="Server install path" Foreground="{DynamicResource MutedBrush}"/>
+                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding ServerInstallPath}"/>
+                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseServerInstallCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
+                        </Grid>
+                        <TextBlock Text="Backups directory" Foreground="{DynamicResource MutedBrush}"/>
+                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding BackupsDirectory}"/>
+                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseBackupsCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
+                        </Grid>
+                        <TextBlock Text="SteamCMD path (optional)" Foreground="{DynamicResource MutedBrush}"/>
+                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Classes="mono" Text="{Binding SteamCmdPath}"/>
+                            <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseSteamCmdCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
+                        </Grid>
+                        <TextBlock Text="CurseForge API key (for resolving mod names)" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="•"/>
+                        <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                            <TextBlock Grid.Column="0" Text="Backups to keep (0 = no rotation)" VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
-            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Авто-управление" FontWeight="SemiBold"/>
-                    <CheckBox IsChecked="{Binding AutoRestartOnCrash}" Content="Перезапускать при ненулевом коде выхода / краше"/>
-                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
-                        <TextBlock Grid.Column="0" Text="Пауза перед auto-restart (сек)" VerticalAlignment="Center"/>
-                        <NumericUpDown Grid.Column="1" Value="{Binding AutoRestartDelaySeconds}" Minimum="1" Maximum="600"/>
-                    </Grid>
-                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
-                        <TextBlock Grid.Column="0" Text="Периодический рестарт каждые N часов (0 = выкл)" VerticalAlignment="Center"/>
-                        <NumericUpDown Grid.Column="1" Value="{Binding ScheduledRestartHours}" Minimum="0" Maximum="168"/>
-                    </Grid>
-                    <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
-                        <TextBlock Grid.Column="0" Text="Автобэкап каждые N минут (0 = выкл)" VerticalAlignment="Center"/>
-                        <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalMinutes}" Minimum="0" Maximum="1440"/>
-                    </Grid>
-                    <CheckBox IsChecked="{Binding AutoBackupOnlyWhenRunning}" Content="Делать автобэкап только когда сервер запущен"/>
-                </StackPanel>
-            </Border>
+                <Border Classes="panel">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section" Text="AUTO-MANAGEMENT"/>
+                        <CheckBox IsChecked="{Binding AutoRestartOnCrash}" Content="Restart on non-zero exit / crash"/>
+                        <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                            <TextBlock Grid.Column="0" Text="Delay before auto-restart (sec)" VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding AutoRestartDelaySeconds}" Minimum="1" Maximum="600"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                            <TextBlock Grid.Column="0" Text="Scheduled restart every N hours (0 = off)" VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding ScheduledRestartHours}" Minimum="0" Maximum="168"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                            <TextBlock Grid.Column="0" Text="Auto-backup every N minutes (0 = off)" VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalMinutes}" Minimum="0" Maximum="1440"/>
+                        </Grid>
+                        <CheckBox IsChecked="{Binding AutoBackupOnlyWhenRunning}" Content="Only auto-backup while the server is running"/>
+                    </StackPanel>
+                </Border>
 
-            <Border CornerRadius="8" Padding="16" Background="#2a2f44">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="App data" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding DataDir}" FontFamily="Menlo,Consolas,monospace" Opacity="0.85"/>
-                    <Button Content="📁 Открыть в Finder" Command="{Binding OpenDataFolderCommand}" HorizontalAlignment="Left"/>
-                </StackPanel>
-            </Border>
-
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Content="💾 Save" Command="{Binding SaveCommand}" Padding="20,10"/>
-                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.7"/>
+                <Border Classes="panel">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="section" Text="APP DATA"/>
+                        <TextBlock Text="{Binding DataDir}" FontFamily="{DynamicResource MonoFont}" Foreground="{DynamicResource MutedBrush}"/>
+                        <Button Command="{Binding OpenDataFolderCommand}" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="{DynamicResource IconFolder}"/><TextBlock Text="Show in Finder"/></StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+                <Border Height="40"/>
             </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary" Command="{Binding SaveCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="{DynamicResource IconSave}"/><TextBlock Text="Save"/></StackPanel>
+            </Button>
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}"/>
         </StackPanel>
-    </ScrollViewer>
+    </Grid>
 </UserControl>

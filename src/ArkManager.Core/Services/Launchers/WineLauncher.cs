@@ -37,13 +37,13 @@ public sealed class WineLauncher : IServerLauncher
         var wine = FindWineBinary();
         if (wine == null)
             return new LauncherStatus(false,
-                "wine не найден. Установите через brew: brew install --cask --no-quarantine gcenx/wine/wine-crossover");
+                "wine not found. Install via brew: brew install --cask --no-quarantine gcenx/wine/wine-crossover");
 
         try
         {
             var r = await ProcessRunner.RunCaptureAsync(wine, new[] { "--version" }, ct: ct);
             if (r.ExitCode != 0)
-                return new LauncherStatus(false, "wine не запускается: " + r.StdErr);
+                return new LauncherStatus(false, "wine won't start: " + r.StdErr);
             return new LauncherStatus(true, r.StdOut.Trim() + " (" + wine + ")");
         }
         catch (Exception ex)
@@ -62,7 +62,7 @@ public sealed class WineLauncher : IServerLauncher
         if (string.IsNullOrWhiteSpace(settings.ServerInstallPath) ||
             !File.Exists(Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe")))
         {
-            throw new InvalidOperationException("ArkAscendedServer.exe не найден. Установите сервер на вкладке Install.");
+            throw new InvalidOperationException("ArkAscendedServer.exe not found. Install the server on the Install tab.");
         }
 
         var exe = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
@@ -140,7 +140,7 @@ public sealed class WineLauncher : IServerLauncher
             return settings.WineBinaryPath;
         return FindWineBinary()
                ?? throw new InvalidOperationException(
-                   "wine не найден. Установите через Doctor → «Install wine».");
+                   "wine not found. Install via Doctor → \"Install wine\".");
     }
 
     private static string ResolveWinePrefix(AppSettings settings)

@@ -54,13 +54,13 @@ public sealed class ModsService
                 var info = await _cf.GetModAsync(id, key, ct);
                 var entry = info != null
                     ? new ModEntry(id, info.Name, info.Summary)
-                    : new ModEntry(id, "(не найдено в CurseForge)");
+                    : new ModEntry(id, "(not found on CurseForge)");
                 _resolvedCache[id] = entry;
                 onUpdate(entry);
             }
             catch (Exception ex)
             {
-                onUpdate(new ModEntry(id, "(ошибка резолва)", ex.Message));
+                onUpdate(new ModEntry(id, "(resolve error)", ex.Message));
             }
         }
     }
@@ -69,7 +69,7 @@ public sealed class ModsService
     {
         id = id.Trim();
         if (string.IsNullOrEmpty(id)) return;
-        if (!id.All(char.IsDigit)) throw new ArgumentException("Mod ID должен быть числом (CurseForge ID), а не '" + id + "'.");
+        if (!id.All(char.IsDigit)) throw new ArgumentException("Mod ID must be a number (CurseForge ID), not '" + id + "'.");
         if (DefaultProfile.ModIds.Contains(id)) return;
         DefaultProfile.ModIds.Add(id);
         Persist();

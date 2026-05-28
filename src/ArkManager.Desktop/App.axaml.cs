@@ -45,15 +45,15 @@ public partial class App : Application
         // «Зелёный» = мир загружен и сервер принимает игроков (а не просто стартовал процесс).
         server.ReadyChanged += ready =>
         {
-            if (ready) Notify("ArkManager", $"Сервер «{Name()}» запущен и принимает игроков");
+            if (ready) Notify("ArkManager", $"Server \"{Name()}\" is up and accepting players");
         };
         server.StateChanged += state =>
         {
             var msg = state switch
             {
-                ServerState.Starting => $"Сервер «{Name()}» запускается…",
-                ServerState.Stopped  => $"Сервер «{Name()}» остановлен",
-                ServerState.Crashed  => $"⚠️ Сервер «{Name()}» упал",
+                ServerState.Starting => $"Server \"{Name()}\" is starting…",
+                ServerState.Stopped  => $"Server \"{Name()}\" stopped",
+                ServerState.Crashed  => $"Server \"{Name()}\" crashed",
                 _ => null, // Running ловим через ReadyChanged; Stopping — транзитный, пропускаем
             };
             if (msg != null) Notify("ArkManager", msg);

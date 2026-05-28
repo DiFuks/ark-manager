@@ -2,6 +2,7 @@ using System.Globalization;
 using ArkManager.Core.Services;
 using ArkManager.Core.Services.Rcon;
 using ArkManager.Core.Util;
+using Avalonia;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,6 +15,7 @@ public partial class ServerViewModel : ViewModelBase
     private readonly ServerManager? _server;
 
     [ObservableProperty] private string _log = "";
+    [ObservableProperty] private string _identity = "—";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartCommand))]
@@ -29,14 +31,24 @@ public partial class ServerViewModel : ViewModelBase
     private bool _ready;
 
     // Кружок статуса как в окне ARK: серый stopped → жёлтый загрузка → зелёный готов → красный краш.
+    // Цвета берём из дизайн-токенов (Themes/Tokens.axaml), а не из Brushes.*, чтобы оттенок
+    // совпадал с остальным OK/Warn/Danger в UI.
     public IBrush StatusBrush => State switch
     {
-        "Running"  => Ready ? Brushes.LimeGreen : Brushes.Orange,
-        "Starting" => Brushes.Orange,
-        "Stopping" => Brushes.Orange,
-        "Crashed"  => Brushes.OrangeRed,
-        _          => Brushes.Gray,
+        "Running"  => Ready ? Tok("OkBrush") : Tok("WarnBrush"),
+        "Starting" => Tok("WarnBrush"),
+        "Stopping" => Tok("WarnBrush"),
+        "Crashed"  => Tok("DangerBrush"),
+        _          => Tok("MutedBrush"),
     };
+
+    private static IBrush Tok(string key)
+    {
+        if (Avalonia.Application.Current?.Resources is { } res
+            && res.TryGetResource(key, null, out var v) && v is IBrush b)
+            return b;
+        return Brushes.Gray;
+    }
 
     // Пока процесс жив, но мир ещё грузится — честнее показать «Loading…», а не «Running».
     public string StatusText => State == "Running" && !Ready ? "Loading…" : State;
@@ -57,9 +69,11 @@ public partial class ServerViewModel : ViewModelBase
 
     public ServerViewModel() { }
 
-    public ServerViewModel(ServerManager server, PlayerPoller poller)
+    public ServerViewModel(ServerManager server, PlayerPoller poller, SettingsService settings)
     {
         _server = server;
+        var s = settings.Current.LaunchOptions;
+        Identity = $"{s.SessionName} · {s.Map}";
         foreach (var l in server.Snapshot()) AppendLine(l);
         server.StateChanged += s => App.UiThread(() => { State = s.ToString(); Pid = server.Pid; });
         server.ReadyChanged += r => App.UiThread(() => Ready = r);
@@ -78,7 +92,7 @@ public partial class ServerViewModel : ViewModelBase
         {
             PlayersOnline = s.Count;
             PlayersDetail = s.Error != null
-                ? "❗ " + s.Error
+                ? s.Error
                 : s.Names.Count == 0 ? "—" : string.Join(", ", s.Names);
             LastSample = s.SampledUtc.ToLocalTime().ToString("HH:mm:ss");
         });

@@ -11,8 +11,19 @@ public partial class ModsViewModel : ViewModelBase
 
     public ObservableCollection<ModEntry> Mods { get; } = new();
     [ObservableProperty] private string _newModId = "";
-    [ObservableProperty] private ModEntry? _selected;
+
+    // Команды ниже работают только с выделенным модом → дизейблятся, когда выделения нет
+    // (иначе кнопки выглядят активными, но молча ничего не делают).
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MoveUpCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MoveDownCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenInCurseForgeCommand))]
+    private ModEntry? _selected;
+
     [ObservableProperty] private string _status = "";
+
+    public bool HasSelection => Selected != null;
 
     public ModsViewModel() { }
 
@@ -28,14 +39,14 @@ public partial class ModsViewModel : ViewModelBase
         if (_mods == null) return;
         Mods.Clear();
         foreach (var m in _mods.List()) Mods.Add(m);
-        Status = $"{Mods.Count} мод(а/ов)";
+        Status = $"{Mods.Count} mod(s)";
     }
 
     [RelayCommand]
     public async Task ResolveNamesAsync()
     {
         if (_mods == null) return;
-        Status = "Резолвлю имена через CurseForge...";
+        Status = "Resolving names via CurseForge...";
         try
         {
             await _mods.ResolveNamesAsync(entry => App.UiThread(() =>
@@ -43,9 +54,9 @@ public partial class ModsViewModel : ViewModelBase
                 var idx = Mods.ToList().FindIndex(m => m.Id == entry.Id);
                 if (idx >= 0) Mods[idx] = entry;
             }));
-            Status = "Имена обновлены.";
+            Status = "Names updated.";
         }
-        catch (Exception ex) { Status = "Ошибка: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; }
     }
 
     [RelayCommand]
@@ -63,7 +74,7 @@ public partial class ModsViewModel : ViewModelBase
         catch (Exception ex) { Status = ex.Message; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelection))]
     public void Remove()
     {
         if (_mods == null || Selected == null) return;
@@ -71,7 +82,7 @@ public partial class ModsViewModel : ViewModelBase
         Reload();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelection))]
     public void MoveUp()
     {
         if (_mods == null || Selected == null) return;
@@ -83,7 +94,7 @@ public partial class ModsViewModel : ViewModelBase
         Reload();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelection))]
     public void MoveDown()
     {
         if (_mods == null || Selected == null) return;
@@ -95,7 +106,7 @@ public partial class ModsViewModel : ViewModelBase
         Reload();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelection))]
     public void OpenInCurseForge()
     {
         if (Selected == null) return;

@@ -67,23 +67,23 @@ public sealed class AutoBackupWorker : IDisposable
 
             if (_settings.Current.AutoBackupOnlyWhenRunning && _server.State != ServerState.Running)
             {
-                Log?.Invoke("[auto-backup] пропуск — сервер не запущен");
+                Log?.Invoke("[auto-backup] skipped — server not running");
                 _lastRunUtc = DateTime.UtcNow;
                 continue;
             }
 
             try
             {
-                Log?.Invoke("[auto-backup] создаю снимок...");
+                Log?.Invoke("[auto-backup] creating snapshot...");
                 var info = await _backups.CreateBackupAsync(note: "auto", progress: null, _shutdown.Token);
                 BackupCreated?.Invoke(info);
-                Log?.Invoke($"[auto-backup] готово: {Path.GetFileName(info.FilePath)}");
+                Log?.Invoke($"[auto-backup] done: {Path.GetFileName(info.FilePath)}");
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex)
             {
                 BackupFailed?.Invoke(ex);
-                Log?.Invoke("[auto-backup] ошибка: " + ex.Message);
+                Log?.Invoke("[auto-backup] error: " + ex.Message);
             }
             finally
             {
