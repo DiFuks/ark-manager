@@ -13,8 +13,6 @@ public partial class ConfigViewModel : ViewModelBase
 
     public IReadOnlyList<MapPreset> KnownMaps { get; } = Maps.Known;
 
-    [ObservableProperty] private MapPreset? _selectedMap;
-
     // Базовые настройки запуска (мапятся в ini + CLI).
     [ObservableProperty] private string _map = "TheIsland_WP";
     [ObservableProperty] private string _sessionName = "My ASA Server";
@@ -141,17 +139,11 @@ public partial class ConfigViewModel : ViewModelBase
         catch (Exception ex) { Status = "Error: " + ex.Message; }
     }
 
-    partial void OnSelectedMapChanged(MapPreset? value)
-    {
-        if (value != null && Map != value.Map) Map = value.Map;
-    }
-
     private void LoadFromSettings()
     {
         if (_settings == null) return;
         var o = _settings.Current.LaunchOptions;
         Map = o.Map; SessionName = o.SessionName;
-        SelectedMap = KnownMaps.FirstOrDefault(m => m.Map.Equals(o.Map, StringComparison.OrdinalIgnoreCase));
         Port = o.Port; QueryPort = o.QueryPort; RconPort = o.RconPort;
         RconEnabled = o.RconEnabled;
         ServerPassword = o.ServerPassword ?? "";

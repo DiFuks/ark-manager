@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ArkManager.App.ViewModels"
+             xmlns:m="using:ArkManager.Core.Models"
              x:Class="ArkManager.App.Views.ConfigView"
              x:DataType="vm:ConfigViewModel">
     <Grid RowDefinitions="auto,*,auto" RowSpacing="14">
@@ -18,10 +19,13 @@
                                 <TextBlock Classes="section" Text="SERVER" Margin="0,0,0,8"/>
                                 <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Map" VerticalAlignment="Center"/>
-                                    <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="8">
-                                        <ComboBox Grid.Column="0" ItemsSource="{Binding KnownMaps}" SelectedItem="{Binding SelectedMap}" PlaceholderText="Preset…" HorizontalAlignment="Stretch"/>
-                                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding Map}" PlaceholderText="custom map"/>
-                                    </Grid>
+                                    <AutoCompleteBox Grid.Row="0" Grid.Column="1"
+                                                     ItemsSource="{Binding KnownMaps}"
+                                                     Text="{Binding Map}"
+                                                     ValueMemberBinding="{Binding Map, DataType=m:MapPreset}"
+                                                     FilterMode="Contains"
+                                                     PlaceholderText="TheIsland_WP, Ragnarok_WP, mod map…"
+                                                     HorizontalAlignment="Stretch"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Session name" VerticalAlignment="Center"/>
                                     <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Max players" VerticalAlignment="Center"/>
@@ -101,7 +105,7 @@
                         <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
                         <Button Content="Find next" Click="OnFindNext"/>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                    <TextBox Grid.Row="1" Classes="log" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
                              Background="{DynamicResource ConsoleBrush}"
                              BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
@@ -115,7 +119,7 @@
                         <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
                         <Button Content="Find next" Click="OnFindNext"/>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                    <TextBox Grid.Row="1" Classes="log" Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
                              Background="{DynamicResource ConsoleBrush}"
                              BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
