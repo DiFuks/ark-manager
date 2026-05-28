@@ -21,8 +21,6 @@ public partial class RconViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
-    [NotifyCanExecuteChangedFor(nameof(SaveworldCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DoExitCommand))]
     [NotifyCanExecuteChangedFor(nameof(ReconnectCommand))]
     [NotifyPropertyChangedFor(nameof(StatusText))]
     [NotifyPropertyChangedFor(nameof(StatusDotBrush))]
@@ -146,14 +144,6 @@ public partial class RconViewModel : ViewModelBase
 
     [RelayCommand] public void Clear() => Lines = "";
     [RelayCommand] public async Task CopyLog() => await Services.Browse.CopyToClipboardAsync(Lines);
-
-    [RelayCommand(CanExecute = nameof(CanSend))]
-    public void Saveworld() { Command = "saveworld"; _ = SendAsync(); }
-
-    [RelayCommand(CanExecute = nameof(CanSend))]
-    public void DoExit()   { Command = "DoExit";    _ = SendAsync(); }
-
-    [RelayCommand] public void Broadcast(string? msg) { Command = "Broadcast " + (msg ?? "Hello"); _ = SendAsync(); }
 
     private void Append(string line)
     {
