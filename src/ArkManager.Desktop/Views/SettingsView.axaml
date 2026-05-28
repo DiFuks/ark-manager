@@ -36,11 +36,6 @@
                             <TextBlock Grid.Column="0" Text="Scheduled restart every N hours (0 = off)" VerticalAlignment="Center"/>
                             <NumericUpDown Grid.Column="1" Value="{Binding ScheduledRestartHours}" Minimum="0" Maximum="168"/>
                         </Grid>
-                        <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
-                            <TextBlock Grid.Column="0" Text="Auto-backup every N minutes (0 = off)" VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalMinutes}" Minimum="0" Maximum="1440"/>
-                        </Grid>
-                        <CheckBox IsChecked="{Binding AutoBackupOnlyWhenRunning}" Content="Only auto-backup while the server is running"/>
                     </StackPanel>
                 </Border>
 

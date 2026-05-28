@@ -15,8 +15,6 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _autoRestartOnCrash;
     [ObservableProperty] private int _autoRestartDelaySeconds = 10;
     [ObservableProperty] private int _scheduledRestartHours;
-    [ObservableProperty] private int _autoBackupIntervalMinutes;
-    [ObservableProperty] private bool _autoBackupOnlyWhenRunning = true;
     [ObservableProperty] private string _status = "";
 
     public SettingsViewModel() { }
@@ -32,8 +30,6 @@ public partial class SettingsViewModel : ViewModelBase
         AutoRestartOnCrash = c.AutoRestartOnCrash;
         AutoRestartDelaySeconds = c.AutoRestartDelaySeconds;
         ScheduledRestartHours = c.ScheduledRestartHours;
-        AutoBackupIntervalMinutes = c.AutoBackupIntervalMinutes;
-        AutoBackupOnlyWhenRunning = c.AutoBackupOnlyWhenRunning;
     }
 
     [RelayCommand]
@@ -47,8 +43,6 @@ public partial class SettingsViewModel : ViewModelBase
             s.AutoRestartOnCrash = AutoRestartOnCrash;
             s.AutoRestartDelaySeconds = AutoRestartDelaySeconds;
             s.ScheduledRestartHours = ScheduledRestartHours;
-            s.AutoBackupIntervalMinutes = AutoBackupIntervalMinutes;
-            s.AutoBackupOnlyWhenRunning = AutoBackupOnlyWhenRunning;
         });
         Status = "Saved.";
     }

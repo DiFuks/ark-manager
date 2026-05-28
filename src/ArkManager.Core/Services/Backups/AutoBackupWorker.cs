@@ -4,8 +4,8 @@ namespace ArkManager.Core.Services.Backups;
 /// Фоновый воркер автоматических бэкапов с настраиваемым интервалом.
 /// Подписывается на SettingsService.Changed — при смене интервала
 /// текущий sleep немедленно прерывается, новый интервал применяется сразу.
-/// Опция OnlyWhenRunning гарантирует, что не плодим одинаковые снимки
-/// при остановленном сервере (Saved не меняется → бесполезная нагрузка).
+/// При остановленном сервере тик пропускается всегда: бэкап имеет смысл
+/// только когда мир активно меняется (Saved/* не растёт у idle-сервера).
 /// </summary>
 public sealed class AutoBackupWorker : IDisposable
 {
@@ -65,7 +65,7 @@ public sealed class AutoBackupWorker : IDisposable
             // Re-check settings после пробуждения (могли поменяться).
             if (_settings.Current.AutoBackupIntervalMinutes <= 0) continue;
 
-            if (_settings.Current.AutoBackupOnlyWhenRunning && _server.State != ServerState.Running)
+            if (_server.State != ServerState.Running)
             {
                 Log?.Invoke("[auto-backup] skipped — server not running");
                 _lastRunUtc = DateTime.UtcNow;

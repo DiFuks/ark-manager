@@ -30,6 +30,10 @@
                     <TextBlock Grid.Column="0" Text="Snapshots to keep (0 = no rotation)" VerticalAlignment="Center"/>
                     <NumericUpDown Grid.Column="1" Value="{Binding BackupRotationKeep}" Minimum="0" Maximum="100"/>
                 </Grid>
+                <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
+                    <TextBlock Grid.Column="0" Text="Auto-backup every N minutes (0 = off, only while server is running)" VerticalAlignment="Center"/>
+                    <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalMinutes}" Minimum="0" Maximum="1440"/>
+                </Grid>
             </StackPanel>
         </Border>
 

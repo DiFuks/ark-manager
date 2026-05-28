@@ -36,11 +36,12 @@ public partial class BackupsViewModel : ViewModelBase
     [ObservableProperty] private string _autoBackupStatus = "Auto-backup off";
     [ObservableProperty] private string _summary = "";
 
-    // Бэкап-сторадж: путь и глубина ротации. Источник истины переехал сюда из Settings;
-    // меняется здесь — сразу пишем в settings.json (BackupService читает из _settings.Current
-    // на каждом тике, кэша нет).
+    // Бэкап-сторадж: путь, глубина ротации, интервал авто-бэкапа. Источник истины переехал
+    // сюда из Settings; меняется здесь — сразу пишем в settings.json (BackupService и
+    // AutoBackupWorker читают из _settings.Current каждый тик, кэша нет).
     [ObservableProperty] private string _backupsDirectory = "";
     [ObservableProperty] private int _backupRotationKeep = 10;
+    [ObservableProperty] private int _autoBackupIntervalMinutes;
 
     public bool HasSelection => Selected != null;
     public bool CanCreate => !Busy;
@@ -57,6 +58,7 @@ public partial class BackupsViewModel : ViewModelBase
         _settings = settings;
         BackupsDirectory = settings.Current.BackupsDirectory ?? "";
         BackupRotationKeep = settings.Current.BackupRotationKeep;
+        AutoBackupIntervalMinutes = settings.Current.AutoBackupIntervalMinutes;
         Reload();
 
         _auto.BackupCreated += _ => App.UiThread(() => { Reload(); UpdateAutoStatus(); });
@@ -86,11 +88,10 @@ public partial class BackupsViewModel : ViewModelBase
             return;
         }
 
-        // OnlyWhenRunning + сервер не Running → воркер всё равно крутит NextRunUtc, но создавать
-        // снэпшот не будет: показывать тикающий таймер для никогда-не-сработающего тика
-        // вводит юзера в заблуждение. Показываем явный paused.
-        var onlyWhenRunning = _settings?.Current.AutoBackupOnlyWhenRunning ?? true;
-        if (onlyWhenRunning && _server is { State: not ServerState.Running })
+        // Сервер не Running → воркер всё равно крутит NextRunUtc, но тик пропустит:
+        // бэкап idle-сервера бесполезен. Показываем явный paused, иначе тикающий
+        // таймер вводит в заблуждение.
+        if (_server is { State: not ServerState.Running })
         {
             AutoBackupStatus = "Auto-backup paused (server idle)";
             return;
@@ -194,5 +195,14 @@ public partial class BackupsViewModel : ViewModelBase
     partial void OnBackupRotationKeepChanged(int value)
     {
         _settings?.Update(s => s.BackupRotationKeep = value);
+    }
+
+    partial void OnAutoBackupIntervalMinutesChanged(int value)
+    {
+        _settings?.Update(s => s.AutoBackupIntervalMinutes = value);
+        // AutoBackupWorker сам подхватит через SettingsService.Changed (cancel sleep),
+        // pill сверху обновится из периодического тика UpdateAutoStatus, но дернём сразу
+        // чтобы юзер увидел реакцию мгновенно.
+        UpdateAutoStatus();
     }
 }

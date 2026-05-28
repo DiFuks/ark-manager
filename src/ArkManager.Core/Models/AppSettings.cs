@@ -39,10 +39,8 @@ public sealed class AppSettings
     public int ScheduledRestartHours { get; set; } = 0;
 
     /// <summary>Автобэкап раз в N минут (0 = выкл). Ротация — через BackupRotationKeep.</summary>
+    /// <remarks>Тик всегда пропускается при не-Running сервере: idle-снимки бессмысленны.</remarks>
     public int AutoBackupIntervalMinutes { get; set; } = 0;
-
-    /// <summary>Делать автобэкап только когда сервер в состоянии Running.</summary>
-    public bool AutoBackupOnlyWhenRunning { get; set; } = true;
 }
 
 public sealed class ServerLaunchOptions
