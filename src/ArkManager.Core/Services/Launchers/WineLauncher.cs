@@ -39,26 +39,6 @@ public sealed class WineLauncher : IServerLauncher
     public static string? FindWineBinary()
         => EnumerateWineCandidates().FirstOrDefault(File.Exists);
 
-    public async Task<LauncherStatus> ProbeAsync(CancellationToken ct = default)
-    {
-        var wine = FindWineBinary();
-        if (wine == null)
-            return new LauncherStatus(false,
-                "wine not found. Install via brew: brew install --cask --no-quarantine gcenx/wine/wine-crossover");
-
-        try
-        {
-            var r = await ProcessRunner.RunCaptureAsync(wine, new[] { "--version" }, ct: ct);
-            if (r.ExitCode != 0)
-                return new LauncherStatus(false, "wine won't start: " + r.StdErr);
-            return new LauncherStatus(true, r.StdOut.Trim() + " (" + wine + ")");
-        }
-        catch (Exception ex)
-        {
-            return new LauncherStatus(false, ex.Message);
-        }
-    }
-
     public async Task<RunningServer> StartAsync(
         AppSettings settings,
         IReadOnlyList<string> modIds,

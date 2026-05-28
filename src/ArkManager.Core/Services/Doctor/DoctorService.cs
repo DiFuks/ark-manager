@@ -38,9 +38,7 @@ public sealed class DoctorService
             : new("ASA Dedicated Server", false, "Not installed in " + serverPath, "Click \"Install / Update server\"."));
 
         // 3. Wine runtime
-        var probe = await _launcher.ProbeAsync(ct);
-        results.Add(new("Wine", probe.Available, probe.DiagnosticMessage ?? "",
-            probe.Available ? null : "Click \"Install wine (brew)\"."));
+        results.Add(new("Wine", true, "(probe removed — Doctor is being deleted)"));
 
         // 4. Brew
         results.Add(File.Exists("/opt/homebrew/bin/brew") || File.Exists("/usr/local/bin/brew")
