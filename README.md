@@ -1,165 +1,112 @@
 # ArkManager
 
-Менеджер ARK: Survival Ascended dedicated server для macOS. Аналог
-`ASADedicatedManager` (Windows), нативно работающий на маке:
+A dedicated server manager for ARK: Survival Ascended. Bundles for **macOS arm64**,
+**Linux x64** and **Windows x64** — all self-contained, no external runtimes to
+install.
 
-* установка/обновление сервера через **SteamCMD** (app id `2430930`,
-  с принудительной Windows-сборкой через `+@sSteamCmdForcePlatformType windows`);
-* отображение **версии сервера** (`buildid` из `appmanifest_2430930.acf`) +
-  кнопка `Check for updates` тянет latest build через `steamcmd +app_info_print`;
-* редактирование `GameUserSettings.ini` / `Game.ini` (форма + raw-tabs);
-* создание и восстановление **бэкапов** (`ShooterGame/Saved`, zip, ротация);
-* **автобэкап** с настраиваемым интервалом (опция «только когда сервер запущен»);
-* менеджмент модов CurseForge — список ID, добавление/удаление, порядок;
-* запуск/остановка сервера, потоковый просмотр лога, uptime/PID,
-  кнопки Start/Stop дизейблятся по состоянию;
-* **RCON клиент** (Source RCON по TCP) с быстрыми кнопками `saveworld`/`DoExit`/`Broadcast`;
-* **live players** на Server-табе — бэкграунд-опрос `ListPlayers` раз в 30с;
-* **авто-рестарт** при креше + опциональный периодический рестарт каждые N часов;
-* поддержка **кластера** (`-ClusterId` / `-ClusterDirOverride`);
-* пресеты карт (TheIsland / Center / Scorched / Aberration / Extinction / Astraeos / Ragnarok);
-* опциональный **CurseForge API** для резолва ID → имя/описание модов;
-* запуск .exe-сервера через **wine64** (cask `wine-stable`); установку wine
-  Doctor делает сам через Terminal-скрипт.
+The ASA dedicated server is a Windows `.exe` (there is no native mac/linux
+build), so:
 
-## Требования
+- macOS / Linux — runs through **wine** (gcenx wine-stable / lutris-wine,
+  **bundled in the app**, verified via SHA256, no brew / apt needed);
+- Windows — runs natively via `Process.Start`.
 
-* macOS (Apple Silicon или Intel, на Apple Silicon — нужна Rosetta 2)
-* `.NET 10 SDK`
-* `wine64` — ставится из Doctor одной кнопкой:
-  * `brew install --cask wine-stable` (+ снятие quarantine через `xattr`);
-  * скрипт автоматически предложит поставить Rosetta 2, если её нет.
+## Features
 
-ASA-сервер заведомо работает под Wine при флаге `-NoBattlEye`
-(BattlEye под Wine не запустится). Это включено по умолчанию.
+- install / update the server via **SteamCMD** (app id `2430930`);
+- auto-resolve CurseForge mod IDs → names through the public cfwidget proxy
+  (no API key required);
+- edit `GameUserSettings.ini` / `Game.ini` (form view + raw tabs, auto-reload
+  from disk when switching tabs);
+- backups of `ShooterGame/Saved/` (zip, rotation, background auto-backups on
+  an interval);
+- start / stop the server, streaming log, uptime / PID, auto-restart on crash,
+  graceful shutdown via RCON `saveworld` / `DoExit` before kill;
+- **RCON client** (Source RCON / TCP) with one-click `saveworld`/`DoExit`/`Broadcast`;
+- live player counter on the Server tab (background `ListPlayers` poll every 30s);
+- **cluster** support (`-ClusterId` / `-ClusterDirOverride` with folder picker);
+- 7 map presets (TheIsland / TheCenter / ScorchedEarth / Aberration /
+  Extinction / Astraeos / Ragnarok); mod maps via raw `Game.ini` or by editing
+  `Maps.cs`.
 
-> **Note:** cask `wine-stable` помечен deprecated, отключение `2026-09-01`. Уже
-> установленный wine продолжит работать; после этой даты потребуется ручная
-> миграция на `gcenx/wine/game-porting-toolkit` или альтернативный cask.
+## Install
 
-## Запуск из исходников
+Download the `.zip` (mac/win) or `.tar.gz` (linux) from GitHub Releases, unpack,
+run. The .NET runtime and wine are embedded.
+
+- **macOS**: on first launch Gatekeeper will ask for confirmation — right-click
+  → Open (the app is ad-hoc signed, not notarized).
+- **Windows**: SmartScreen will show "Unknown publisher" → More info → Run
+  anyway (no Authenticode certificate).
+
+## Quick start
+
+1. **Install** → `Install SteamCMD` → `Install server`. The first run is slow
+   (~25 GB). Until the server is installed only the Install tab is shown in the
+   sidebar; afterwards the rest of the navigation is unlocked.
+2. **Config** → set `Session name`, `Admin password`, ports — you can start
+   right away (defaults are sensible). RCON is on by default, port 27020.
+3. **Mods** → CurseForge IDs comma-separated → `Add`. Names are resolved
+   automatically when the tab opens.
+4. **Server** → `▶ Start`. On the first launch wine spends ~30s creating its
+   prefix in `~/Library/Application Support/ArkManager/server-runtime/` (mac) /
+   `$XDG_DATA_HOME/ArkManager/server-runtime/` (linux) / `%LOCALAPPDATA%/...`
+   (win), then ASA loads the world.
+5. **Backups** → `Create` or enable auto-backup every N minutes (only ticks
+   while the server is `Running`).
+
+## Build from source
 
 ```bash
 git clone <repo>
 cd ark-manager
+
+# dev iteration
 dotnet build ArkManager.slnx
+dotnet test  ArkManager.slnx
 dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
+
+# production bundles for all 3 platforms (from a single mac/linux host)
+./build.sh                     # mac+linux+win
+./build.sh --target macos      # single target
+make mac / make linux / make windows
+make run                       # open the built .app from dist
+make clean
 ```
 
-При первом запуске создаётся `~/Library/Application Support/ArkManager/`:
+Architecture, invariants and gotchas — see [`CLAUDE.md`](CLAUDE.md) at the
+repo root.
 
-* `settings.json` — все настройки (пути, опции запуска, моды, автобэкап);
-* `logs/` — место для логов приложения;
-* `steamcmd/` — встроенный SteamCMD (можно переопределить путь в Settings);
-* `backups/` — место по умолчанию для zip-бэкапов;
-* `server/` — место по умолчанию для самого ASA-сервера;
-* `wineprefix/` — WINEPREFIX по умолчанию (wine инициализирует автоматически
-  при первом запуске сервера, ~30 сек).
+### Running with `dotnet run` (no bundle)
 
-## Быстрый старт
+`BundledWineLauncher` looks for wine first in the `ARKMANAGER_WINE_PATH`
+environment variable, then inside the bundle, then in the build cache
+`~/.cache/ark-manager/wine/<sha>/.../bin/`. So once you've run
+`./build.sh --target macos` at least once, wine is on disk and `dotnet run`
+finds it via the cache fallback — no env var required.
 
-1. **Doctor** → `Run checks`. Если wine не установлен — `Install wine (brew)`
-   откроет окно Terminal, попросит sudo-пароль для `gstreamer-runtime` и
-   подтверждение установки Rosetta 2.
-2. **Install** — `Install / Reinstall SteamCMD` (≈10 МБ),
-   затем `Install / Update server` (~15–25 ГБ, долго в первый раз). После
-   установки внизу показан `installed buildid`; кнопка `🔄 Check for updates`
-   сравнит с актуальным.
-3. **Config** — задай `Session name`, `Admin password`, порты. Сохрани.
-   Пароли пишутся **только в ini**, не в URL-query сервера (известный
-   foot-gun ASA: URL-парсер ломает RCON-аутентификацию).
-4. **Mods** — вставь CurseForge ID (по одному или через запятую) → `Add`.
-5. **Server** → `▶ Start`. Лог льётся в окно; `■ Stop` останавливает процесс.
-   Под кнопками — live-счётчик игроков из RCON.
-6. **Backups** → `Create` сохранит `Saved/` в `asa-backup-YYYYMMDD-HHMMSS.zip`,
-   с ротацией по N последних. В Settings можно включить автобэкап раз в N минут.
+## Intentionally out of scope
 
-## Архитектура
+- Multi-instance UI (the `Profiles` model is in place, the GUI only drives the
+  first one).
+- CurseForge browser / search (only ID → name resolution).
+- GUI i18n (UI is English only).
+- AppImage / `.dmg` / native installers — only `.zip` / `.tar.gz`.
+- Code signing / notarization — ad-hoc on macOS only.
+- Headless CLI — GUI only.
+- ARM64 Linux, Intel Mac — untested.
 
-```
-ArkManager.slnx
-├── src/ArkManager.Core/         # UI-агностичная бизнес-логика
-│   ├── Models/AppSettings.cs    # настройки/профили/опции запуска
-│   ├── Services/
-│   │   ├── AppPaths.cs          # vendor-каталог в Application Support
-│   │   ├── SettingsService.cs   # JSON I/O + событие Changed
-│   │   ├── ServerManager.cs     # стейт-машина сервера + лог-кольцо
-│   │   ├── Steam/SteamCmdService.cs     # install + version probe (acf/app_info)
-│   │   ├── Config/IniFile.cs            # round-trip ini parser (UE-style)
-│   │   ├── Config/ConfigService.cs      # GameUserSettings/Game.ini
-│   │   ├── Backups/BackupService.cs     # zip create/restore/rotate
-│   │   ├── Backups/AutoBackupWorker.cs  # фоновый таймер автобэкапов
-│   │   ├── Mods/ModsService.cs
-│   │   ├── Doctor/DoctorService.cs      # probes + Terminal-скрипт wine-install
-│   │   ├── Rcon/{RconClient,PlayerPoller}.cs
-│   │   └── Launchers/
-│   │       ├── IServerLauncher.cs
-│   │       ├── ServerCommandLine.cs     # сборка CLI ASA (без паролей в URL)
-│   │       └── WineLauncher.cs          # wine64 + WINEPREFIX
-│   └── Util/ProcessRunner.cs    # потоковый wrapper над Process
-├── src/ArkManager.Desktop/          # Avalonia 12 GUI, MVVM (CommunityToolkit.Mvvm)
-│   ├── App.axaml(.cs)           # DI + helpers (UiThread/OpenInFinder/OpenInBrowser)
-│   ├── AppServices.cs           # ServiceCollection composition root
-│   ├── ViewModels/              # *ViewModel.cs per таб
-│   └── Views/                   # *.axaml + code-behind
-└── tests/ArkManager.Core.Tests/ # xUnit
-```
-
-Табы: `Server → RCON → Install → Config → Mods → Backups → Doctor → Settings`.
-
-### Launcher
-
-`WineLauncher` ищет `wine64` в этом порядке:
-
-1. `settings.WineBinaryPath` (override из Settings).
-2. `/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64`
-3. `Wine Staging.app` / `Wine Devel.app` / `Game Porting Toolkit.app` /
-   `Wine Crossover.app` — fallback для альтернативных установок.
-4. `/opt/homebrew/bin/wine64`, `/usr/local/bin/wine64`.
-
-`WINEPREFIX` — `settings.WinePrefixPath` (по умолчанию
-`~/Library/Application Support/ArkManager/wineprefix`). Wine сам ребилдит
-префикс при первом старте.
-
-### Командная строка сервера
-
-Собирается в `ServerCommandLine.Build`. Формат:
-
-```
-"TheIsland_WP?listen?SessionName=...?Port=N?QueryPort=M?MaxPlayers=K"
- -server -log -mods=ID1,ID2 -automanagedmods -NoBattlEye  <extra...>
-```
-
-Пароли (`ServerPassword`, `ServerAdminPassword`, `SpectatorPassword`) и
-`RCONEnabled` / `RCONPort` **не кладутся в URL** — только в
-`GameUserSettings.ini` через `ConfigService.ApplyLaunchOptionsToIni`. Причина:
-ASA URL-парсер склеивает хвост строки в значение пароля, RCON-аутентификация
-после этого ломается. Превью CLI — на вкладке **Config**.
-
-## RCON
-
-Вкладка **RCON**. По умолчанию подставляет порт/пароль из текущих настроек.
-Используется протокол Source RCON (TCP). Команды:
-
-* `ListPlayers`, `Broadcast <msg>`, `saveworld`, `DoExit`, `KickPlayer <id>` и т.д.
-* быстрые кнопки `saveworld` и `DoExit` справа от Send.
-
-RCON-пароль — это `[ServerSettings].ServerAdminPassword` в `GameUserSettings.ini`.
-
-## Что я пока не делал
-
-* Multi-instance UI — модель `Profiles` есть, но GUI работает только с первым (`Default`).
-* Глобальный CurseForge browser — только резолв имени по ID, без поиска.
-* GUI-локализация (сейчас русский в подсказках).
-* Жёсткий лимит RAM сервера. У ASA нет CLI-флага; на macOS нет cgroups;
-  `ulimit -v` ломает wine. Альтернатива — `Settings → Периодический рестарт каждые N часов`.
-
-## Тесты
+## Tests
 
 ```bash
 dotnet test ArkManager.slnx
 ```
 
-Прогоняют `IniFile` round-trip, `ServerCommandLine.Build` (включая
-проверку, что пароли/RCON отсутствуют в URL), `SteamCmdService` парсеры
-(`appmanifest_*.acf` + `app_info_print` для public-ветки), `PlayerPoller`.
+Cover: `IniFile` round-trip, `ServerCommandLine.Build` (passwords / RCON not in
+URL), SteamCMD parsers (`appmanifest_*.acf` + `app_info_print`), the bootstrap
+URL helper, `PlayerPoller`. No mocking frameworks — pure-logic units only.
+
+## Licensing
+
+Wine sources: WineHQ (LGPL 2.1), gcenx macOS builds, lutris-wine Linux builds —
+all redistributable. Pinned versions + SHA256 in `build/wine-sources.json`.

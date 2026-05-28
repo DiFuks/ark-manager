@@ -12,10 +12,10 @@ linux:
 windows:
 	@./build.sh --target windows
 
-# Запустить собранный .app из dist/
+# Open the built .app from dist/
 run:
 	@open "dist/$(shell awk -F '[<>]' '/<Version>/{print $$3; exit}' Directory.Build.props | xargs -I{} echo "ArkManager-{}-macos-arm64")/ArkManager.app"
 
 clean:
 	@rm -rf dist
-	@echo "dist/ удалён"
+	@echo "dist/ removed"

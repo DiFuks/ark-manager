@@ -1,25 +1,37 @@
 # ArkManager — context for Claude
 
-ASA (ARK: Survival Ascended) dedicated server manager для macOS. Аналог
-Windows-only ASADedicatedManager, написан под Mac. Цель — нативный mac-GUI
-для управления полным жизненным циклом сервера (install/config/mods/backup/
-start/stop/RCON), сам ASA-сервер крутится через **wine64** (встроен в бандл),
-потому что нативной mac-сборки сервера не существует.
+ASA (ARK: Survival Ascended) dedicated server manager. Originally built as a
+Mac alternative to the Windows-only ASADedicatedManager; now cross-platform —
+bundles for **macOS arm64**, **Linux x64** and **Windows x64**. The ASA server
+is a Windows `.exe` (there is no native mac/linux build), so on mac/linux it
+runs through **wine** (gcenx wine-stable / lutris-wine, **bundled in the
+app**), and on Windows it runs natively via `Process.Start`.
 
 ## Stack & commands
 
 - .NET 10 SDK, Avalonia 12, CommunityToolkit.Mvvm 8.x, MS.Ext.DI, xUnit
-- Solution — `.slnx` (XML-формат .NET 10), НЕ `.sln`
+- Solution — `.slnx` (the .NET 10 XML format), NOT `.sln`
 
 ```bash
+# dev iteration
 dotnet build ArkManager.slnx
 dotnet test  ArkManager.slnx
 dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
+
+# production bundles (self-contained .NET + embedded wine on mac/linux)
+./build.sh                         # mac+linux+win
+./build.sh --target macos          # single target
+make mac / make linux / make windows
+make run                           # open dist/.../ArkManager.app
+make clean                         # rm -rf dist/
 ```
+
+Version lives in `Directory.Build.props` (`<Version>`), the single
+source-of-truth for apphost, Info.plist and archive filenames.
 
 ## Layout
 
-- `src/ArkManager.Core/` — UI-агностичная бизнес-логика
+- `src/ArkManager.Core/` — UI-agnostic business logic
   - `Models/` — AppSettings, ServerLaunchOptions, ServerProfile, Maps
   - `Services/{AppPaths,SettingsService,ServerManager}.cs`
   - `Services/Steam/SteamCmdService.cs` (+ `InstalledServerVersion` record)
@@ -30,210 +42,309 @@ dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
   - `Services/Rcon/{RconClient,PlayerPoller}.cs`
   - `Util/ProcessRunner.cs`
 - `src/ArkManager.Desktop/` — Avalonia 12 GUI
-  - `App.axaml(.cs)` — DI bootstrap, UiThread/OpenInFinder/OpenInBrowser, **force dark theme**
+  - `App.axaml(.cs)` — DI bootstrap, UiThread/OpenInFinder/OpenInBrowser, **forced dark theme**
   - `AppServices.cs` — DI composition root
-  - `Services/Browse.cs` — file/folder picker через `TopLevel.StorageProvider`
+  - `Services/Browse.cs` — file/folder picker via `TopLevel.StorageProvider`
   - `Converters/OkIcon.cs` — bool → ✅/❌
   - `ViewModels/*ViewModel.cs` — partial + `[ObservableProperty]` / `[RelayCommand]`
-  - `Views/*View.{axaml,axaml.cs}` — `ViewLocator` биндит по имени класса
-- `tests/ArkManager.Core.Tests/` — xUnit. `Core.csproj` имеет
-  `<InternalsVisibleTo Include="ArkManager.Core.Tests" />` — internal-методы
-  тестируемы.
+  - `Views/*View.{axaml,axaml.cs}` — `ViewLocator` binds by class name
+- `tests/ArkManager.Core.Tests/` — xUnit. `Core.csproj` has
+  `<InternalsVisibleTo Include="ArkManager.Core.Tests" />` so internal members
+  are testable.
 
-## Табы UI (текущий список)
+## UI tabs (current set)
 
-`MainWindowViewModel` собирает nav:
+`MainWindowViewModel` assembles the nav:
 
 `Server → RCON → Install → Config → Mods → Backups`
 
-(Стартовый таб — `Server`. Dashboard был, но удалён: единственное уникальное
-с него — players online / names — переехало в Server.)
+(There used to be a Dashboard; it was removed — its only unique content,
+players online / names, moved to the Server tab.)
+
+**Nav gated by install state.** While the server isn't installed (no
+`appmanifest_2430930.acf` per `InstallViewModel.IsServerInstalled`), the
+sidebar shows **only** `Install`. After install the nav expands to the full
+list. Switching is done by in-place mutation of `NavItems` (`Clear()` resets
+the ListBox selection through `CollectionChanged(Reset)`; reference equality
+in `Selected` then means no PropertyChanged fires, so the selection
+visually "drops").
 
 ## App-local state
 
-Vendor-каталог приложения (соответствует правилу из user CLAUDE.md):
+The app's vendor folder (per the user-CLAUDE.md rule):
 
 - macOS:  `~/Library/Application Support/ArkManager/`
 - Linux:  `$XDG_DATA_HOME/ArkManager/`
 - Win:    `%APPDATA%/ArkManager/`
 
-Содержит: `settings.json`, `logs/`, `steamcmd/`, `backups/`, `server/` (default),
-`server-runtime/` (WINEPREFIX, создаётся wine'ом при первом запуске).
+- Windows fix: we use `LocalApplicationData` (`%LOCALAPPDATA%`), NOT
+  `Roaming` — the ASA server is 25 GB and that doesn't belong in Roaming.
 
-## Подводные камни кода (не очевидно из исходников)
+Contains: `settings.json`, `logs/`, `steamcmd/`, `backups/`, `server/`
+(default), `server-runtime/` (WINEPREFIX, created by wine on first launch).
 
-### CommunityToolkit.Mvvm — naming source-generator
+Legacy cleanup: the `AppPaths` ctor wipes any leftover `<DataDir>/wineprefix/`
+from the old brew-based version — one-shot migration, no UI notification.
 
-`[ObservableProperty] private T _camelField;` → property `CamelField`. Генератор
-**капитализирует ТОЛЬКО первый символ** после `_`. Для acronyms нужно поднимать
-заглавные явно в имени поля:
+## Code gotchas (not obvious from sources)
 
-- `_xpMultiplier` → `XpMultiplier` ❌ (а ARK ini-key — `XPMultiplier`)
+### CommunityToolkit.Mvvm — naming source generator
+
+`[ObservableProperty] private T _camelField;` → property `CamelField`. The
+generator **only capitalises the very first character** after `_`. For acronyms
+you need to lift uppercase letters explicitly in the field name:
+
+- `_xpMultiplier` → `XpMultiplier` ❌ (ARK ini key is `XPMultiplier`)
 - `_xPMultiplier` → `XPMultiplier` ✅
-- `_rconPort` → `RconPort` (это ок, RCON в коде везде PascalCase `RconPort`)
-- если нужен `URL` — поле должно быть `_uRL`
+- `_rconPort` → `RconPort` (fine — `RconPort` is PascalCase everywhere in code)
+- if you need `URL`, the field has to be `_uRL`
 
-### Дизейбл команд (Start/Stop по состоянию)
+### Disabling commands (Start/Stop / Install by state)
 
-Pattern: `[NotifyCanExecuteChangedFor(nameof(StartCommand))]` на поле
-`_state` + `[RelayCommand(CanExecute = nameof(CanStart))]` на методе. Avalonia
-сам дизейблит `Button` через `ICommand.CanExecute` — `IsEnabled` в XAML
-явно прописывать не надо. См. `ServerViewModel.CanStart/CanStop`.
+Pattern: `[NotifyCanExecuteChangedFor(nameof(StartCommand))]` on the `_state`
+field + `[RelayCommand(CanExecute = nameof(CanStart))]` on the method. Avalonia
+disables the `Button` itself through `ICommand.CanExecute` — no need to spell
+out `IsEnabled` in XAML. See `ServerViewModel.CanStart/CanStop` and
+`InstallViewModel.CanInstallSteamCmd`/`CanInstallOrUpdateServer`. The latter
+keeps `Install server` disabled while there's no steamcmd / empty path.
 
-### ServerCommandLine: пароли и RCON НЕ в URL
+### Config ↔ ini auto-reload
 
-`ServerCommandLine.Build` строит URL-query вида
+ASA writes its own defaults into `GameUserSettings.ini` on startup and
+sometimes overwrites our values. To save the user from hitting Reload,
+`ConfigViewModel` refreshes its buffers on:
+
+- **switching to the Config tab as a whole** —
+  `MainWindowViewModel.OnSelectedChanged` calls
+  `ConfigViewModel.RefreshFromDisk()` (reads both raw tabs + Basic from ini);
+- **sub-tab switch** (Basic ↔ GUS.ini ↔ Game.ini) —
+  `OnSelectedTabIndexChanged` re-reads only the active sub-tab.
+
+The Basic tab picks up
+`[ServerSettings]`/`[SessionSettings]`/`[/Script/Engine.GameSession]` **only**
+for the fields that `ApplyLaunchOptionsToIni` writes: passwords, RCON,
+SessionName, ports, MaxPlayers. Everything else (Map, NoBattlEye,
+AutoManagedMods, ClusterId, Extra*) lives only in the VM / settings.json.
+
+Trade-off: unsaved edits in the current sub-tab are lost when you come back to
+it. The user explicitly asked for this ("no Reload presses").
+
+### ServerManager.StartAsync syncs the ini
+
+Before `_launcher.StartAsync` we call `_config.ApplyLaunchOptionsToIni(...)`.
+Without it, the very first launch after a fresh install would pick up ASA's
+defaults for RCON / passwords — RCON would end up disabled even if
+`RconEnabled=true` in settings.json. Save in the Config tab does the same plus
+a JSON update; here we just guarantee that ini and settings.json haven't
+drifted.
+
+### ServerCommandLine: passwords and RCON are NOT in the URL
+
+`ServerCommandLine.Build` builds a URL query like
 `TheIsland_WP?listen?SessionName=...?Port=N?QueryPort=M?MaxPlayers=K`.
-В URL **специально не кладутся** `ServerPassword` / `ServerAdminPassword` /
-`SpectatorPassword` / `RCONEnabled` / `RCONPort`. Причина: ASA URL-парсер
-может склеить хвост строки в значение пароля и сохранить так в
-`GameUserSettings.ini` — потом RCON-аутентификация ломается (приходит склеенный
-пароль вида `2222?RCONEnabled=True?RCONPort=27020`).
+We **deliberately do not** put `ServerPassword` / `ServerAdminPassword` /
+`SpectatorPassword` / `RCONEnabled` / `RCONPort` into the URL. Reason: the ASA
+URL parser can splice the rest of the string into a password value and
+persist it that way into `GameUserSettings.ini` — then RCON auth breaks (it
+gets a glued password like `2222?RCONEnabled=True?RCONPort=27020`).
 
-Эти ключи пишутся **только в ini** через `ConfigService.ApplyLaunchOptionsToIni`
-(`[ServerSettings]` секция). Оттуда сервер их и читает. RCON-клиент тоже
-работает по ini-значению.
+These keys are written **only into the ini** via
+`ConfigService.ApplyLaunchOptionsToIni` (`[ServerSettings]` section). The
+server reads them from there. The RCON client also uses the ini value.
 
-Тесты `Build_Passwords_NotInUrlQuery` / `Build_Rcon_NotInUrlQuery`
-проверяют отсутствие этих ключей в URL.
+The `Build_Passwords_NotInUrlQuery` / `Build_Rcon_NotInUrlQuery` tests assert
+these keys are absent from the URL.
 
 ### Avalonia 12
 
-- `Grid.RowSpacing` / `Grid.ColumnSpacing` — единственное число. `RowSpacings`
-  (plural) не существует, билд молча сломается на XAML compile.
-- `TextBox.PlaceholderText` — НЕ `Watermark` (последний deprecated, валит warning).
-- `TopLevel.StorageProvider` (Avalonia 11+) для файловых диалогов; владельцем
-  нужен `TopLevel` (= MainWindow). У нас он сохраняется в `Services.Browse.Owner`
-  в `App.OnFrameworkInitializationCompleted`.
+- `Grid.RowSpacing` / `Grid.ColumnSpacing` — singular. `RowSpacings` (plural)
+  does not exist; the build will silently fail at XAML compile.
+- `TextBox.PlaceholderText` — NOT `Watermark` (the latter is deprecated and
+  warns at compile time).
+- `TopLevel.StorageProvider` (Avalonia 11+) for file dialogs; the owner has to
+  be a `TopLevel` (= MainWindow). We stash it in `Services.Browse.Owner` in
+  `App.OnFrameworkInitializationCompleted`.
 
-### Дизайн-система «Field Manual» (слой темы)
+### "Field Manual" design system (theme layer)
 
-UI переведён на единый визуальный язык C1 «Field Manual» (тёплый уголь +
-ember-янтарь, слэб-заголовки). Весь дизайн вынесен в `src/ArkManager.Desktop/Themes/`:
+The UI sits on a single visual language C1 "Field Manual" (warm charcoal +
+ember amber, slab headings). All design lives in
+`src/ArkManager.Desktop/Themes/`:
 
-- `Tokens.axaml` — `SolidColorBrush`-токены (`BgBrush`, `PanelBrush`, `AccentBrush`,
-  `MutedBrush`, `OkBrush`, `DangerBrush`, …). **Хардкод-хексов в Views больше нет** —
-  только `{DynamicResource …}`/`Classes`.
-- `Icons.axaml` — `StreamGeometry`-глифы (solid, под `PathIcon`). Эмодзи в UI запрещены.
-- `Resources.axaml` — мёрджит Tokens+Icons+ControlThemes, плюс `FontFamily` ключи
-  (`DisplayFont`=Zilla Slab, `UiFont`=IBM Plex Sans, `MonoFont`=IBM Plex Mono;
-  ttf вшиты в `Assets/Fonts/`, `avares://…/#Family`). Подключён в `App.axaml` как
-  `<Application.Resources>`.
-- `TextStyles.axaml` — классы `TextBlock` (`h1`/`stat`/`section`/`meta`).
-- `Controls.axaml` — стили: `Button` (база = ghost, `.primary`/`.icon`/`.danger`/`.chip`),
-  `Border.panel`/`.tile`/`.console`/`.chip`/`.pill`, инпуты, `ListBox.nav`/`.rows`,
-  `TabControl.seg` (сегмент-табы через **полный ретемплейт TabItem** — иначе лезет
-  синяя Fluent-пипка).
-- `ControlThemes.axaml` — `ControlTheme` для `ButtonSpinner` (NumericUpDown): Fluent-дефолт
-  «стёсывает» скруглённый угол квадратными кнопками; внутренний бордер недостижим
-  app-level стилями (двойной `/template/` не резолвится), поэтому переопределён целиком
-  (скруглённый бордер + `ClipToBounds` + плоские шеврон-кнопки). `NumericUpDown /template/
-  TextBox` гасится, чтобы не было двойного бордера.
+- `Tokens.axaml` — `SolidColorBrush` tokens (`BgBrush`, `PanelBrush`,
+  `AccentBrush`, `MutedBrush`, `OkBrush`, `DangerBrush`, …). **No hex
+  literals in Views any more** — only `{DynamicResource …}` / `Classes`.
+- `Icons.axaml` — `StreamGeometry` glyphs (solid, for `PathIcon`). Emoji in UI
+  is banned.
+- `Resources.axaml` — merges Tokens+Icons+ControlThemes, plus `FontFamily`
+  keys (`DisplayFont`=Zilla Slab, `UiFont`=IBM Plex Sans,
+  `MonoFont`=IBM Plex Mono; ttfs embedded in `Assets/Fonts/`,
+  `avares://…/#Family`). Wired into `App.axaml` as `<Application.Resources>`.
+- `TextStyles.axaml` — `TextBlock` classes (`h1`/`stat`/`section`/`meta`).
+- `Controls.axaml` — styles: `Button` (base = ghost,
+  `.primary`/`.icon`/`.danger`/`.chip`),
+  `Border.panel`/`.tile`/`.console`/`.chip`/`.pill`, inputs,
+  `ListBox.nav`/`.rows`, `TabControl.seg` (segment tabs via **full TabItem
+  re-template** — otherwise the Fluent blue selection chip bleeds through).
+- `ControlThemes.axaml` — `ControlTheme` for the `ButtonSpinner`
+  (NumericUpDown): the Fluent default chips the rounded corner away with
+  square buttons; the inner border can't be reached from app-level styles
+  (a double `/template/` doesn't resolve), so we override it entirely
+  (rounded border + `ClipToBounds` + flat chevron buttons). The
+  `NumericUpDown /template/ TextBox` is silenced so we don't get a double
+  border.
 
-`App.axaml`: `RequestedThemeVariant="Dark"` (токены dark-only). UI — **английский**
-(копирайт VM/Core переведён; единственная кириллица в репо — комментарии Core).
+`App.axaml`: `RequestedThemeVariant="Dark"` (tokens are dark-only). UI is
+**English** (the Core/VM copy is translated; comments are English too).
 
-`MainWindowViewModel`: env `ARKMANAGER_START_TAB=<TabTitle>` открывает приложение
-сразу на нужном табе (для тестов/скриншотов; по умолчанию выключено).
+`MainWindowViewModel`: env `ARKMANAGER_START_TAB=<TabTitle>` opens the app
+directly on the named tab (for tests / screenshots; off by default).
 
 ### .NET 10 + Avalonia template
 
-Шаблон `dotnet new avalonia.mvvm` создаёт проект **без** `ImplicitUsings`.
-Если добавляешь файлы в `ArkManager.App`, рассчитывай: `System`, `System.IO`,
-`System.Threading.Tasks`, `System.Linq` уже через `ImplicitUsings=enable`
-в csproj. В Core — там тоже включено.
+The `dotnet new avalonia.mvvm` template creates the project **without**
+`ImplicitUsings`. If you add files in `ArkManager.App`, count on `System`,
+`System.IO`, `System.Threading.Tasks`, `System.Linq` being available via
+`ImplicitUsings=enable` in the csproj. Core has it on too.
 
-### Sln нюанс
+### Sln quirk
 
-`dotnet sln add ...` работает только если в текущей папке есть `*.sln`/`*.slnx`.
-У нас `ArkManager.slnx` в корне репо.
+`dotnet sln add ...` only works if the current directory contains a
+`*.sln`/`*.slnx`. Ours is `ArkManager.slnx` at the repo root.
 
-## ASA technical quirks (что НЕ интуитивно)
+### Cross-OS build / CI
+
+- `build.sh` — a single bash script, run from a mac/linux host, builds any
+  combination of `--target macos|linux|windows`. Each target:
+  `dotnet publish --self-contained` → wine (if needed) → pack into `dist/`.
+  Internally it has a `publish_for()` helper — its stdout is captured via
+  `$(...)`, so every informational line (`echo "==>"`, `dotnet publish`
+  output) is redirected to stderr (`>&2`); only the publish path stays on
+  stdout.
+- `Makefile` — a thin wrapper over `build.sh`. Targets: `build`, `mac`,
+  `linux`, `windows`, `run`, `clean`. Recipe lines have to be tabs (GNU make).
+- `.github/workflows/release.yml` — matrix `macos-latest` / `ubuntu-latest` /
+  `windows-latest`, triggered on pushing a `v*.*.*` tag; creates a draft
+  release with all three archives. Wine tarballs are cached by the hash of
+  `wine-sources.json`.
+- Artifact sizes: mac/linux ~300–400 MB (including wine + .NET),
+  Win ~130 MB.
+
+## ASA technical quirks (NOT intuitive)
 
 - **App ID 2430930**, free anonymous download.
-- **Нет native Mac/Linux build** — только Windows .exe. SteamCMD на маке
-  требует **`+@sSteamCmdForcePlatformType windows`** перед `+login anonymous`,
-  иначе откажет «invalid platform». Плюс **`+app_info_update 1`** — без него
-  steamcmd падает с «Failed to install app — Missing configuration» (PICS-кэш
-  не подтягивается).
-- **`.exe` запускается через wine64** (встроен в бандл). Whisky-cask
-  архивирован (Aug 2024), Parallels-launcher выпилен; brew-cask wine-stable
-  тоже убран — wine теперь bundled.
-- **BattlEye под Wine не работает** → флаг **`-NoBattlEye`** обязателен, включён
-  в `ServerLaunchOptions` по умолчанию.
-- **Моды через CurseForge** (не Steam Workshop). Передаются как
-  `-mods=id1,id2,...` + `-automanagedmods` для auto-download.
-- **Cluster**: `-ClusterId=<name>` + опционально `-ClusterDirOverride=<path>`,
-  одинаковый ID на нескольких серверах = общие трансферы.
-- **Save папка**: `<ServerInstallPath>/ShooterGame/Saved/SavedArks/<Map>/`
-- **Конфиги**: `<ServerInstallPath>/ShooterGame/Saved/Config/WindowsServer/{GameUserSettings,Game}.ini`
-- **Server build version**: `<ServerInstallPath>/steamapps/appmanifest_2430930.acf`
-  (top-level keys `buildid` + `LastUpdated`). Latest build тянется через
-  `steamcmd +app_info_print 2430930`, регэксп ищет `public` → `buildid`.
-- **RCON**: Source RCON (TCP). Маркер-пакет нужен для склейки многосегментных
-  ответов — у нас в `RconClient.SendAsync` он есть. RCON-пароль =
-  `ServerAdminPassword` из `[ServerSettings]` в ini (не из CLI!).
+- **No native Mac/Linux build** — only a Windows .exe. SteamCMD on mac/linux
+  requires **`+@sSteamCmdForcePlatformType windows`** before
+  `+login anonymous`, otherwise it refuses with "invalid platform" (on a
+  Windows host the flag is NOT applied). Plus **`+app_info_update 1`** —
+  without it steamcmd fails with "Failed to install app — Missing
+  configuration" (the PICS cache doesn't get pulled). See
+  `SteamCmdService.BuildInstallArgs(installDir, SteamCmdHostOs)` — covered
+  separately in `SteamCmdBootstrapTests`.
+- **The `.exe` runs through wine** on mac/linux (bundled, see the Wine section
+  below), natively on Windows via `NativeWindowsLauncher`. The Whisky cask is
+  archived (Aug 2024), the Parallels launcher was dropped; the brew-cask
+  wine-stable is gone too — wine is bundled, no third-party installs.
+- **BattlEye does not work under Wine** → the **`-NoBattlEye`** flag is
+  mandatory, on by default in `ServerLaunchOptions`.
+- **Mods via CurseForge** (not Steam Workshop). Passed as
+  `-mods=id1,id2,...` + `-automanagedmods` for auto-download.
+- **Cluster**: `-ClusterId=<name>` + optionally `-ClusterDirOverride=<path>`;
+  the same ID across several servers means shared transfers.
+- **Save folder**: `<ServerInstallPath>/ShooterGame/Saved/SavedArks/<Map>/`
+- **Configs**: `<ServerInstallPath>/ShooterGame/Saved/Config/WindowsServer/{GameUserSettings,Game}.ini`
+- **Server build version**:
+  `<ServerInstallPath>/steamapps/appmanifest_2430930.acf` (top-level keys
+  `buildid` + `LastUpdated`). The latest build is pulled via
+  `steamcmd +app_info_print 2430930`; a regex picks up
+  `public` → `buildid`.
+- **RCON**: Source RCON (TCP). A marker packet is needed to splice multi-
+  segment responses — we have it in `RconClient.SendAsync`. The RCON password
+  = `ServerAdminPassword` from `[ServerSettings]` in the ini (not from the
+  CLI!).
 - **CurseForge API**: ASA gameId = 83374, endpoint `/v1/mods/{id}`, header
-  `x-api-key`. Без ключа резолв имён не работает, но это не блокирует ничего.
+  `x-api-key`. Without a key the name resolution stops working, but it
+  doesn't block anything.
 
 ## Wine (embedded)
 
-Wine идёт встроенным в бандл — юзер ничего не ставит, слова «wine» в UI нет.
+Wine ships bundled inside the app — the user installs nothing, and the word
+"wine" never appears in the UI.
 
-- macOS: `<App>.app/Contents/Resources/wine/bin/wine64` (Intel x86_64 от gcenx,
-  запускается под Rosetta 2 на Apple Silicon).
-- Linux: `<install-dir>/wine/bin/wine64` (Lutris-wine static build).
-- Windows: wine не используется — `NativeWindowsLauncher` запускает .exe нативно.
-- Источники пиним в `build/wine-sources.json` (URL + SHA256). `build.sh` качает,
-  проверяет хэш, кладёт в `~/.cache/ark-manager/wine/` и копирует в бандл.
+- **macOS**: gcenx **wine-stable 11.0_1** in
+  `<App>.app/Contents/Resources/wine/bin/` (Intel x86_64 via Rosetta 2).
+  11.x uses unified wow64, so there's ONLY `bin/wine`, no `bin/wine64`.
+- **Linux**: **lutris-wine 7.2-2** in `<install-dir>/wine/bin/` (statically
+  built). Older wine still splits `wine` (32-bit) and `wine64` (64-bit).
+- **Windows**: wine is not used — `NativeWindowsLauncher` runs the .exe
+  natively.
 
-WINEPREFIX живёт в `<DataDir>/server-runtime/`, создаётся wine'ом при первом
-запуске сервера (slow first-run ~30s). Старая папка `<DataDir>/wineprefix/`
-от прежней brew-версии чистится автоматически на старте `AppPaths`.
+`BundledWineLauncher.ResolveEmbeddedWineBinary` tries, in order:
 
-В env-переменных запуска: `WINEDEBUG=-all`, `WINEDLLOVERRIDES=winemac.drv=`
-(без последнего wine на macOS рисует Server Console-окно с белым на белом).
+1. `$ARKMANAGER_WINE_PATH` — dev escape hatch for Rider / `dotnet run`,
+   where `AppContext.BaseDirectory` points into `bin.noindex/Debug/` with no
+   wine next to it.
+2. The bundle path; inside it tries names `wine64` → `wine` (ASA is 64-bit,
+   so `wine64` goes first for compatibility with old lutris-wine; modern
+   gcenx is caught by the `wine` fallback).
+3. `~/.cache/ark-manager/wine/<sha-prefix>/<extracted-dir>/.../bin/{wine64,wine}` —
+   **dev fallback** to the build cache, so `dotnet run` without env vars also
+   works. End users do not have this folder.
 
-## Автобэкап
+Sources are pinned in `build/wine-sources.json` (URL + SHA256). `build.sh`
+downloads, verifies the hash, drops the result in
+`~/.cache/ark-manager/wine/<sha-prefix>/` and copies it into the bundle.
 
-`AutoBackupWorker` (singleton, pre-resolved в `App.OnFrameworkInitializationCompleted`).
-Фоновый цикл `Task.Run`. Параметры из settings:
-- `AutoBackupIntervalMinutes` — 0 выключает.
-- `AutoBackupOnlyWhenRunning` — если true, пропускаем тики когда
-  `ServerManager.State != Running` (избегаем гонять одинаковые снимки
-  у простаивающего сервера).
+WINEPREFIX = `<DataDir>/server-runtime/`, created by wine on the first server
+launch (slow first-run, ~30s).
 
-Подписка на `SettingsService.Changed` — текущий sleep кенселится через
-linked CTS, новый интервал применяется немедленно (а не на следующем тике).
+Launch env: `WINEDEBUG=-all`, `WINEDLLOVERRIDES=winemac.drv=` (without the
+latter, wine on macOS paints a Server Console window as white-on-white).
 
-События `BackupCreated` / `BackupFailed` / `Log` + публичное `NextRunUtc`.
-`BackupsViewModel` показывает «автобэкап через MM:SS», тикает раз в 5с.
+## Auto-backup
 
-## Что НЕ сделано (намеренно out of scope)
+`AutoBackupWorker` (singleton, pre-resolved in
+`App.OnFrameworkInitializationCompleted`). Background `Task.Run` loop.
+Parameters from settings:
 
-- Multi-instance UI (модель `Profiles` готова, GUI работает только с первым).
-- CurseForge browser/search (только resolve ID → имя).
-- GUI i18n / переключение языка в рантайме (resx/ResourceManager). UI сейчас
-  статически английский; мультиязычность отложена.
-- ARK Game.ini secondary settings (OverrideEngramEntries, EngramOverrides и
-  тонна других кастомизаций) — есть raw-редактор Game.ini как fallback.
-- Лимит RAM сервера. У ASA нет CLI-флага, на macOS нет cgroups, `ulimit -v`
-  ломает wine. Workaround — `ScheduledRestartHours` (есть в Settings).
-- AppImage / .dmg / installers — дистрибуция пока только через прямой запуск.
-- Code signing / notarization — не подписано, Gatekeeper требует ручного разрешения.
-- Headless CLI — нет, только GUI.
-- ARM64 Linux — не тестировалось, wine-бандл x86_64.
-- Intel Mac — не тестировалось (только Apple Silicon + Rosetta).
+- `AutoBackupIntervalMinutes` — 0 turns it off. A tick is always skipped when
+  `ServerManager.State != Running` (idle snapshots are pointless, hard-coded).
+
+Subscribes to `SettingsService.Changed` — the current sleep is cancelled via
+a linked CTS, the new interval applies immediately (not on the next tick).
+
+Events: `BackupCreated` / `BackupFailed` / `Log` + public `NextRunUtc`.
+`BackupsViewModel` renders "auto-backup in MM:SS", refreshing every 5s.
+
+## Intentionally out of scope
+
+- Multi-instance UI (the `Profiles` model is in place, the GUI only drives
+  the first one).
+- CurseForge browser/search (only ID → name resolution).
+- GUI i18n / runtime language switching (resx/ResourceManager). The UI is
+  English-only for now; multi-language deferred.
+- ARK Game.ini secondary settings (`OverrideEngramEntries`,
+  `EngramOverrides` and a pile of other customisations) — the raw Game.ini
+  editor is the fallback.
+- Server RAM limit. ASA has no CLI flag, macOS has no cgroups, `ulimit -v`
+  breaks wine. No workaround.
+- AppImage / .dmg / native installers (Inno Setup / WiX) — only
+  `.zip` / `.tar.gz`.
+- Code signing / notarization — ad-hoc on macOS only; Gatekeeper requires
+  right-click → Open on the first launch.
+- Headless CLI — none, GUI only.
+- ARM64 Linux — untested; the wine bundle is x86_64.
+- Intel Mac — untested (Apple Silicon + Rosetta only).
 
 ## Code style
 
-- Комментарии в Core/ на русском, в XAML/тестах преимущественно английский.
-- Не плодить null-проверки на boundary внутри Core — `SettingsService` гарантирует
-  defaults через `Defaults()`.
-- `catch { /* ignore */ }` применять только для несущественных вещей (cleanup,
-  фоновый UI hint, открытие в Finder без последствий при сбое).
-- VM имеют параметрless конструктор для XAML-дизайнера; реальные инстансы
-  через DI.
-- Tests xUnit, без mock-фреймворков. Парсеры / pure logic — приоритет.
+- Comments are English everywhere (Core, Desktop, tests, XAML).
+- Don't pile up null checks on Core boundaries — `SettingsService`
+  guarantees defaults via `Defaults()`.
+- Use `catch { /* ignore */ }` only for inessential things (cleanup,
+  background UI hint, "open in Finder" with no consequence on failure).
+- VMs have a parameterless ctor for the XAML designer; real instances come
+  from DI.
+- Tests are xUnit, no mock frameworks. Parsers / pure logic come first.
 
-Branch `main`, без remote (юзер пушит сам по желанию).
+Branch `main`, pushed to `origin` on GitHub (`DiFuks/ark-manager`).

@@ -1,11 +1,13 @@
 <Project>
   <!--
-    Build-выхлоп складываем в каталоги с суффиксом ".noindex": Spotlight такие
-    каталоги не индексирует нативно и рекурсивно. Без этого .NET apphost
-    (нативный Mach-O бинарь в bin/, напр. ArkManager.App) всплывает в Spotlight
-    как «программа». Маркер .metadata_never_index тут не годится — он не чистит
-    уже проиндексированное и срабатывает асинхронно (гонка с mds).
-    Применяется ко всем проектам репо (Directory.Build.props импортируется в каждый).
+    Build output goes into directories with the ".noindex" suffix: Spotlight
+    refuses to index such directories natively and recursively. Without this
+    the .NET apphost (a native Mach-O binary under bin/, e.g. ArkManager.App)
+    shows up in Spotlight as an "application". A .metadata_never_index marker
+    doesn't help here — it doesn't clear the already-indexed entries and runs
+    asynchronously (racing mds).
+    Applies to every project in the repo (Directory.Build.props is imported
+    into each one).
   -->
   <PropertyGroup>
     <Version>1.0.0</Version>
