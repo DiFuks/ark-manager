@@ -26,7 +26,7 @@ dotnet run --project src/ArkManager.Desktop/ArkManager.App.csproj
   - `Services/Config/{IniFile,ConfigService}.cs`
   - `Services/Backups/{BackupService,AutoBackupWorker}.cs`
   - `Services/Mods/{ModsService,CurseForgeClient}.cs`
-  - `Services/Launchers/{IServerLauncher,ServerCommandLine,WineLauncher}.cs`
+  - `Services/Launchers/{IServerLauncher,ServerCommandLine,BundledWineLauncher,NativeWindowsLauncher}.cs`
   - `Services/Rcon/{RconClient,PlayerPoller}.cs`
   - `Util/ProcessRunner.cs`
 - `src/ArkManager.Desktop/` — Avalonia 12 GUI
