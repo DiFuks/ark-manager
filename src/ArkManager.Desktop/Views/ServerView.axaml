@@ -64,10 +64,7 @@
         <!-- console -->
         <Border Grid.Row="3" Classes="console">
             <Grid RowDefinitions="auto,*">
-                <Grid Grid.Row="0" ColumnDefinitions="*,auto" Margin="14,9">
-                    <TextBlock Grid.Column="0" Classes="section" Text="CONSOLE" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Classes="meta" Text="{Binding LastSample, StringFormat='sampled {0}'}"/>
-                </Grid>
+                <TextBlock Grid.Row="0" Classes="section" Text="CONSOLE" VerticalAlignment="Center" Margin="14,9"/>
                 <TextBox Grid.Row="1" x:Name="LogBox" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
                          TextWrapping="NoWrap" FontFamily="{DynamicResource MonoFont}" FontSize="11"
                          Background="Transparent" BorderThickness="0" Padding="14,4"/>

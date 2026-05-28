@@ -79,8 +79,6 @@ public partial class ServerViewModel : ViewModelBase
         && !string.IsNullOrWhiteSpace(PlayersDetail)
         && PlayersDetail != "—";
 
-    [ObservableProperty] private string _lastSample = "—";
-
     [ObservableProperty] private string _cpuUsage = "—";
     [ObservableProperty] private string _ramUsage = "—";
 
@@ -113,7 +111,6 @@ public partial class ServerViewModel : ViewModelBase
             PlayersDetail = s.Error != null
                 ? s.Error
                 : s.Names.Count == 0 ? "—" : string.Join(", ", s.Names);
-            LastSample = s.SampledUtc.ToLocalTime().ToString("HH:mm:ss");
         });
 
         _ = Task.Run(async () =>
