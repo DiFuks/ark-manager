@@ -147,7 +147,11 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
-    <!-- ===== Generic list rows (Backups/Mods) ===== -->
+    <!-- ===== Generic list rows (Backups/Mods) =====
+         Гасим Fluent дефолт hover/selected на самом ListBoxItem — иначе серый/синий
+         фон шаблона торчал «ушками» по углам tile (CornerRadius у tile 10,
+         у Fluent ListBoxItem прямые углы → радиусные просветы по углам).
+         Реакцию hover/selected переносим на Border.tile внутри ItemTemplate. -->
     <Style Selector="ListBox.rows">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -156,6 +160,25 @@
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Margin" Value="0,0,0,8"/>
         <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:pointerover Border.tile">
+        <Setter Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected Border.tile">
+        <Setter Property="Background" Value="{StaticResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="#40e08a2b"/>
     </Style>
 
     <!-- ===== Config tab strip (segmented look) =====
