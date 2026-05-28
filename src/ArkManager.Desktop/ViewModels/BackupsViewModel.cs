@@ -12,13 +12,31 @@ public partial class BackupsViewModel : ViewModelBase
     private readonly AutoBackupWorker? _auto;
 
     public ObservableCollection<BackupInfo> Backups { get; } = new();
-    [ObservableProperty] private BackupInfo? _selected;
+
+    // Restore/Delete работают только с выделенным снэпшотом, Create — только когда не Busy.
+    // Без CanExecute кнопки активны но молча ничего не делают (юзер ловил).
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RestoreCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
+    private BackupInfo? _selected;
+
     [ObservableProperty] private string _note = "";
     [ObservableProperty] private string _status = "";
-    [ObservableProperty] private bool _busy;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CreateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RestoreCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
+    private bool _busy;
+
     [ObservableProperty] private double _progress;
     [ObservableProperty] private string _autoBackupStatus = "Auto-backup off";
     [ObservableProperty] private string _summary = "";
+
+    public bool HasSelection => Selected != null;
+    public bool CanCreate => !Busy;
+    public bool CanRestore => Selected != null && !Busy;
+    public bool CanDelete => Selected != null && !Busy;
 
     public BackupsViewModel() { }
 
@@ -66,7 +84,7 @@ public partial class BackupsViewModel : ViewModelBase
         Status = "";
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanCreate))]
     public async Task CreateAsync()
     {
         if (_service == null) return;
@@ -83,7 +101,7 @@ public partial class BackupsViewModel : ViewModelBase
         finally { Busy = false; Progress = 0; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRestore))]
     public async Task RestoreAsync()
     {
         if (_service == null || Selected == null) return;
@@ -98,7 +116,7 @@ public partial class BackupsViewModel : ViewModelBase
         finally { Busy = false; Progress = 0; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanDelete))]
     public void Delete()
     {
         if (_service == null || Selected == null) return;
