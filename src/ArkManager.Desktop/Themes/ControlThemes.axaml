@@ -29,7 +29,7 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="MinHeight" Value="36"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
@@ -78,7 +78,7 @@
                 <DataValidationErrors>
                     <ButtonSpinner Name="PART_Spinner"
                                    Theme="{StaticResource AppButtonSpinner}"
-                                   MinHeight="34"
+                                   MinHeight="36"
                                    HorizontalContentAlignment="Stretch"
                                    VerticalContentAlignment="Center"
                                    AllowSpin="{TemplateBinding AllowSpin}"
@@ -87,9 +87,10 @@
                         <TextBox Name="PART_TextBox"
                                  Background="Transparent" BorderThickness="0"
                                  Foreground="{DynamicResource TextBrush}"
-                                 Padding="9,8,4,8"
+                                 Padding="9,0,4,0"
+                                 MinHeight="0"
                                  MinWidth="40"
-                                 Watermark="{TemplateBinding Watermark}"
+                                 PlaceholderText="{TemplateBinding Watermark}"
                                  IsReadOnly="{TemplateBinding IsReadOnly}"
                                  AcceptsReturn="False"
                                  TextWrapping="NoWrap"
