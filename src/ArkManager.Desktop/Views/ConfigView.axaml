@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ArkManager.App.ViewModels"
-             xmlns:m="using:ArkManager.Core.Models"
              x:Class="ArkManager.App.Views.ConfigView"
              x:DataType="vm:ConfigViewModel">
     <Grid RowDefinitions="auto,*,auto" RowSpacing="14">
@@ -19,13 +18,10 @@
                                 <TextBlock Classes="section" Text="SERVER" Margin="0,0,0,8"/>
                                 <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Map" VerticalAlignment="Center"/>
-                                    <AutoCompleteBox Grid.Row="0" Grid.Column="1"
-                                                     ItemsSource="{Binding KnownMaps}"
-                                                     Text="{Binding Map}"
-                                                     ValueMemberBinding="{Binding Map, DataType=m:MapPreset}"
-                                                     FilterMode="Contains"
-                                                     PlaceholderText="TheIsland_WP, Ragnarok_WP, mod map…"
-                                                     HorizontalAlignment="Stretch"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1"
+                                              ItemsSource="{Binding KnownMaps}"
+                                              SelectedItem="{Binding SelectedMapPreset}"
+                                              HorizontalAlignment="Stretch"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Session name" VerticalAlignment="Center"/>
                                     <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Max players" VerticalAlignment="Center"/>
@@ -68,7 +64,7 @@
                         <Border Classes="panel">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="section" Text="ADVANCED"/>
-                                <CheckBox IsChecked="{Binding NoBattlEye}" Content="-NoBattlEye (required for Wine)"/>
+                                <CheckBox IsChecked="{Binding NoBattlEye}" Content="-NoBattlEye" IsEnabled="{Binding IsNoBattlEyeEditable}"/>
                                 <CheckBox IsChecked="{Binding AutoManagedMods}" Content="-automanagedmods (auto-download mods)"/>
                             </StackPanel>
                         </Border>
@@ -80,7 +76,10 @@
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Cluster ID" VerticalAlignment="Center"/>
                                     <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ClusterId}" PlaceholderText="shared across cluster servers"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Cluster dir override" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ClusterDirOverride}" PlaceholderText="optional"/>
+                                    <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,auto" ColumnSpacing="8">
+                                        <TextBox Grid.Column="0" Text="{Binding ClusterDirOverride}" PlaceholderText="optional"/>
+                                        <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseClusterDirCommand}" ToolTip.Tip="Browse"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
+                                    </Grid>
                                 </Grid>
                             </StackPanel>
                         </Border>

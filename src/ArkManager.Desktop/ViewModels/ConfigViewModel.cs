@@ -13,8 +13,13 @@ public partial class ConfigViewModel : ViewModelBase
 
     public IReadOnlyList<MapPreset> KnownMaps { get; } = Maps.Known;
 
+    // BattlEye под wine/proton не работает, поэтому на не-Windows хосте флаг
+    // -NoBattlEye обязателен и в UI зафиксирован.
+    public bool IsNoBattlEyeEditable => OperatingSystem.IsWindows();
+
     // Базовые настройки запуска (мапятся в ini + CLI).
     [ObservableProperty] private string _map = "TheIsland_WP";
+    [ObservableProperty] private MapPreset? _selectedMapPreset;
     [ObservableProperty] private string _sessionName = "My ASA Server";
     [ObservableProperty] private int _port = 7777;
     [ObservableProperty] private int _queryPort = 27015;
@@ -144,13 +149,15 @@ public partial class ConfigViewModel : ViewModelBase
         if (_settings == null) return;
         var o = _settings.Current.LaunchOptions;
         Map = o.Map; SessionName = o.SessionName;
+        SelectedMapPreset = Maps.Known.FirstOrDefault(m => m.Map == Map);
         Port = o.Port; QueryPort = o.QueryPort; RconPort = o.RconPort;
         RconEnabled = o.RconEnabled;
         ServerPassword = o.ServerPassword ?? "";
         AdminPassword = o.AdminPassword ?? "";
         SpectatorPassword = o.SpectatorPassword ?? "";
         MaxPlayers = o.MaxPlayers;
-        NoBattlEye = o.NoBattlEye;
+        // На не-Windows -NoBattlEye обязателен — игнорируем сохранённое значение.
+        NoBattlEye = !OperatingSystem.IsWindows() || o.NoBattlEye;
         AutoManagedMods = o.AutoManagedMods;
         ClusterId = o.ClusterId ?? "";
         ClusterDirOverride = o.ClusterDirOverride ?? "";
@@ -190,6 +197,18 @@ public partial class ConfigViewModel : ViewModelBase
 
     private static IEnumerable<string> Quote(IEnumerable<string> args)
         => args.Select(a => a.Contains(' ') ? "\"" + a + "\"" : a);
+
+    [RelayCommand]
+    public async Task BrowseClusterDirAsync()
+    {
+        var picked = await Services.Browse.PickFolderAsync("Select cluster directory", ClusterDirOverride);
+        if (!string.IsNullOrEmpty(picked)) ClusterDirOverride = picked;
+    }
+
+    partial void OnSelectedMapPresetChanged(MapPreset? value)
+    {
+        if (value != null) Map = value.Map;
+    }
 
     // Любое изменение свойства обновляет preview.
     partial void OnMapChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
