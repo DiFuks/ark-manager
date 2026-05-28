@@ -29,3 +29,6 @@ local-state/
 # macOS app bundle (build-app.sh)
 /dist/
 .superpowers/
+
+## Build caches
+build/.cache/
