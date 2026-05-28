@@ -55,7 +55,8 @@
                 <StackPanel Spacing="5">
                     <TextBlock Classes="section" Text="PLAYERS"/>
                     <TextBlock Classes="stat" Text="{Binding PlayersOnline}"/>
-                    <TextBlock Classes="meta" Text="{Binding PlayersDetail}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Classes="meta" Text="{Binding PlayersDetail}" TextTrimming="CharacterEllipsis"
+                               IsVisible="{Binding HasPlayersDetail}"/>
                 </StackPanel>
             </Border>
         </Grid>

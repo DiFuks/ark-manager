@@ -59,7 +59,17 @@ public partial class ServerViewModel : ViewModelBase
     [ObservableProperty] private bool _autoScroll = true;
 
     [ObservableProperty] private int _playersOnline;
-    [ObservableProperty] private string _playersDetail = "—";
+
+    // PlayersDetail — список ников или текст ошибки опроса. По дефолту «—» (нет данных).
+    // Под цифрой PlayersOnline такая строка визуального смысла не несёт (юзер ловил):
+    // показываем строку только когда есть содержимое.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
+    private string _playersDetail = "—";
+
+    public bool HasPlayersDetail =>
+        !string.IsNullOrWhiteSpace(PlayersDetail) && PlayersDetail != "—";
+
     [ObservableProperty] private string _lastSample = "—";
 
     [ObservableProperty] private string _cpuUsage = "—";
