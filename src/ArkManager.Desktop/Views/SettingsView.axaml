@@ -32,7 +32,7 @@
                             <TextBox Grid.Column="0" Classes="mono" Text="{Binding BackupsDirectory}"/>
                             <Button Grid.Column="1" Classes="icon" Command="{Binding BrowseBackupsCommand}"><PathIcon Data="{DynamicResource IconFolder}"/></Button>
                         </Grid>
-                        <TextBlock Text="CurseForge API key (for resolving mod names)" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Text="CurseForge API key (optional — only as a fallback if the public cfwidget proxy fails)" Foreground="{DynamicResource MutedBrush}"/>
                         <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="•"/>
                         <Grid ColumnDefinitions="*,160" ColumnSpacing="12">
                             <TextBlock Grid.Column="0" Text="Backups to keep (0 = no rotation)" VerticalAlignment="Center"/>
