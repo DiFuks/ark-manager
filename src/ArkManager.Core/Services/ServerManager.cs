@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Launchers;
 using ArkManager.Core.Services.Mods;
 using ArkManager.Core.Services.Rcon;
@@ -18,6 +19,7 @@ public sealed class ServerManager
     private readonly SettingsService _settings;
     private readonly IServerLauncher _launcher;
     private readonly ModsService _mods;
+    private readonly ConfigService _config;
 
     private readonly object _lock = new();
     private CancellationTokenSource? _cts;
@@ -41,11 +43,12 @@ public sealed class ServerManager
     private readonly ConcurrentQueue<string> _ringLog = new();
     public IReadOnlyCollection<string> Snapshot() => _ringLog.ToArray();
 
-    public ServerManager(SettingsService settings, IServerLauncher launcher, ModsService mods)
+    public ServerManager(SettingsService settings, IServerLauncher launcher, ModsService mods, ConfigService config)
     {
         _settings = settings;
         _launcher = launcher;
         _mods = mods;
+        _config = config;
     }
 
     public async Task StartAsync(CancellationToken externalCt = default)
@@ -61,6 +64,15 @@ public sealed class ServerManager
 
         try
         {
+            // Синхронизируем GameUserSettings.ini c VM перед запуском.
+            // Пароли, RCONEnabled/RCONPort, SessionName, Port/QueryPort, MaxPlayers
+            // живут ТОЛЬКО в ini (см. CLAUDE.md: в URL их класть нельзя — ASA-парсер
+            // склеивает хвост в значение). Без этого первый запуск после установки
+            // подхватит ASA-defaults — RCON окажется выключен, даже если в settings.json
+            // RconEnabled=true. Save в Config-табе делает то же самое + ещё JSON-обновление,
+            // мы здесь лишь гарантируем что ini и settings.json не разъехались.
+            _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
+
             _cts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
 
             _running = await _launcher.StartAsync(
