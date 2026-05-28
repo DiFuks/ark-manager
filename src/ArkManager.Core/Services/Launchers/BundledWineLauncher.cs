@@ -21,6 +21,14 @@ public sealed class BundledWineLauncher : IServerLauncher
 
     internal static string ResolveEmbeddedWineBinary()
     {
+        // Dev escape hatch: при `dotnet run`/Rider AppContext.BaseDirectory указывает в
+        // bin.noindex/Debug/..., где рядом нет wine. ARKMANAGER_WINE_PATH=<file> позволяет
+        // ткнуть в кэш билд-скрипта (~/.cache/ark-manager/wine/<sha>/.../bin/wine) и работать
+        // без пересборки бандла. В релизе env не задают, идём embedded-путём ниже.
+        var envOverride = Environment.GetEnvironmentVariable("ARKMANAGER_WINE_PATH");
+        if (!string.IsNullOrWhiteSpace(envOverride) && File.Exists(envOverride))
+            return envOverride;
+
         var baseDir = AppContext.BaseDirectory;
         string binDir;
         if (OperatingSystem.IsMacOS())
