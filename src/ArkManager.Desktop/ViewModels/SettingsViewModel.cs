@@ -19,7 +19,6 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private int _scheduledRestartHours;
     [ObservableProperty] private int _autoBackupIntervalMinutes;
     [ObservableProperty] private bool _autoBackupOnlyWhenRunning = true;
-    [ObservableProperty] private string _curseForgeApiKey = "";
     [ObservableProperty] private string _status = "";
 
     public SettingsViewModel() { }
@@ -39,7 +38,6 @@ public partial class SettingsViewModel : ViewModelBase
         ScheduledRestartHours = c.ScheduledRestartHours;
         AutoBackupIntervalMinutes = c.AutoBackupIntervalMinutes;
         AutoBackupOnlyWhenRunning = c.AutoBackupOnlyWhenRunning;
-        CurseForgeApiKey = c.CurseForgeApiKey ?? "";
     }
 
     [RelayCommand]
@@ -57,7 +55,6 @@ public partial class SettingsViewModel : ViewModelBase
             s.ScheduledRestartHours = ScheduledRestartHours;
             s.AutoBackupIntervalMinutes = AutoBackupIntervalMinutes;
             s.AutoBackupOnlyWhenRunning = AutoBackupOnlyWhenRunning;
-            s.CurseForgeApiKey = NullIfEmpty(CurseForgeApiKey);
         });
         Status = "Saved.";
     }

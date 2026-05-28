@@ -42,11 +42,14 @@ public partial class ModsViewModel : ViewModelBase
         Status = $"{Mods.Count} mod(s)";
     }
 
-    [RelayCommand]
-    public async Task ResolveNamesAsync()
+    /// <summary>
+    /// Тихо подтягивает имена непрорезолвенных модов через CurseForge-прокси.
+    /// Вызывается автоматически при активации Mods-таба (MainWindowVM) и после Add —
+    /// отдельной кнопки нет. Уже закэшированные ID `ModsService` сам пропустит.
+    /// </summary>
+    public async Task AutoResolveNamesAsync()
     {
         if (_mods == null) return;
-        Status = "Resolving names via CurseForge...";
         try
         {
             await _mods.ResolveNamesAsync(entry => App.UiThread(() =>
@@ -54,13 +57,12 @@ public partial class ModsViewModel : ViewModelBase
                 var idx = Mods.ToList().FindIndex(m => m.Id == entry.Id);
                 if (idx >= 0) Mods[idx] = entry;
             }));
-            Status = "Names updated.";
         }
-        catch (Exception ex) { Status = "Error: " + ex.Message; }
+        catch (Exception ex) { Status = "Resolve failed: " + ex.Message; }
     }
 
     [RelayCommand]
-    public void Add()
+    public async Task AddAsync()
     {
         if (_mods == null) return;
         try
@@ -70,6 +72,8 @@ public partial class ModsViewModel : ViewModelBase
             _mods.AddMany(parts);
             NewModId = "";
             Reload();
+            // Сразу резолвим имена только что добавленных — кнопки «Resolve names» больше нет.
+            await AutoResolveNamesAsync();
         }
         catch (Exception ex) { Status = ex.Message; }
     }

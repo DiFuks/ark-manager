@@ -43,16 +43,13 @@ public sealed class ModsService
 
     public async Task ResolveNamesAsync(Action<ModEntry> onUpdate, CancellationToken ct = default)
     {
-        // Ключ опционален: CurseForgeClient сначала ходит в публичный cfwidget. Ключ нужен
-        // только как фолбек если cfwidget недоступен (или для редких приватных модов).
-        var key = _settings.Current.CurseForgeApiKey;
         foreach (var id in DefaultProfile.ModIds.ToArray())
         {
             ct.ThrowIfCancellationRequested();
             if (_resolvedCache.ContainsKey(id)) continue;
             try
             {
-                var info = await _cf.GetModAsync(id, key, ct);
+                var info = await _cf.GetModAsync(id, ct);
                 var entry = info != null
                     ? new ModEntry(id, info.Name, info.Summary, info.WebsiteUrl)
                     : new ModEntry(id, "(not found on CurseForge)");

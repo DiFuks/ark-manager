@@ -17,7 +17,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ViewModelBase CurrentPage => Selected.ViewModel;
 
-    partial void OnSelectedChanged(NavItem value) => OnPropertyChanged(nameof(CurrentPage));
+    partial void OnSelectedChanged(NavItem value)
+    {
+        OnPropertyChanged(nameof(CurrentPage));
+        // На Mods-табе нет кнопки «Resolve names» — резолвим имена сами при открытии.
+        // Уже закэшированные ID ModsService пропустит, лишних запросов не будет.
+        if (value.ViewModel is ModsViewModel mods) _ = mods.AutoResolveNamesAsync();
+    }
 
     public MainWindowViewModel(
         InstallViewModel install,

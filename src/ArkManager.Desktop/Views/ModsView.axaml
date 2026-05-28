@@ -40,7 +40,6 @@
             <Button Command="{Binding OpenInCurseForgeCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="{DynamicResource IconGlobe}"/><TextBlock Text="CurseForge"/></StackPanel>
             </Button>
-            <Button Command="{Binding ResolveNamesCommand}" Content="Resolve names"/>
             <Button Command="{Binding ReloadCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="{DynamicResource IconRefresh}"/><TextBlock Text="Reload"/></StackPanel>
             </Button>

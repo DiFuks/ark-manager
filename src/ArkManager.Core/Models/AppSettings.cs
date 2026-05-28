@@ -29,9 +29,6 @@ public sealed class AppSettings
     [JsonPropertyName("profiles")]
     public List<ServerProfile> Profiles { get; set; } = new();
 
-    /// <summary>CurseForge Studios API key. Когда задан — Mods-страница резолвит ID→имя через api.curseforge.com.</summary>
-    public string? CurseForgeApiKey { get; set; }
-
     /// <summary>Авто-рестарт при ненулевом коде выхода / краше.</summary>
     public bool AutoRestartOnCrash { get; set; } = false;
 
