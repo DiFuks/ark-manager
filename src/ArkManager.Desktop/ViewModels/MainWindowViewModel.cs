@@ -72,14 +72,27 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void RecomputeNav()
     {
-        var prevTitle = Selected?.Title;
-        NavItems.Clear();
-        foreach (var item in _allItems)
+        // In-place мутация коллекции: Clear() слал бы CollectionChanged(Reset),
+        // ListBox терял бы визуальное выделение, а CommunityToolkit на reference-equal
+        // переустановке Selected не фаерит PropertyChanged → выделение бы не вернулось.
+        var target = _allItems
+            .Where(i => _install.IsServerInstalled || i.Title == "Install")
+            .ToList();
+
+        // Снести то, чего не должно быть, по одному (Remove → CollectionChanged(Remove)).
+        for (var i = NavItems.Count - 1; i >= 0; i--)
+            if (!target.Contains(NavItems[i])) NavItems.RemoveAt(i);
+
+        // Вставить недостающее в правильную позицию.
+        for (var i = 0; i < target.Count; i++)
         {
-            if (_install.IsServerInstalled || item.Title == "Install")
-                NavItems.Add(item);
+            if (i >= NavItems.Count) NavItems.Add(target[i]);
+            else if (!ReferenceEquals(NavItems[i], target[i])) NavItems.Insert(i, target[i]);
         }
-        Selected = NavItems.FirstOrDefault(n => n.Title == prevTitle) ?? NavItems[0];
+
+        // Если предыдущий Selected исчез из nav — откатываемся на первый видимый.
+        if (Selected == null || !NavItems.Contains(Selected))
+            Selected = NavItems[0];
     }
 
     // Параметрless конструктор нужен только для XAML-дизайнера.
