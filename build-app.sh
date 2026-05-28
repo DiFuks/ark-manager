@@ -11,7 +11,7 @@ RID="osx-arm64"
 CONFIG="Release"
 
 APP_NAME="ArkManager"
-EXECUTABLE="ArkManager.App"      # apphost-бинарь = имя сборки проекта
+EXECUTABLE="ArkManager"      # apphost-бинарь = имя сборки проекта
 BUNDLE_ID="com.arkmanager.app"
 VERSION="1.0.0"
 
