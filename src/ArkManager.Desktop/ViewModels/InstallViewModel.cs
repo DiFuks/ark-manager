@@ -12,8 +12,15 @@ public partial class InstallViewModel : ViewModelBase
     private readonly SettingsService? _settings;
     private readonly SteamCmdService? _steam;
 
-    [ObservableProperty] private string _serverInstallPath = "";
-    [ObservableProperty] private bool _busy;
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(InstallOrUpdateServerCommand))]
+    private string _serverInstallPath = "";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(InstallSteamCmdCommand))]
+    [NotifyCanExecuteChangedFor(nameof(InstallOrUpdateServerCommand))]
+    private bool _busy;
+
     [ObservableProperty] private bool _checking;
     [ObservableProperty] private string _log = "";
 
@@ -21,6 +28,7 @@ public partial class InstallViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(SteamCmdStatusText))]
     [NotifyPropertyChangedFor(nameof(SteamCmdStatusBrush))]
     [NotifyPropertyChangedFor(nameof(SteamCmdActionLabel))]
+    [NotifyCanExecuteChangedFor(nameof(InstallOrUpdateServerCommand))]
     private bool _isSteamCmdInstalled;
 
     [ObservableProperty]
@@ -98,7 +106,9 @@ public partial class InstallViewModel : ViewModelBase
         if (IsServerInstalled) _ = CheckForUpdatesAsync();
     }
 
-    [RelayCommand]
+    private bool CanInstallSteamCmd() => !Busy;
+
+    [RelayCommand(CanExecute = nameof(CanInstallSteamCmd))]
     public async Task InstallSteamCmdAsync()
     {
         if (_steam == null) return;
@@ -112,7 +122,14 @@ public partial class InstallViewModel : ViewModelBase
         finally { Busy = false; }
     }
 
-    [RelayCommand]
+    // Install/Update сервера требует:
+    //  - не быть busy уже;
+    //  - наличия steamcmd (иначе бросит исключение из ProcessRunner);
+    //  - непустого пути установки (Directory.CreateDirectory("") крашится).
+    private bool CanInstallOrUpdateServer()
+        => !Busy && IsSteamCmdInstalled && !string.IsNullOrWhiteSpace(ServerInstallPath);
+
+    [RelayCommand(CanExecute = nameof(CanInstallOrUpdateServer))]
     public async Task InstallOrUpdateServerAsync()
     {
         if (_steam == null || _settings == null) return;
