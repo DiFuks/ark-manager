@@ -35,6 +35,13 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      - name: Cache wine tarballs
+        if: matrix.target != 'windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ark-manager/wine
+          key: wine-${{ matrix.target }}-${{ hashFiles('build/wine-sources.json') }}
+
       # build.sh is bash; on Windows the runner has Git Bash on PATH as `bash.exe`.
       - name: Build
         shell: bash
