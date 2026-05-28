@@ -5,10 +5,6 @@ set -euo pipefail
 #   ./build.sh                        # all 3 targets
 #   ./build.sh --target macos linux   # subset
 #
-# Phase 1: builds self-contained .NET bundles. Wine is NOT bundled yet —
-# Mac/Linux outputs still require system wine. Phase 2 (Task 17/18) adds
-# wine into the package.
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT="$ROOT/src/ArkManager.Desktop/ArkManager.App.csproj"
 CONFIG="Release"
@@ -21,6 +17,60 @@ VERSION=$(awk -F '[<>]' '/<Version>/{print $3; exit}' "$ROOT/Directory.Build.pro
 
 DIST="$ROOT/dist"
 mkdir -p "$DIST"
+
+WINE_SOURCES="$ROOT/build/wine-sources.json"
+WINE_CACHE="${ARKMANAGER_WINE_CACHE:-$HOME/.cache/ark-manager/wine}"
+mkdir -p "$WINE_CACHE"
+
+# json_field <key1> <key2>  e.g. json_field macos-arm64 url
+json_field() {
+  python3 -c "import json,sys; print(json.load(open('$WINE_SOURCES'))['$1']['$2'])"
+}
+
+ensure_wine() {
+  # ensure_wine <macos-arm64|linux-x64> → echoes absolute path to the extracted wine root.
+  local key="$1"
+  local url sha extracted_dir
+  url=$(json_field "$key" url)
+  sha=$(json_field "$key" sha256)
+  extracted_dir=$(json_field "$key" extractedWineDir)
+
+  local cache_dir="$WINE_CACHE/${sha:0:12}"
+  local root="$cache_dir/$extracted_dir"
+  if [[ -d "$root" && (-x "$root/bin/wine64" || -x "$root/bin/wine") ]]; then
+    echo "$root"
+    return
+  fi
+
+  mkdir -p "$cache_dir"
+  local archive="$cache_dir/wine.tar"
+  echo "==> downloading wine for $key" >&2
+  curl -L --fail --silent --show-error -o "$archive" "$url"
+
+  local actual_sha
+  actual_sha=$(shasum -a 256 "$archive" | awk '{print $1}')
+  if [[ "$actual_sha" != "$sha" ]]; then
+    echo "wine $key sha256 mismatch: expected $sha, got $actual_sha" >&2
+    rm -f "$archive"
+    exit 1
+  fi
+
+  echo "==> extracting wine for $key" >&2
+  # Auto-detect tar compression by extension.
+  case "$url" in
+    *.tar.xz)  tar -xJf "$archive" -C "$cache_dir" ;;
+    *.tar.gz)  tar -xzf "$archive" -C "$cache_dir" ;;
+    *.tar.zst) tar --use-compress-program=zstd -xf "$archive" -C "$cache_dir" ;;
+    *) echo "Unknown wine archive format: $url" >&2; exit 1 ;;
+  esac
+  rm -f "$archive"
+
+  if [[ ! -x "$root/bin/wine64" && ! -x "$root/bin/wine" ]]; then
+    echo "wine $key extracted but neither bin/wine64 nor bin/wine found in $root" >&2
+    exit 1
+  fi
+  echo "$root"
+}
 
 # --- parse args --------------------------------------------------------------
 TARGETS=()
@@ -62,6 +112,10 @@ package_macos() {
   rm -rf "$DIST/$APP_NAME-$VERSION-macos-arm64"
   mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
   cp -R "$publish/." "$app/Contents/MacOS/"
+
+  local wine_root; wine_root=$(ensure_wine macos-arm64)
+  mkdir -p "$app/Contents/Resources/wine"
+  cp -R "$wine_root/." "$app/Contents/Resources/wine/"
 
   # Icon (best-effort).
   local ICON_SRC="$ROOT/src/ArkManager.Desktop/Assets/AppIcon.png"
@@ -126,6 +180,11 @@ package_linux() {
   local out="$DIST/$APP_NAME-$VERSION-linux-x64"
   rm -rf "$out"; mkdir -p "$out"
   cp -R "$publish/." "$out/"
+
+  local wine_root; wine_root=$(ensure_wine linux-x64)
+  mkdir -p "$out/wine"
+  cp -R "$wine_root/." "$out/wine/"
+
   # Ensure the apphost has +x (publish output usually already has it on Unix).
   chmod +x "$out/$APP_NAME" 2>/dev/null || true
   ( cd "$DIST" && tar -czf "$APP_NAME-$VERSION-linux-x64.tar.gz" "$APP_NAME-$VERSION-linux-x64" )
