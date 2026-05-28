@@ -48,7 +48,41 @@ public sealed class BundledWineLauncher : IServerLauncher
             var candidate = Path.Combine(binDir, name);
             if (File.Exists(candidate)) return candidate;
         }
+
+        // Dev fallback: бандл-путь пуст (`dotnet run` из репо), но build-скрипт скачивал
+        // wine в `~/.cache/ark-manager/wine/` — берём оттуда. Прод-юзер этой папки не имеет,
+        // поэтому код тихо сваливается в return ниже и в ошибку с подсказкой.
+        var cached = TryFindCachedWine();
+        if (cached != null) return cached;
+
         return Path.Combine(binDir, "wine64");
+    }
+
+    private static string? TryFindCachedWine()
+    {
+        var cache = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".cache", "ark-manager", "wine");
+        if (!Directory.Exists(cache)) return null;
+
+        // Структура: <cache>/<sha-prefix>/<extracted-dir>/.../bin/{wine64,wine}.
+        // На маке extracted-dir — это .app-бандл, в нём bin лежит в Contents/Resources/wine.
+        // На Linux extracted-dir — обычная папка с bin/ сразу внутри.
+        foreach (var shaDir in Directory.EnumerateDirectories(cache))
+        {
+            foreach (var topDir in Directory.EnumerateDirectories(shaDir))
+            {
+                var binDir = topDir.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
+                    ? Path.Combine(topDir, "Contents", "Resources", "wine", "bin")
+                    : Path.Combine(topDir, "bin");
+                foreach (var name in new[] { "wine64", "wine" })
+                {
+                    var candidate = Path.Combine(binDir, name);
+                    if (File.Exists(candidate)) return candidate;
+                }
+            }
+        }
+        return null;
     }
 
     public async Task<RunningServer> StartAsync(
