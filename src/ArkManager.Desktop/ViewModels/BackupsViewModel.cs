@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using ArkManager.Core.Services;
 using ArkManager.Core.Services.Backups;
 using ArkManager.Core.Util;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,6 +11,8 @@ public partial class BackupsViewModel : ViewModelBase
 {
     private readonly BackupService? _service;
     private readonly AutoBackupWorker? _auto;
+    private readonly ServerManager? _server;
+    private readonly SettingsService? _settings;
 
     public ObservableCollection<BackupInfo> Backups { get; } = new();
 
@@ -40,14 +43,20 @@ public partial class BackupsViewModel : ViewModelBase
 
     public BackupsViewModel() { }
 
-    public BackupsViewModel(BackupService service, AutoBackupWorker auto)
+    public BackupsViewModel(BackupService service, AutoBackupWorker auto, ServerManager server, SettingsService settings)
     {
         _service = service;
         _auto = auto;
+        _server = server;
+        _settings = settings;
         Reload();
 
         _auto.BackupCreated += _ => App.UiThread(() => { Reload(); UpdateAutoStatus(); });
         _auto.Log          += msg => App.UiThread(() => { Status = msg; UpdateAutoStatus(); });
+        // Старт/стоп сервера переключает таймер между «paused» и тикающим — обновляем сразу,
+        // не дожидаясь 5-секундного poll'а.
+        _server.StateChanged += _ => App.UiThread(UpdateAutoStatus);
+        _settings.Changed += _ => App.UiThread(UpdateAutoStatus);
 
         _ = Task.Run(async () =>
         {
@@ -62,6 +71,23 @@ public partial class BackupsViewModel : ViewModelBase
 
     private void UpdateAutoStatus()
     {
+        var interval = _settings?.Current.AutoBackupIntervalMinutes ?? 0;
+        if (interval <= 0)
+        {
+            AutoBackupStatus = "Auto-backup off";
+            return;
+        }
+
+        // OnlyWhenRunning + сервер не Running → воркер всё равно крутит NextRunUtc, но создавать
+        // снэпшот не будет: показывать тикающий таймер для никогда-не-сработающего тика
+        // вводит юзера в заблуждение. Показываем явный paused.
+        var onlyWhenRunning = _settings?.Current.AutoBackupOnlyWhenRunning ?? true;
+        if (onlyWhenRunning && _server is { State: not ServerState.Running })
+        {
+            AutoBackupStatus = "Auto-backup paused (server idle)";
+            return;
+        }
+
         if (_auto?.NextRunUtc is { } next)
         {
             var left = next - DateTime.UtcNow;
