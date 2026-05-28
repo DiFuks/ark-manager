@@ -16,27 +16,12 @@ public sealed class AppSettings
     /// <summary>Сколько последних бэкапов хранить (0 = без ротации).</summary>
     public int BackupRotationKeep { get; set; } = 10;
 
-    /// <summary>Путь до бинарника wine64 (override). Если null — авто-детект в стандартных brew-путях.</summary>
-    public string? WineBinaryPath { get; set; }
-
-    /// <summary>Путь к WINEPREFIX (директория, куда wine кладёт «C:\»). По умолчанию — wineprefix в data-dir.</summary>
-    public string? WinePrefixPath { get; set; }
-
     /// <summary>Аргументы запуска. Map+опции попадают в начало; -mods / -NoBattlEye добавляются автоматически.</summary>
     public ServerLaunchOptions LaunchOptions { get; set; } = new();
 
     /// <summary>Список профилей серверов (мульти-инстанс) — для будущего расширения. Пока используется только Default.</summary>
     [JsonPropertyName("profiles")]
     public List<ServerProfile> Profiles { get; set; } = new();
-
-    /// <summary>Авто-рестарт при ненулевом коде выхода / краше.</summary>
-    public bool AutoRestartOnCrash { get; set; } = false;
-
-    /// <summary>Пауза между авто-рестартами в секундах (back-off для первого, дальше тот же).</summary>
-    public int AutoRestartDelaySeconds { get; set; } = 10;
-
-    /// <summary>Периодический рестарт каждые N часов (0 = выкл).</summary>
-    public int ScheduledRestartHours { get; set; } = 0;
 
     /// <summary>Автобэкап раз в N минут (0 = выкл). Ротация — через BackupRotationKeep.</summary>
     /// <remarks>Тик всегда пропускается при не-Running сервере: idle-снимки бессмысленны.</remarks>

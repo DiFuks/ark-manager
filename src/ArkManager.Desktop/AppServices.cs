@@ -41,7 +41,6 @@ public static class AppServices
         sc.AddTransient<ModsViewModel>();
         sc.AddTransient<BackupsViewModel>();
         sc.AddTransient<ServerViewModel>();
-        sc.AddTransient<SettingsViewModel>();
         sc.AddTransient<DoctorViewModel>();
         sc.AddTransient<RconViewModel>();
 

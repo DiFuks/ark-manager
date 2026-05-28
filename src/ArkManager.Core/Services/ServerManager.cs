@@ -23,7 +23,6 @@ public sealed class ServerManager
     private CancellationTokenSource? _cts;
     private RunningServer? _running;
     private bool _stopRequested;
-    private CancellationTokenSource? _scheduleCts;
 
     public ServerState State { get; private set; } = ServerState.Stopped;
     public int? Pid => _running?.Pid;
@@ -72,25 +71,19 @@ public sealed class ServerManager
                 {
                     PushLog($"[server exited code={code}]");
                     ServerState target;
-                    bool autoRestart;
                     lock (_lock)
                     {
                         // При намеренной остановке (включая хард-кил fallback, дающий
                         // ненулевой код) это НЕ краш — состояние Stopped.
                         target = (code == 0 || _stopRequested) ? ServerState.Stopped : ServerState.Crashed;
                         _running = null;
-                        autoRestart = !_stopRequested
-                                      && code != 0
-                                      && _settings.Current.AutoRestartOnCrash;
                     }
                     SetReady(false);
                     SetState(target);
-                    if (autoRestart) _ = AutoRestartLoopAsync();
                 },
                 ct: _cts.Token);
 
             SetState(ServerState.Running);
-            StartScheduledRestartTimer();
         }
         catch (Exception ex)
         {
@@ -111,7 +104,6 @@ public sealed class ServerManager
             _stopRequested = true;
         }
         SetState(ServerState.Stopping);
-        _scheduleCts?.Cancel();
 
         try
         {
@@ -154,7 +146,6 @@ public sealed class ServerManager
             pid = _running?.Pid;
         }
         SetState(ServerState.Stopping);
-        _scheduleCts?.Cancel();
 
         // Сохранить мир (saveworld + DoExit). Внутри свой таймаут, ошибки не критичны.
         await TryGracefulSaveAndExitAsync(CancellationToken.None);
@@ -286,38 +277,6 @@ public sealed class ServerManager
             try { await Task.Delay(500, ct); } catch { return false; }
         }
         return !await _launcher.IsRunningAsync(pid, ct);
-    }
-
-    private async Task AutoRestartLoopAsync()
-    {
-        var delay = Math.Max(1, _settings.Current.AutoRestartDelaySeconds);
-        PushLog($"[auto-restart] waiting {delay}s before restarting...");
-        try { await Task.Delay(TimeSpan.FromSeconds(delay)); } catch { }
-        try { await StartAsync(); }
-        catch (Exception ex) { PushLog("[auto-restart] failed: " + ex.Message); }
-    }
-
-    private void StartScheduledRestartTimer()
-    {
-        _scheduleCts?.Cancel();
-        var hours = _settings.Current.ScheduledRestartHours;
-        if (hours <= 0) return;
-        _scheduleCts = new CancellationTokenSource();
-        var token = _scheduleCts.Token;
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(TimeSpan.FromHours(hours), token);
-                if (token.IsCancellationRequested) return;
-                PushLog("[scheduled restart]");
-                await StopAsync();
-                await Task.Delay(2000, token);
-                await StartAsync();
-            }
-            catch (OperationCanceledException) { /* normal */ }
-            catch (Exception ex) { PushLog("[scheduled restart failed] " + ex.Message); }
-        });
     }
 
     private void PushLog(string line)

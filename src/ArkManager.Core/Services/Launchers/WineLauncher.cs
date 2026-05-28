@@ -11,6 +11,13 @@ namespace ArkManager.Core.Services.Launchers;
 /// </summary>
 public sealed class WineLauncher : IServerLauncher
 {
+    private readonly AppPaths _paths;
+
+    public WineLauncher(AppPaths paths)
+    {
+        _paths = paths;
+    }
+
     /// <summary>Стандартные пути, в которых ищем wine64. Первый найденный — используется.</summary>
     public static IEnumerable<string> EnumerateWineCandidates()
     {
@@ -66,8 +73,10 @@ public sealed class WineLauncher : IServerLauncher
         }
 
         var exe = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
-        var wine = ResolveWineBinary(settings);
-        var prefix = ResolveWinePrefix(settings);
+        var wine = FindWineBinary()
+                   ?? throw new InvalidOperationException(
+                       "wine not found. Install via Doctor → \"Install wine\".");
+        var prefix = _paths.DefaultWinePrefixDir;
         Directory.CreateDirectory(prefix);
 
         var args = new List<string> { exe };
@@ -134,21 +143,4 @@ public sealed class WineLauncher : IServerLauncher
         catch { return Task.FromResult(false); }
     }
 
-    private static string ResolveWineBinary(AppSettings settings)
-    {
-        if (!string.IsNullOrWhiteSpace(settings.WineBinaryPath) && File.Exists(settings.WineBinaryPath))
-            return settings.WineBinaryPath;
-        return FindWineBinary()
-               ?? throw new InvalidOperationException(
-                   "wine not found. Install via Doctor → \"Install wine\".");
-    }
-
-    private static string ResolveWinePrefix(AppSettings settings)
-    {
-        // Если задан явно — используем как есть. Иначе — собственный prefix в data-dir.
-        if (!string.IsNullOrWhiteSpace(settings.WinePrefixPath))
-            return settings.WinePrefixPath;
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        return Path.Combine(home, "Library", "Application Support", "ArkManager", "wineprefix");
-    }
 }

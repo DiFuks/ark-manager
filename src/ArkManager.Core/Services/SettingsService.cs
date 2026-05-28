@@ -53,7 +53,6 @@ public sealed class SettingsService
         {
             ServerInstallPath = _paths.DefaultServerInstallDir,
             BackupsDirectory = _paths.DefaultBackupsDir,
-            WinePrefixPath = _paths.DefaultWinePrefixDir,
         };
         s.Profiles.Add(new ServerProfile { Name = "Default", Options = s.LaunchOptions });
         return s;
