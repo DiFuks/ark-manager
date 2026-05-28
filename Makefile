@@ -1,28 +1,21 @@
-APP  := ArkManager.app
-DIST := dist/$(APP)
-DEST := /Applications/$(APP)
+.PHONY: build mac linux windows run clean
 
-.PHONY: build bundle run clean
+build:
+	@./build.sh
 
-# Собрать .app, установить в /Applications (с заменой) и убрать за собой dist/
-build: bundle
-	@echo "==> Установка в /Applications (с заменой)"
-	@rm -rf "$(DEST)"
-	@cp -R "$(DIST)" "$(DEST)"
-	@# best-effort очистка dist/ с ретраем: Spotlight/Finder может воссоздать .DS_Store
-	@# в свежем .app-бандле прямо во время удаления → "Directory not empty"
-	@for i in 1 2 3; do rm -rf dist 2>/dev/null; [ -d dist ] || break; sleep 1; done; true
-	@echo "Установлено: $(DEST)"
+mac:
+	@./build.sh --target macos
 
-# Только собрать бандл в dist/ (без установки)
-bundle:
-	@./build-app.sh
+linux:
+	@./build.sh --target linux
 
-# Запустить установленную версию
+windows:
+	@./build.sh --target windows
+
+# Запустить собранный .app из dist/
 run:
-	@open "$(DEST)"
+	@open "dist/$(shell awk -F '[<>]' '/<Version>/{print $$3; exit}' Directory.Build.props | xargs -I{} echo "ArkManager-{}-macos-arm64")/ArkManager.app"
 
-# Удалить артефакты сборки
 clean:
 	@rm -rf dist
 	@echo "dist/ удалён"
