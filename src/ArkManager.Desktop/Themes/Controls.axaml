@@ -101,18 +101,12 @@
     <Style Selector="TextBox.mono">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
     </Style>
-    <!-- Скруглённый вид и борт NumericUpDown целиком даёт кастомный ControlTheme для
-         ButtonSpinner (Themes/ControlThemes.axaml). Здесь только гасим внутренний TextBox,
-         чтобы не было второго бордера поверх бордера ButtonSpinner. -->
-    <Style Selector="NumericUpDown">
-        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-    </Style>
-    <Style Selector="NumericUpDown /template/ TextBox">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="0"/>
-        <Setter Property="Padding" Value="2,0"/>
-    </Style>
+    <!-- NumericUpDown: поверхность = внутренний TextBox (рисуется обычным стилем TextBox выше →
+         тот же фон/бордер/скругление, что у текст-полей). ButtonSpinner прозрачный и накладывает
+         шевроны поверх справа (Themes/ControlThemes.axaml). Здесь лишь резервируем правый отступ
+         внутри TextBox, чтобы цифры не залезали под шевроны. -->
+    <!-- NumericUpDown полностью ретемплейтится в Themes/ControlThemes.axaml (там же его «коробка»
+         через AppButtonSpinner). Здесь стилей для него не держим. -->
     <Style Selector="ComboBox">
         <Setter Property="Background" Value="{StaticResource Panel2Brush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
