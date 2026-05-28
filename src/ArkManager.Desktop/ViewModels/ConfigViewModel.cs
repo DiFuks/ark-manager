@@ -205,6 +205,30 @@ public partial class ConfigViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(picked)) ClusterDirOverride = picked;
     }
 
+    // ASA сам дописывает кучу ключей в GameUserSettings.ini при первом старте, плюс
+    // правит Game.ini под маппинги. Чтобы юзеру не приходилось жать Reload — перечитываем
+    // raw-таб с диска при переходе на него. Несохранённые правки в raw-табе при свитче-туда
+    // теряются (этого юзер и просил — «без нажатий»).
+    partial void OnSelectedTabIndexChanged(int value)
+    {
+        if (_config == null) return;
+        try
+        {
+            switch (value)
+            {
+                case 1:
+                    if (File.Exists(_config.GameUserSettingsPath))
+                        GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
+                    break;
+                case 2:
+                    if (File.Exists(_config.GamePath))
+                        GameIniRaw = File.ReadAllText(_config.GamePath);
+                    break;
+            }
+        }
+        catch { /* нет доступа / гонка — оставляем текущий буфер */ }
+    }
+
     partial void OnSelectedMapPresetChanged(MapPreset? value)
     {
         if (value != null) Map = value.Map;
