@@ -4,6 +4,8 @@ A dedicated server manager for ARK: Survival Ascended. Bundles for **macOS arm64
 **Linux x64** and **Windows x64** — all self-contained, no external runtimes to
 install.
 
+**Website:** <https://difuks.github.io/ark-manager/>
+
 The ASA dedicated server is a Windows `.exe` (there is no native mac/linux
 build), so:
 
