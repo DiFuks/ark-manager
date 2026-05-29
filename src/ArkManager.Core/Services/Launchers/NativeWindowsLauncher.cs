@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Util;
 
 namespace ArkManager.Core.Services.Launchers;
@@ -13,6 +14,7 @@ public sealed class NativeWindowsLauncher : IServerLauncher
 {
     public async Task<RunningServer> StartAsync(
         AppSettings settings,
+        ServerConfigSnapshot snapshot,
         IReadOnlyList<string> modIds,
         Action<string> onOutput,
         Action<int> onExit,
@@ -28,7 +30,7 @@ public sealed class NativeWindowsLauncher : IServerLauncher
                 "ArkAscendedServer.exe not found. Install the server on the Install tab.");
 
         var args = new List<string>();
-        args.AddRange(ServerCommandLine.Build(settings, modIds));
+        args.AddRange(ServerCommandLine.Build(settings, snapshot, modIds));
 
         var workDir = Path.Combine(settings.ServerInstallPath, "ShooterGame", "Binaries", "Win64");
 

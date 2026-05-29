@@ -86,6 +86,7 @@ public sealed class ServerManager
 
             _running = await _launcher.StartAsync(
                 _settings.Current,
+                _config.Snapshot,
                 _mods.Ids(),
                 onOutput: PushLog,
                 onExit: code =>

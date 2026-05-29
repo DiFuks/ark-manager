@@ -193,21 +193,29 @@ public partial class ConfigViewModel : ViewModelBase
     private IReadOnlyList<string> BuildCli()
     {
         if (_settings == null) return Array.Empty<string>();
-        // Take the current snapshot from the VM (even before Save) for the preview.
         var s = new AppSettings { LaunchOptions = new ServerLaunchOptions
         {
-            Map = Map, SessionName = SessionName, Port = Port, QueryPort = QueryPort,
+            Map = Map, MaxPlayers = MaxPlayers,
+            SessionName = SessionName,    // still on the model at this point — T20 removes it
+            Port = Port, QueryPort = QueryPort,
             RconPort = RconPort, RconEnabled = RconEnabled,
             ServerPassword = ServerPassword, AdminPassword = AdminPassword,
-            SpectatorPassword = SpectatorPassword, MaxPlayers = MaxPlayers,
+            SpectatorPassword = SpectatorPassword,
             NoBattlEye = NoBattlEye, AutoManagedMods = AutoManagedMods,
             ClusterId = string.IsNullOrWhiteSpace(ClusterId) ? null : ClusterId,
             ClusterDirOverride = string.IsNullOrWhiteSpace(ClusterDirOverride) ? null : ClusterDirOverride,
             ExtraCommandLineArgs = ExtraCommandLineArgs,
             ExtraQueryString = ExtraQueryString,
         }};
+        var snap = new ServerConfigSnapshot
+        {
+            SessionName = SessionName, Port = Port, QueryPort = QueryPort,
+            RconPort = RconPort, RconEnabled = RconEnabled,
+            ServerPassword = ServerPassword, AdminPassword = AdminPassword,
+            SpectatorPassword = SpectatorPassword,
+        };
         return ArkManager.Core.Services.Launchers.ServerCommandLine.Build(
-            s,
+            s, snap,
             _settings.Current.Profiles.FirstOrDefault()?.ModIds ?? new List<string>());
     }
 

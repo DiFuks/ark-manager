@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Util;
 
 namespace ArkManager.Core.Services.Launchers;
@@ -88,6 +89,7 @@ public sealed class BundledWineLauncher : IServerLauncher
 
     public async Task<RunningServer> StartAsync(
         AppSettings settings,
+        ServerConfigSnapshot snapshot,
         IReadOnlyList<string> modIds,
         Action<string> onOutput,
         Action<int> onExit,
@@ -118,7 +120,7 @@ public sealed class BundledWineLauncher : IServerLauncher
         Directory.CreateDirectory(prefix);
 
         var args = new List<string> { exe };
-        args.AddRange(ServerCommandLine.Build(settings, modIds));
+        args.AddRange(ServerCommandLine.Build(settings, snapshot, modIds));
 
         var env = new Dictionary<string, string>
         {

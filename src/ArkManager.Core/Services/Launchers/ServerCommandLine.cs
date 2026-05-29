@@ -1,5 +1,6 @@
 using System.Text;
 using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 
 namespace ArkManager.Core.Services.Launchers;
 
@@ -9,7 +10,7 @@ namespace ArkManager.Core.Services.Launchers;
 /// </summary>
 public static class ServerCommandLine
 {
-    public static IReadOnlyList<string> Build(AppSettings settings, IReadOnlyList<string> modIds)
+    public static IReadOnlyList<string> Build(AppSettings settings, ServerConfigSnapshot snapshot, IReadOnlyList<string> modIds)
     {
         var o = settings.LaunchOptions;
         // Passwords and RCON are NOT put into the URL query. Reason: with multiple parameters
@@ -21,9 +22,9 @@ public static class ServerCommandLine
         {
             o.Map,
             "listen",
-            $"SessionName={Escape(o.SessionName)}",
-            $"Port={o.Port}",
-            $"QueryPort={o.QueryPort}",
+            $"SessionName={Escape(snapshot.SessionName)}",
+            $"Port={snapshot.Port}",
+            $"QueryPort={snapshot.QueryPort}",
         };
 
         if (!string.IsNullOrWhiteSpace(o.ExtraQueryString))

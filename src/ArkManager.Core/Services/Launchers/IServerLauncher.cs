@@ -1,4 +1,5 @@
 using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 
 namespace ArkManager.Core.Services.Launchers;
 
@@ -11,6 +12,7 @@ public interface IServerLauncher
     /// </summary>
     Task<RunningServer> StartAsync(
         AppSettings settings,
+        ServerConfigSnapshot snapshot,
         IReadOnlyList<string> modIds,
         Action<string> onOutput,
         Action<int> onExit,

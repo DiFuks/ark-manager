@@ -1,4 +1,5 @@
 using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Launchers;
 using Xunit;
 
@@ -10,7 +11,7 @@ public class ServerCommandLineTests
     public void Build_DefaultOptions_HasMapAndCoreFlags()
     {
         var s = new AppSettings();
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.Contains("-server", args);
         Assert.Contains("-log", args);
         Assert.Contains("-NoBattlEye", args);
@@ -26,7 +27,7 @@ public class ServerCommandLineTests
         // The server runs headless (no winemac.drv → no window), so the full UE log
         // must be routed to stdout — otherwise it only goes to a window/file and is invisible to ArkManager.
         var s = new AppSettings();
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.Contains("-stdout", args);
         Assert.Contains("-FullStdOutLogOutput", args);
         Assert.Contains("-unattended", args);
@@ -36,7 +37,7 @@ public class ServerCommandLineTests
     public void Build_AddsModsFlag_WhenModsPresent()
     {
         var s = new AppSettings();
-        var args = ServerCommandLine.Build(s, new[] { "928597", "929094" });
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), new[] { "928597", "929094" });
         Assert.Contains("-mods=928597,929094", args);
     }
 
@@ -49,7 +50,7 @@ public class ServerCommandLineTests
         s.LaunchOptions.ServerPassword = "srv";
         s.LaunchOptions.AdminPassword = "adm";
         s.LaunchOptions.SpectatorPassword = "spec";
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.DoesNotContain("ServerPassword", args[0]);
         Assert.DoesNotContain("ServerAdminPassword", args[0]);
         Assert.DoesNotContain("SpectatorPassword", args[0]);
@@ -60,7 +61,7 @@ public class ServerCommandLineTests
     {
         var s = new AppSettings();
         s.LaunchOptions.ExtraCommandLineArgs = "-ForceAllowCaveFlyers -ServerAllowAnsel";
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.Contains("-ForceAllowCaveFlyers", args);
         Assert.Contains("-ServerAllowAnsel", args);
     }
@@ -71,7 +72,7 @@ public class ServerCommandLineTests
         var s = new AppSettings();
         s.LaunchOptions.ClusterId = "my-cluster";
         s.LaunchOptions.ClusterDirOverride = "/tmp/cluster";
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.Contains("-ClusterId=my-cluster", args);
         Assert.Contains(args, a => a.StartsWith("-ClusterDirOverride="));
     }
@@ -83,7 +84,7 @@ public class ServerCommandLineTests
         var s = new AppSettings();
         s.LaunchOptions.RconEnabled = true;
         s.LaunchOptions.RconPort = 27042;
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.DoesNotContain("RCONEnabled", args[0]);
         Assert.DoesNotContain("RCONPort", args[0]);
     }
@@ -93,7 +94,7 @@ public class ServerCommandLineTests
     {
         var s = new AppSettings();
         s.LaunchOptions.NoBattlEye = false;
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.DoesNotContain("-NoBattlEye", args);
     }
 
@@ -101,7 +102,7 @@ public class ServerCommandLineTests
     public void Build_MaxPlayers_NotInUrlQuery()
     {
         var s = new AppSettings { LaunchOptions = new ServerLaunchOptions { MaxPlayers = 42 } };
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         var url = args[0];
         Assert.DoesNotContain("MaxPlayers=", url);
     }
@@ -110,7 +111,7 @@ public class ServerCommandLineTests
     public void Build_MaxPlayers_AsWinLiveMaxPlayersFlag()
     {
         var s = new AppSettings { LaunchOptions = new ServerLaunchOptions { MaxPlayers = 42 } };
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.Contains("-WinLiveMaxPlayers=42", args);
     }
 
@@ -118,7 +119,19 @@ public class ServerCommandLineTests
     public void Build_MaxPlayers_OmittedWhenZero()
     {
         var s = new AppSettings { LaunchOptions = new ServerLaunchOptions { MaxPlayers = 0 } };
-        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var args = ServerCommandLine.Build(s, SnapshotFrom(s.LaunchOptions), Array.Empty<string>());
         Assert.DoesNotContain(args, a => a.StartsWith("-WinLiveMaxPlayers="));
     }
+
+    private static ServerConfigSnapshot SnapshotFrom(ServerLaunchOptions o) => new()
+    {
+        SessionName = o.SessionName,
+        Port = o.Port,
+        QueryPort = o.QueryPort,
+        RconPort = o.RconPort,
+        RconEnabled = o.RconEnabled,
+        ServerPassword = o.ServerPassword ?? "",
+        AdminPassword = o.AdminPassword ?? "",
+        SpectatorPassword = o.SpectatorPassword ?? "",
+    };
 }
