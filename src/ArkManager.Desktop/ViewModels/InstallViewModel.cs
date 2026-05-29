@@ -1,4 +1,5 @@
 using ArkManager.Core.Services;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Steam;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,6 +12,7 @@ public partial class InstallViewModel : ViewModelBase
     private const int MaxLogChars = 200_000;
     private readonly SettingsService? _settings;
     private readonly SteamCmdService? _steam;
+    private readonly ConfigService? _config;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(InstallOrUpdateServerCommand))]
@@ -92,10 +94,11 @@ public partial class InstallViewModel : ViewModelBase
 
     public InstallViewModel() { }
 
-    public InstallViewModel(SettingsService settings, SteamCmdService steam)
+    public InstallViewModel(SettingsService settings, SteamCmdService steam, ConfigService config)
     {
         _settings = settings;
         _steam = steam;
+        _config = config;
         ServerInstallPath = settings.Current.ServerInstallPath ?? "";
         UpdateSteamState();
         RefreshInstalledVersion();
@@ -161,6 +164,7 @@ public partial class InstallViewModel : ViewModelBase
             await _steam.InstallOrUpdateServerAsync(ServerInstallPath, Append);
             Append("[done]");
             RefreshInstalledVersion();
+            _config?.EnsureIni();
         }
         catch (Exception ex) { Append("[error] " + ex.Message); }
         finally { Busy = false; }

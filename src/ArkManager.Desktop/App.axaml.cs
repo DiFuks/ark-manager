@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -41,6 +42,16 @@ public partial class App : Application
         // Server lifecycle notifications (independent of the currently open tab).
         var server = AppServices.Get<ServerManager>();
         var config = AppServices.Get<ConfigService>();
+
+        // Safety-net: ensure the ini files exist for users whose install pre-dates this feature.
+        // EnsureIni is idempotent — it is a no-op when the ini already exists.
+        var settings = AppServices.Get<SettingsService>();
+        if (settings.Current.ServerInstallPath is { } installPath
+            && File.Exists(Path.Combine(installPath, "steamapps", "appmanifest_2430930.acf")))
+        {
+            config.EnsureIni();
+        }
+
         string Name() => config.Snapshot.SessionName;
 
         // "Green" = world loaded and server accepting players (not merely that the process started).
