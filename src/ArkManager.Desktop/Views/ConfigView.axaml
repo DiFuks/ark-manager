@@ -23,7 +23,7 @@
                                               SelectedItem="{Binding SelectedMapPreset}"
                                               HorizontalAlignment="Stretch"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Session name" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SessionName}"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Snapshot.SessionName}"/>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Max players" VerticalAlignment="Center"/>
                                     <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding MaxPlayers}" Minimum="1" Maximum="200" HorizontalAlignment="Left" Width="140"/>
                                 </Grid>
@@ -35,13 +35,13 @@
                                 <TextBlock Classes="section" Text="NETWORK" Margin="0,0,0,8"/>
                                 <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Game port" VerticalAlignment="Center"/>
-                                    <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Port}" Minimum="1024" Maximum="65535" HorizontalAlignment="Left" Width="140"/>
+                                    <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Snapshot.Port}" Minimum="1024" Maximum="65535" HorizontalAlignment="Left" Width="140"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Query port" VerticalAlignment="Center"/>
-                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding QueryPort}" Minimum="1024" Maximum="65535" HorizontalAlignment="Left" Width="140"/>
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Snapshot.QueryPort}" Minimum="1024" Maximum="65535" HorizontalAlignment="Left" Width="140"/>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="RCON" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="14">
-                                        <ToggleSwitch IsChecked="{Binding RconEnabled}" OnContent="Enabled" OffContent="Disabled"/>
-                                        <NumericUpDown Value="{Binding RconPort}" Minimum="1024" Maximum="65535" Width="140"/>
+                                        <ToggleSwitch IsChecked="{Binding Snapshot.RconEnabled}" OnContent="Enabled" OffContent="Disabled"/>
+                                        <NumericUpDown Value="{Binding Snapshot.RconPort}" Minimum="1024" Maximum="65535" Width="140"/>
                                     </StackPanel>
                                 </Grid>
                                 <StackPanel IsVisible="{Binding FirewallIsSupported}" Spacing="6" Margin="0,14,0,0">
@@ -59,11 +59,11 @@
                                 <TextBlock Classes="section" Text="PASSWORDS" Margin="0,0,0,8"/>
                                 <Grid ColumnDefinitions="170,*" RowDefinitions="auto,auto,auto" RowSpacing="10" ColumnSpacing="14">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Server password" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ServerPassword}"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Snapshot.ServerPassword}"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Admin password" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AdminPassword}"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Snapshot.AdminPassword}"/>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Spectator password" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SpectatorPassword}"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Snapshot.SpectatorPassword}"/>
                                 </Grid>
                             </StackPanel>
                         </Border>

@@ -19,17 +19,9 @@ public partial class ConfigViewModel : ViewModelBase
     // -NoBattlEye flag is mandatory and pinned in the UI.
     public bool IsNoBattlEyeEditable => OperatingSystem.IsWindows();
 
-    // Basic launch settings (mapped into ini + CLI).
+    // CLI-only launch settings (not stored in ini).
     [ObservableProperty] private string _map = "TheIsland_WP";
     [ObservableProperty] private MapPreset? _selectedMapPreset;
-    [ObservableProperty] private string _sessionName = "My ASA Server";
-    [ObservableProperty] private int _port = 7777;
-    [ObservableProperty] private int _queryPort = 27015;
-    [ObservableProperty] private int _rconPort = 27020;
-    [ObservableProperty] private bool _rconEnabled = true;
-    [ObservableProperty] private string _serverPassword = "";
-    [ObservableProperty] private string _adminPassword = "";
-    [ObservableProperty] private string _spectatorPassword = "";
     [ObservableProperty] private int _maxPlayers = 70;
     [ObservableProperty] private bool _noBattlEye = true;
     [ObservableProperty] private bool _autoManagedMods = true;
@@ -64,6 +56,9 @@ public partial class ConfigViewModel : ViewModelBase
 
     public string CommandLinePreview => string.Join(" ", Quote(BuildCli()));
 
+    // Live snapshot of the 8 ini-owned fields — binds directly to Basic tab controls.
+    public ServerConfigSnapshot Snapshot => _config?.Snapshot ?? new ServerConfigSnapshot();
+
     public bool FirewallIsSupported => _firewall?.IsSupported ?? false;
     public bool FirewallCanModify   => _firewall is { IsSupported: true, IsElevated: true };
     public string FirewallHelpText  =>
@@ -81,24 +76,30 @@ public partial class ConfigViewModel : ViewModelBase
         _firewall = firewall;
         LoadFromSettings();
         LoadIniFiles();
+        _config.Snapshot.PropertyChanged += (_, _) => OnPropertyChanged(nameof(CommandLinePreview));
     }
 
     [RelayCommand]
     public void Save()
     {
         if (_settings == null || _config == null) return;
+
+        _config.UpdateBasic(b =>
+        {
+            b.SessionName = Snapshot.SessionName;
+            b.Port = Snapshot.Port;
+            b.QueryPort = Snapshot.QueryPort;
+            b.RconPort = Snapshot.RconPort;
+            b.RconEnabled = Snapshot.RconEnabled;
+            b.ServerPassword = Snapshot.ServerPassword;
+            b.AdminPassword = Snapshot.AdminPassword;
+            b.SpectatorPassword = Snapshot.SpectatorPassword;
+        });
+
         _settings.Update(s =>
         {
             var o = s.LaunchOptions;
             o.Map = Map;
-            o.SessionName = SessionName;
-            o.Port = Port;
-            o.QueryPort = QueryPort;
-            o.RconPort = RconPort;
-            o.RconEnabled = RconEnabled;
-            o.ServerPassword = ServerPassword;
-            o.AdminPassword = AdminPassword;
-            o.SpectatorPassword = SpectatorPassword;
             o.MaxPlayers = MaxPlayers;
             o.NoBattlEye = NoBattlEye;
             o.AutoManagedMods = AutoManagedMods;
@@ -108,18 +109,8 @@ public partial class ConfigViewModel : ViewModelBase
             o.ExtraQueryString = ExtraQueryString;
             if (s.Profiles.Count > 0) s.Profiles[0].Options = o;
         });
-        // Mirror into ini (if the folder exists — otherwise it will be applied after the first launch).
-        try
-        {
-            _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
-            // The form writes [ServerSettings] straight into GameUserSettings.ini — re-read the raw tab
-            // so it doesn't show stale text and then overwrite what we just saved.
-            if (File.Exists(_config.GameUserSettingsPath))
-                GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
-        }
-        catch { /* server folder not created yet */ }
 
-        Status = "Saved to settings.json";
+        Status = "Saved";
         OnPropertyChanged(nameof(CommandLinePreview));
     }
 
@@ -162,13 +153,8 @@ public partial class ConfigViewModel : ViewModelBase
     {
         if (_settings == null) return;
         var o = _settings.Current.LaunchOptions;
-        Map = o.Map; SessionName = o.SessionName;
+        Map = o.Map;
         SelectedMapPreset = Maps.Known.FirstOrDefault(m => m.Map == Map);
-        Port = o.Port; QueryPort = o.QueryPort; RconPort = o.RconPort;
-        RconEnabled = o.RconEnabled;
-        ServerPassword = o.ServerPassword ?? "";
-        AdminPassword = o.AdminPassword ?? "";
-        SpectatorPassword = o.SpectatorPassword ?? "";
         MaxPlayers = o.MaxPlayers;
         // On non-Windows -NoBattlEye is mandatory — ignore the stored value.
         NoBattlEye = !OperatingSystem.IsWindows() || o.NoBattlEye;
@@ -192,30 +178,18 @@ public partial class ConfigViewModel : ViewModelBase
 
     private IReadOnlyList<string> BuildCli()
     {
-        if (_settings == null) return Array.Empty<string>();
+        if (_settings == null || _config == null) return Array.Empty<string>();
         var s = new AppSettings { LaunchOptions = new ServerLaunchOptions
         {
             Map = Map, MaxPlayers = MaxPlayers,
-            SessionName = SessionName,    // still on the model at this point — T20 removes it
-            Port = Port, QueryPort = QueryPort,
-            RconPort = RconPort, RconEnabled = RconEnabled,
-            ServerPassword = ServerPassword, AdminPassword = AdminPassword,
-            SpectatorPassword = SpectatorPassword,
             NoBattlEye = NoBattlEye, AutoManagedMods = AutoManagedMods,
             ClusterId = string.IsNullOrWhiteSpace(ClusterId) ? null : ClusterId,
             ClusterDirOverride = string.IsNullOrWhiteSpace(ClusterDirOverride) ? null : ClusterDirOverride,
             ExtraCommandLineArgs = ExtraCommandLineArgs,
             ExtraQueryString = ExtraQueryString,
         }};
-        var snap = new ServerConfigSnapshot
-        {
-            SessionName = SessionName, Port = Port, QueryPort = QueryPort,
-            RconPort = RconPort, RconEnabled = RconEnabled,
-            ServerPassword = ServerPassword, AdminPassword = AdminPassword,
-            SpectatorPassword = SpectatorPassword,
-        };
         return ArkManager.Core.Services.Launchers.ServerCommandLine.Build(
-            s, snap,
+            s, _config.Snapshot,
             _settings.Current.Profiles.FirstOrDefault()?.ModIds ?? new List<string>());
     }
 
@@ -240,8 +214,8 @@ public partial class ConfigViewModel : ViewModelBase
     }
 
     // ASA appends a bunch of its own keys into GameUserSettings.ini at startup and may
-    // overwrite the values we put there. To spare the user from pressing Reload —
-    // re-read the active sub-tab from disk whenever it is switched to.
+    // overwrite the values we put there. Re-read the active raw sub-tab from disk whenever
+    // it is switched to so the user sees the latest content without pressing Reload.
     // Unsaved edits in the current sub-tab are lost on return (the user explicitly asked for this).
     partial void OnSelectedTabIndexChanged(int value)
     {
@@ -250,7 +224,6 @@ public partial class ConfigViewModel : ViewModelBase
         {
             switch (value)
             {
-                case 0: ReloadBasicFromIni(); break;
                 case 1:
                     if (File.Exists(_config.GameUserSettingsPath))
                         GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
@@ -264,66 +237,14 @@ public partial class ConfigViewModel : ViewModelBase
         catch { /* no access / race — keep the current buffer */ }
     }
 
-    /// <summary>
-    /// Called by MainWindowViewModel when the user switches to the Config tab as a whole (not a sub-tab) —
-    /// refreshes both raw buffers and Basic from ini in a single pass. Without this, the first visit
-    /// to Config after starting the server would show stale values until the user toggled
-    /// to another sub-tab and back.
-    /// </summary>
-    public void RefreshFromDisk()
-    {
-        if (_config == null) return;
-        LoadIniFiles();
-        ReloadBasicFromIni();
-    }
-
-    // Re-reads the Basic fields from GameUserSettings.ini for keys written by
-    // ApplyLaunchOptionsToIni. Non-ini fields (Map, NoBattlEye, AutoManagedMods, ClusterId,
-    // ExtraCommandLineArgs/QueryString) aren't touched — they live only in settings.json/VM.
-    private void ReloadBasicFromIni()
-    {
-        if (_config == null || !File.Exists(_config.GameUserSettingsPath)) return;
-        var ini = _config.LoadGameUserSettings();
-
-        var server = ini.TryGetSection("ServerSettings");
-        if (server != null)
-        {
-            ServerPassword = server.GetSingle("ServerPassword") ?? ServerPassword;
-            AdminPassword = server.GetSingle("ServerAdminPassword") ?? AdminPassword;
-            SpectatorPassword = server.GetSingle("SpectatorPassword") ?? SpectatorPassword;
-            if (bool.TryParse(server.GetSingle("RCONEnabled"), out var rconEnabled)) RconEnabled = rconEnabled;
-            if (int.TryParse(server.GetSingle("RCONPort"), out var rconPort)) RconPort = rconPort;
-        }
-
-        var session = ini.TryGetSection("SessionSettings");
-        if (session != null)
-        {
-            SessionName = session.GetSingle("SessionName") ?? SessionName;
-            if (int.TryParse(session.GetSingle("Port"), out var port)) Port = port;
-            if (int.TryParse(session.GetSingle("QueryPort"), out var queryPort)) QueryPort = queryPort;
-        }
-
-        var gameSession = ini.TryGetSection("/Script/Engine.GameSession");
-        if (gameSession != null && int.TryParse(gameSession.GetSingle("MaxPlayers"), out var maxPlayers))
-            MaxPlayers = maxPlayers;
-    }
-
     partial void OnSelectedMapPresetChanged(MapPreset? value)
     {
         if (value != null) Map = value.Map;
     }
 
-    // Any property change refreshes the preview.
+    // Any CLI-only property change refreshes the preview.
     partial void OnMapChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnSessionNameChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnPortChanged(int value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnQueryPortChanged(int value) => OnPropertyChanged(nameof(CommandLinePreview));
     partial void OnMaxPlayersChanged(int value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnServerPasswordChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnAdminPasswordChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnSpectatorPasswordChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnRconEnabledChanged(bool value) => OnPropertyChanged(nameof(CommandLinePreview));
-    partial void OnRconPortChanged(int value) => OnPropertyChanged(nameof(CommandLinePreview));
     partial void OnNoBattlEyeChanged(bool value) => OnPropertyChanged(nameof(CommandLinePreview));
     partial void OnAutoManagedModsChanged(bool value) => OnPropertyChanged(nameof(CommandLinePreview));
     partial void OnExtraCommandLineArgsChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));

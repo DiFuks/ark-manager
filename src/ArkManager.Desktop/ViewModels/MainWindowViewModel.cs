@@ -27,9 +27,8 @@ public partial class MainWindowViewModel : ViewModelBase
         // The Mods tab has no "Resolve names" button — resolve them ourselves on open.
         // ModsService will skip already-cached IDs, no extra requests will be made.
         if (value.ViewModel is ModsViewModel mods) _ = mods.AutoResolveNamesAsync();
-        // On the Config tab ASA may append to / overwrite the ini in the background (server start, manual edits).
-        // Refresh the raw buffers and Basic fields from ini on open — no need to press Reload.
-        if (value.ViewModel is ConfigViewModel config) config.RefreshFromDisk();
+        // Config tab: raw ini buffers refresh via OnSelectedTabIndexChanged; Snapshot is kept live
+        // by ConfigService's FileSystemWatcher — no explicit RefreshFromDisk needed.
     }
 
     public MainWindowViewModel(
