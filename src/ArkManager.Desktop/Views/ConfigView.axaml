@@ -44,6 +44,13 @@
                                         <NumericUpDown Value="{Binding RconPort}" Minimum="1024" Maximum="65535" Width="140"/>
                                     </StackPanel>
                                 </Grid>
+                                <StackPanel IsVisible="{Binding FirewallIsSupported}" Spacing="6" Margin="0,14,0,0">
+                                    <CheckBox IsChecked="{Binding ManageFirewallRules}"
+                                              IsEnabled="{Binding FirewallCanModify}"
+                                              Content="Manage Windows Firewall rules" />
+                                    <TextBlock Classes="meta" TextWrapping="Wrap"
+                                               Text="{Binding FirewallHelpText}" />
+                                </StackPanel>
                             </StackPanel>
                         </Border>
 
