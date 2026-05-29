@@ -4,6 +4,12 @@ namespace ArkManager.Core.Models;
 
 public sealed class AppSettings
 {
+    /// <summary>
+    /// Settings schema version. v2 introduced 2026-05-29: 8 fields that used to live on
+    /// LaunchOptions moved into GameUserSettings.ini. Legacy files are migrated on Load.
+    /// </summary>
+    public int SchemaVersion { get; set; } = 2;
+
     /// <summary>Where the installed ASA Dedicated Server lives (directory containing ArkAscendedServer.exe).</summary>
     public string? ServerInstallPath { get; set; }
 
