@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using ArkManager.App.ViewModels;
 using ArkManager.App.Views;
 using ArkManager.Core.Services;
+using ArkManager.Core.Services.Config;
 
 namespace ArkManager.App;
 
@@ -39,8 +40,8 @@ public partial class App : Application
 
         // Server lifecycle notifications (independent of the currently open tab).
         var server = AppServices.Get<ServerManager>();
-        var settings = AppServices.Get<SettingsService>();
-        string Name() => settings.Current.LaunchOptions.SessionName;
+        var config = AppServices.Get<ConfigService>();
+        string Name() => config.Snapshot.SessionName;
 
         // "Green" = world loaded and server accepting players (not merely that the process started).
         server.ReadyChanged += ready =>
