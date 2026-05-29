@@ -1,0 +1,52 @@
+---
+import Icon from './Icon.astro';
+---
+<footer>
+  <div class="container foot">
+    <div class="row primary">
+      <a href="https://github.com/DiFuks/ark-manager" target="_blank" rel="noopener">
+        <Icon name="github" size={16} /> GitHub
+      </a>
+      <a href="https://github.com/DiFuks/ark-manager/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://github.com/DiFuks/ark-manager/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      <span class="meta" id="footer-version">latest</span>
+    </div>
+    <p class="meta note">
+      macOS: right-click → Open on first launch. Windows: SmartScreen → More info → Run anyway.
+      No code signing.
+    </p>
+  </div>
+</footer>
+
+<style>
+  footer {
+    padding-block: 48px;
+    border-top: 1px solid var(--line);
+    background: var(--rail);
+  }
+  .row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .row a {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .row a:hover { color: var(--accent-ink); text-decoration: none; }
+  .note { margin: 16px 0 0; max-width: 64ch; }
+</style>
+
+<script>
+  import { fetchLatestRelease } from '../lib/github';
+  const release = await fetchLatestRelease();
+  if (release) {
+    const v = document.getElementById('footer-version');
+    if (v) v.textContent = release.tag_name;
+  }
+</script>

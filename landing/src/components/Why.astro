@@ -1,0 +1,38 @@
+---
+const items = [
+  { label: 'BUNDLED',         headline: 'Wine embedded. No external installs.' },
+  { label: 'SELF-CONTAINED',  headline: '.NET runtime ships with the app.' },
+  { label: 'OPEN SOURCE',     headline: 'Inspect, fork, contribute.' },
+];
+---
+<section id="why">
+  <div class="container">
+    <div class="why-grid">
+      {items.map(it => (
+        <div class="why-item">
+          <p class="section-label">{it.label}</p>
+          <p class="why-head">{it.headline}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+  }
+  .why-head {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(20px, 2vw, 26px);
+    color: var(--text);
+    line-height: 1.3;
+    margin: 0;
+  }
+  @media (max-width: 800px) {
+    .why-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+</style>

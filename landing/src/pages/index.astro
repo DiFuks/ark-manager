@@ -1,9 +1,21 @@
 ---
 import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import Why from '../components/Why.astro';
+import Features from '../components/Features.astro';
+import Screenshots from '../components/Screenshots.astro';
+import QuickStart from '../components/QuickStart.astro';
+import Download from '../components/Download.astro';
+import Footer from '../components/Footer.astro';
 ---
 <Base>
-  <main class="container">
-    <h1 class="h1">ArkManager</h1>
-    <p class="body">Landing scaffolding — sections wired up in subsequent tasks.</p>
+  <main>
+    <Hero />
+    <Why />
+    <Features />
+    <Screenshots />
+    <QuickStart />
+    <Download />
   </main>
+  <Footer />
 </Base>

@@ -1,0 +1,107 @@
+---
+const tabs = [
+  { id: 'server',   label: 'Server'   },
+  { id: 'rcon',     label: 'RCON'     },
+  { id: 'install',  label: 'Install'  },
+  { id: 'config',   label: 'Config'   },
+  { id: 'mods',     label: 'Mods'     },
+  { id: 'backups',  label: 'Backups'  },
+];
+const base = import.meta.env.BASE_URL;
+---
+<section id="screenshots">
+  <div class="container">
+    <p class="section-label">SCREENSHOTS</p>
+    <h2 class="h2">Every tab.</h2>
+
+    <div class="tabs" role="tablist">
+      {tabs.map((t, i) => (
+        <button
+          class={`tab ${i === 0 ? 'active' : ''}`}
+          data-target={t.id}
+          role="tab"
+          aria-selected={i === 0 ? 'true' : 'false'}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+
+    <div class="stage panel">
+      {tabs.map((t, i) => (
+        <img
+          class={`shot ${i === 0 ? 'active' : ''}`}
+          data-id={t.id}
+          src={`${base}screenshots/${t.id}.png`}
+          alt={`ArkManager ${t.label} tab`}
+          loading={i === 0 ? 'eager' : 'lazy'}
+          width="1600"
+          height="1000"
+        />
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 32px 0 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--accent-ink);
+    border-bottom-color: var(--accent);
+  }
+  .stage {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+  }
+  .shot {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  .shot.active { opacity: 1; }
+  @media (max-width: 600px) {
+    .tabs { overflow-x: auto; flex-wrap: nowrap; }
+    .tab { white-space: nowrap; }
+  }
+</style>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLButtonElement>('#screenshots .tab');
+  const shots = document.querySelectorAll<HTMLImageElement>('#screenshots .shot');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.target;
+      tabs.forEach(b => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      shots.forEach(img => img.classList.toggle('active', img.dataset.id === id));
+    });
+  });
+</script>

@@ -1,0 +1,130 @@
+---
+import Icon from './Icon.astro';
+
+const cards = [
+  { id: 'mac',   os: 'macOS',   arch: 'arm64', format: '.zip',    icon: 'apple'   },
+  { id: 'linux', os: 'Linux',   arch: 'x64',   format: '.tar.gz', icon: 'linux'   },
+  { id: 'win',   os: 'Windows', arch: 'x64',   format: '.zip',    icon: 'windows' },
+] as const;
+---
+<section id="download">
+  <div class="container">
+    <p class="section-label">DOWNLOAD</p>
+    <h2 class="h2">Pick your platform.</h2>
+    <p class="meta dl-meta">
+      <span id="dl-version">Latest release</span>
+      <span id="dl-date"></span>
+    </p>
+
+    <div class="grid">
+      {cards.map(c => (
+        <article class="panel dl-card" data-os={c.id}>
+          <div class="dl-head">
+            <Icon name={c.icon} size={28} class="dl-icon" />
+            <div>
+              <h3 class="dl-os">{c.os}</h3>
+              <p class="meta dl-arch">{c.arch} · {c.format}</p>
+            </div>
+          </div>
+          <p class="meta dl-size">— MB</p>
+          <a class="btn primary dl-btn" href="https://github.com/DiFuks/ark-manager/releases/latest" target="_blank" rel="noopener">
+            <Icon name="download" size={18} /> Download
+          </a>
+          <p class="meta dl-note"></p>
+        </article>
+      ))}
+    </div>
+
+    <p class="meta dl-all">
+      <a href="https://github.com/DiFuks/ark-manager/releases" target="_blank" rel="noopener">All releases →</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .dl-meta { display: flex; gap: 12px; margin: 12px 0 40px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .dl-card {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: border-color 200ms ease, background 200ms ease;
+  }
+  .dl-card.detected {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--accent-soft), transparent 80%), var(--panel);
+  }
+  .dl-card.detected .dl-btn { box-shadow: 0 0 32px var(--accent-glow); }
+  .dl-head { display: flex; gap: 16px; align-items: flex-start; }
+  .dl-icon { color: var(--accent-ink); flex-shrink: 0; }
+  .dl-os {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 22px;
+    margin: 0;
+    color: var(--text);
+  }
+  .dl-arch { margin: 4px 0 0; }
+  .dl-size { margin: 0; }
+  .dl-btn { align-self: flex-start; }
+  .dl-note { margin: 4px 0 0; min-height: 1em; }
+  .dl-all { margin: 32px 0 0; text-align: center; }
+  .dl-all a { color: var(--muted); }
+  .dl-all a:hover { color: var(--accent-ink); }
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  import { detectOs, osLabel } from '../lib/os-detect';
+  import { fetchLatestRelease, pickAsset, formatSize, formatDate, type OsKey } from '../lib/github';
+
+  const os = detectOs();
+
+  if (os) {
+    document
+      .querySelector<HTMLElement>(`#download .dl-card[data-os="${os}"]`)
+      ?.classList.add('detected');
+
+    const heroCta = document.getElementById('hero-cta');
+    if (heroCta) {
+      heroCta.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M11 3h2v10h3l-4 5-4-5h3V3ZM4 20h16v2H4v-2Z"/></svg> Download for ${osLabel(os)}`;
+    }
+  }
+
+  const ua = navigator.userAgent;
+  const isIntelMac = /Mac/.test(ua) && /Intel/i.test(ua);
+  const isLinuxArm = /Linux/.test(ua) && /(arm|aarch64)/i.test(ua);
+  if (isIntelMac) {
+    const note = document.querySelector('#download .dl-card[data-os="mac"] .dl-note');
+    if (note) note.textContent = 'Apple Silicon only — Intel Macs untested.';
+  }
+  if (isLinuxArm) {
+    const note = document.querySelector('#download .dl-card[data-os="linux"] .dl-note');
+    if (note) note.textContent = 'x64 only — ARM untested.';
+  }
+
+  const release = await fetchLatestRelease();
+  if (release) {
+    const ver = document.getElementById('dl-version');
+    const date = document.getElementById('dl-date');
+    if (ver) ver.textContent = release.tag_name;
+    if (date) date.textContent = `· released ${formatDate(release.published_at)}`;
+
+    (['mac', 'linux', 'win'] as OsKey[]).forEach(key => {
+      const asset = pickAsset(release, key);
+      if (!asset) return;
+      const card = document.querySelector<HTMLElement>(`#download .dl-card[data-os="${key}"]`);
+      const btn = card?.querySelector<HTMLAnchorElement>('.dl-btn');
+      const size = card?.querySelector<HTMLElement>('.dl-size');
+      if (btn) btn.href = asset.browser_download_url;
+      if (size) size.textContent = formatSize(asset.size);
+    });
+  }
+</script>
