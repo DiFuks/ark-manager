@@ -48,6 +48,28 @@ public sealed class ConfigService : IDisposable
         file.Save(GamePath);
     }
 
+    public string LoadGameUserSettingsRaw()
+        => File.Exists(GameUserSettingsPath) ? File.ReadAllText(GameUserSettingsPath) : "";
+
+    public string LoadGameRaw()
+        => File.Exists(GamePath) ? File.ReadAllText(GamePath) : "";
+
+    /// <summary>
+    /// Overwrites GameUserSettings.ini with the supplied text, then re-parses to refresh Snapshot.
+    /// </summary>
+    public void SaveGameUserSettingsRaw(string text)
+    {
+        Directory.CreateDirectory(ConfigDir);
+        File.WriteAllText(GameUserSettingsPath, text);
+        ReloadSnapshotFromDisk();
+    }
+
+    public void SaveGameRaw(string text)
+    {
+        Directory.CreateDirectory(ConfigDir);
+        File.WriteAllText(GamePath, text);
+    }
+
     /// <summary>
     /// Mutates the 8 ArkManager-owned keys in GameUserSettings.ini and updates Snapshot
     /// in lockstep. Existing unrelated keys (ASA's ~100 defaults, custom edits) are preserved.
