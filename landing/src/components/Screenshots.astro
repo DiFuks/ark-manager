@@ -7,7 +7,7 @@ const tabs = [
   { id: 'mods',     label: 'Mods'     },
   { id: 'backups',  label: 'Backups'  },
 ];
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 ---
 <section id="screenshots">
   <div class="container">

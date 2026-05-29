@@ -1,6 +1,6 @@
 ---
 import Icon from './Icon.astro';
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 ---
 <section id="hero">
   <div class="container hero">

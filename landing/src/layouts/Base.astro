@@ -12,7 +12,7 @@ const {
   description = 'Cross-platform dedicated server manager for ARK: Survival Ascended. No setup, no wine to install, no .NET runtime to install. macOS, Linux, Windows.',
 } = Astro.props;
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 const ogImage = new URL(`${base}og-image.png`, Astro.site ?? 'https://difuks.github.io').toString();
 ---
 <!doctype html>
