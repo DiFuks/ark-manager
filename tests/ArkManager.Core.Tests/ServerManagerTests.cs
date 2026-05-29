@@ -1,5 +1,5 @@
-using ArkManager.Core.Models;
 using ArkManager.Core.Services;
+using ArkManager.Core.Services.Config;
 using Xunit;
 
 namespace ArkManager.Core.Tests;
@@ -13,25 +13,24 @@ public class ServerManagerTests
     [Fact]
     public void ShouldAttemptGracefulSave_True_WhenRconEnabledAndPasswordSet()
     {
-        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = "secret" };
-        Assert.True(ServerManager.ShouldAttemptGracefulSave(o));
+        var s = new ServerConfigSnapshot { RconEnabled = true, AdminPassword = "secret" };
+        Assert.True(ServerManager.ShouldAttemptGracefulSave(s));
     }
 
     [Fact]
     public void ShouldAttemptGracefulSave_False_WhenRconDisabled()
     {
-        var o = new ServerLaunchOptions { RconEnabled = false, AdminPassword = "secret" };
-        Assert.False(ServerManager.ShouldAttemptGracefulSave(o));
+        var s = new ServerConfigSnapshot { RconEnabled = false, AdminPassword = "secret" };
+        Assert.False(ServerManager.ShouldAttemptGracefulSave(s));
     }
 
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void ShouldAttemptGracefulSave_False_WhenNoAdminPassword(string? password)
+    public void ShouldAttemptGracefulSave_False_WhenNoAdminPassword(string password)
     {
-        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = password };
-        Assert.False(ServerManager.ShouldAttemptGracefulSave(o));
+        var s = new ServerConfigSnapshot { RconEnabled = true, AdminPassword = password };
+        Assert.False(ServerManager.ShouldAttemptGracefulSave(s));
     }
 
     // While the server is still in the Loading phase (!IsReady) there's nothing to save —
@@ -41,15 +40,15 @@ public class ServerManagerTests
     [Fact]
     public void ShouldAttemptGracefulSave_False_WhenNotReady()
     {
-        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = "secret" };
-        Assert.False(ServerManager.ShouldAttemptGracefulSave(o, isReady: false));
+        var s = new ServerConfigSnapshot { RconEnabled = true, AdminPassword = "secret" };
+        Assert.False(ServerManager.ShouldAttemptGracefulSave(s, isReady: false));
     }
 
     [Fact]
     public void ShouldAttemptGracefulSave_True_WhenReadyAndRconConfigured()
     {
-        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = "secret" };
-        Assert.True(ServerManager.ShouldAttemptGracefulSave(o, isReady: true));
+        var s = new ServerConfigSnapshot { RconEnabled = true, AdminPassword = "secret" };
+        Assert.True(ServerManager.ShouldAttemptGracefulSave(s, isReady: true));
     }
 
     // The "green" readiness indicator = the log line ASA prints once the world is loaded

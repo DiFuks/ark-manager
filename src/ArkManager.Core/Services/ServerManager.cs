@@ -67,21 +67,17 @@ public sealed class ServerManager
 
         try
         {
-            // Sync GameUserSettings.ini with the VM before starting.
-            // Passwords, RCONEnabled/RCONPort, SessionName, Port/QueryPort, MaxPlayers
-            // live ONLY in ini (see CLAUDE.md: they must not go into the URL — the ASA parser
-            // glues the tail into the value). Without this the first launch after install
-            // would pick up ASA defaults — RCON ends up disabled, even if settings.json says
-            // RconEnabled=true. Save in the Config tab does the same plus a JSON update;
-            // here we only make sure ini and settings.json haven't drifted apart.
-            _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
+            // Safety net: if the ini was hand-deleted or never created post-install, materialize defaults
+            // before launching. Empirically (2026-05-29) ASA does NOT overwrite our 8 keys, so a full
+            // ApplyLaunchOptionsToIni here is unnecessary — see the design doc for details.
+            _config.EnsureIni();
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
 
             if (ShouldEnsureFirewallRules(_settings.Current, _firewall))
             {
-                var o = _settings.Current.LaunchOptions;
-                await _firewall.EnsureRulesAsync(o.Port, o.QueryPort, o.RconPort, _cts.Token);
+                var s = _config.Snapshot;
+                await _firewall.EnsureRulesAsync(s.Port, s.QueryPort, s.RconPort, _cts.Token);
             }
 
             _running = await _launcher.StartAsync(
@@ -131,7 +127,7 @@ public sealed class ServerManager
 
         try
         {
-            if (ShouldAttemptGracefulSave(_settings.Current.LaunchOptions, wasReady))
+            if (ShouldAttemptGracefulSave(_config.Snapshot, wasReady))
             {
                 // Ready + RCON configured: ask the server to save the world and exit. Otherwise
                 // a hard-kill loses progress since the last auto-save — ASA flushes the world
@@ -181,7 +177,7 @@ public sealed class ServerManager
         }
         SetState(ServerState.Stopping);
 
-        if (ShouldAttemptGracefulSave(_settings.Current.LaunchOptions, wasReady))
+        if (ShouldAttemptGracefulSave(_config.Snapshot, wasReady))
         {
             // Save the world (saveworld + DoExit). Has its own 30s timeout inside; errors aren't critical.
             await TryGracefulSaveAndExitAsync(CancellationToken.None);
@@ -267,8 +263,8 @@ public sealed class ServerManager
     }
 
     /// <summary>Decides whether it makes sense to attempt a graceful save via RCON.</summary>
-    internal static bool ShouldAttemptGracefulSave(ServerLaunchOptions o)
-        => o.RconEnabled && !string.IsNullOrWhiteSpace(o.AdminPassword);
+    internal static bool ShouldAttemptGracefulSave(ServerConfigSnapshot s)
+        => s.RconEnabled && !string.IsNullOrWhiteSpace(s.AdminPassword);
 
     /// <summary>
     /// As above, but also gated on Ready: while the world is still loading there's nothing
@@ -276,8 +272,8 @@ public sealed class ServerManager
     /// a 60-second wait for a voluntary exit that never comes — Stop has to skip straight to
     /// the hard-kill in that case.
     /// </summary>
-    internal static bool ShouldAttemptGracefulSave(ServerLaunchOptions o, bool isReady)
-        => isReady && ShouldAttemptGracefulSave(o);
+    internal static bool ShouldAttemptGracefulSave(ServerConfigSnapshot s, bool isReady)
+        => isReady && ShouldAttemptGracefulSave(s);
 
     /// <summary>
     /// Gate for auto-firewall: must be opted into AND on a supported OS AND with admin rights.
@@ -292,8 +288,8 @@ public sealed class ServerManager
     /// </summary>
     private async Task TryGracefulSaveAndExitAsync(CancellationToken ct)
     {
-        var o = _settings.Current.LaunchOptions;
-        if (!ShouldAttemptGracefulSave(o))
+        var s = _config.Snapshot;
+        if (!ShouldAttemptGracefulSave(s))
         {
             PushLog("[stop] RCON disabled or no admin password — graceful save skipped " +
                     "(hard-kill; progress since last auto-save may be lost).");
@@ -306,7 +302,7 @@ public sealed class ServerManager
             timeout.CancelAfter(TimeSpan.FromSeconds(30));
 
             await using var rcon = new RconClient();
-            await rcon.ConnectAsync("127.0.0.1", o.RconPort, o.AdminPassword!, timeout.Token);
+            await rcon.ConnectAsync("127.0.0.1", s.RconPort, s.AdminPassword, timeout.Token);
 
             PushLog("[stop] saveworld...");
             var resp = await rcon.SendAsync("saveworld", timeout.Token);
