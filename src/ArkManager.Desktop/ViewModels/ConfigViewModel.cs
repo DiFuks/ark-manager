@@ -221,10 +221,6 @@ public partial class ConfigViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(picked)) ClusterDirOverride = picked;
     }
 
-    // ASA appends a bunch of its own keys into GameUserSettings.ini at startup and may
-    // overwrite the values we put there. To spare the user from pressing Reload —
-    // re-read the active sub-tab from disk whenever it is switched to.
-    // Unsaved edits in the current sub-tab are lost on return (the user explicitly asked for this).
     // Auto-save on toggle. Idempotent: skips if values already match (e.g. during LoadFromSettings)
     // or if elevation is missing (we never persist changes the user can't make).
     partial void OnManageFirewallRulesChanged(bool value)
@@ -235,6 +231,10 @@ public partial class ConfigViewModel : ViewModelBase
         _settings.Update(s => s.ManageFirewallRules = value);
     }
 
+    // ASA appends a bunch of its own keys into GameUserSettings.ini at startup and may
+    // overwrite the values we put there. To spare the user from pressing Reload —
+    // re-read the active sub-tab from disk whenever it is switched to.
+    // Unsaved edits in the current sub-tab are lost on return (the user explicitly asked for this).
     partial void OnSelectedTabIndexChanged(int value)
     {
         if (_config == null) return;
