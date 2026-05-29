@@ -115,12 +115,25 @@
             </TabItem>
 
             <TabItem Header="GameUserSettings.ini">
-                <Grid RowDefinitions="auto,*" Margin="0,10,0,0">
+                <Grid RowDefinitions="auto,auto,*" Margin="0,10,0,0">
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
                         <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
                         <Button Content="Find next" Click="OnFindNext"/>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Classes="log" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource AccentBrush}"
+                            Padding="8,4"
+                            Margin="0,0,0,4"
+                            IsVisible="{Binding HasExternalChangeForGus}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="File changed on disk."
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource BgBrush}" />
+                            <Button Content="Reload" Command="{Binding ReloadRawGusCommand}" Classes="chip" />
+                            <Button Content="Keep my edits" Command="{Binding DismissExternalChangeGusCommand}" Classes="chip" />
+                        </StackPanel>
+                    </Border>
+                    <TextBox Grid.Row="2" Classes="log" Text="{Binding GameUserSettingsRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
                              Background="{DynamicResource ConsoleBrush}"
                              BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
@@ -129,12 +142,25 @@
             </TabItem>
 
             <TabItem Header="Game.ini">
-                <Grid RowDefinitions="auto,*" Margin="0,10,0,0">
+                <Grid RowDefinitions="auto,auto,*" Margin="0,10,0,0">
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
                         <TextBox Width="240" PlaceholderText="Find…" KeyDown="OnSearchKeyDown"/>
                         <Button Content="Find next" Click="OnFindNext"/>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Classes="log" Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource AccentBrush}"
+                            Padding="8,4"
+                            Margin="0,0,0,4"
+                            IsVisible="{Binding HasExternalChangeForGame}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="File changed on disk."
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource BgBrush}" />
+                            <Button Content="Reload" Command="{Binding ReloadRawGameCommand}" Classes="chip" />
+                            <Button Content="Keep my edits" Command="{Binding DismissExternalChangeGameCommand}" Classes="chip" />
+                        </StackPanel>
+                    </Border>
+                    <TextBox Grid.Row="2" Classes="log" Text="{Binding GameIniRaw}" AcceptsReturn="True" TextWrapping="NoWrap"
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
                              Background="{DynamicResource ConsoleBrush}"
                              BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"

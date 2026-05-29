@@ -37,6 +37,18 @@ public partial class ConfigViewModel : ViewModelBase
     [ObservableProperty] private string _gameUserSettingsRaw = "";
     [ObservableProperty] private string _gameIniRaw = "";
 
+    // Tracks the on-disk content at the time of the last load/save,
+    // so we can detect user edits vs. external changes.
+    private string _originalRawGus = "";
+    private string _originalRawGame = "";
+
+    // True when the watcher detected an external change while the user has unsaved edits.
+    [ObservableProperty] private bool _hasExternalChangeForGus;
+    [ObservableProperty] private bool _hasExternalChangeForGame;
+
+    public bool IsRawGusDirty => GameUserSettingsRaw != _originalRawGus;
+    public bool IsRawGameDirty => GameIniRaw != _originalRawGame;
+
     [ObservableProperty] private string _status = "";
 
     // Active sub-tab (Basic / GameUserSettings.ini / Game.ini / Preview CLI).
@@ -77,6 +89,7 @@ public partial class ConfigViewModel : ViewModelBase
         LoadFromSettings();
         LoadIniFiles();
         _config.Snapshot.PropertyChanged += (_, _) => OnPropertyChanged(nameof(CommandLinePreview));
+        _config.RawFilesChanged += () => App.UiThread(OnRawFilesChanged);
     }
 
     [RelayCommand]
@@ -133,20 +146,25 @@ public partial class ConfigViewModel : ViewModelBase
         switch (SelectedTabIndex)
         {
             case 0: Save(); break;
-            case 1: SaveRawIni(_config?.GameUserSettingsPath, GameUserSettingsRaw, "GameUserSettings.ini"); break;
-            case 2: SaveRawIni(_config?.GamePath, GameIniRaw, "Game.ini"); break;
+            case 1:
+                if (_config != null)
+                {
+                    _config.SaveGameUserSettingsRaw(GameUserSettingsRaw);
+                    _originalRawGus = GameUserSettingsRaw;
+                    HasExternalChangeForGus = false;
+                    Status = "GameUserSettings.ini saved";
+                }
+                break;
+            case 2:
+                if (_config != null)
+                {
+                    _config.SaveGameRaw(GameIniRaw);
+                    _originalRawGame = GameIniRaw;
+                    HasExternalChangeForGame = false;
+                    Status = "Game.ini saved";
+                }
+                break;
         }
-    }
-
-    private void SaveRawIni(string? path, string content, string label)
-    {
-        if (path == null) return;
-        try
-        {
-            File.WriteAllText(path, content);
-            Status = label + " saved";
-        }
-        catch (Exception ex) { Status = "Error: " + ex.Message; }
     }
 
     private void LoadFromSettings()
@@ -170,10 +188,13 @@ public partial class ConfigViewModel : ViewModelBase
     private void LoadIniFiles()
     {
         if (_config == null) return;
-        GameUserSettingsRaw = File.Exists(_config.GameUserSettingsPath)
-            ? File.ReadAllText(_config.GameUserSettingsPath) : "";
-        GameIniRaw = File.Exists(_config.GamePath)
-            ? File.ReadAllText(_config.GamePath) : "";
+        GameUserSettingsRaw = _config.LoadGameUserSettingsRaw();
+        _originalRawGus = GameUserSettingsRaw;
+        HasExternalChangeForGus = false;
+
+        GameIniRaw = _config.LoadGameRaw();
+        _originalRawGame = GameIniRaw;
+        HasExternalChangeForGame = false;
     }
 
     private IReadOnlyList<string> BuildCli()
@@ -225,12 +246,14 @@ public partial class ConfigViewModel : ViewModelBase
             switch (value)
             {
                 case 1:
-                    if (File.Exists(_config.GameUserSettingsPath))
-                        GameUserSettingsRaw = File.ReadAllText(_config.GameUserSettingsPath);
+                    GameUserSettingsRaw = _config.LoadGameUserSettingsRaw();
+                    _originalRawGus = GameUserSettingsRaw;
+                    HasExternalChangeForGus = false;
                     break;
                 case 2:
-                    if (File.Exists(_config.GamePath))
-                        GameIniRaw = File.ReadAllText(_config.GamePath);
+                    GameIniRaw = _config.LoadGameRaw();
+                    _originalRawGame = GameIniRaw;
+                    HasExternalChangeForGame = false;
                     break;
             }
         }
@@ -241,6 +264,65 @@ public partial class ConfigViewModel : ViewModelBase
     {
         if (value != null) Map = value.Map;
     }
+
+    private void OnRawFilesChanged()
+    {
+        if (_config == null) return;
+
+        var gusOnDisk = _config.LoadGameUserSettingsRaw();
+        if (gusOnDisk != _originalRawGus)
+        {
+            if (!IsRawGusDirty)
+            {
+                GameUserSettingsRaw = gusOnDisk;
+                _originalRawGus = gusOnDisk;
+                HasExternalChangeForGus = false;
+            }
+            else
+            {
+                HasExternalChangeForGus = true;
+            }
+        }
+
+        var gameOnDisk = _config.LoadGameRaw();
+        if (gameOnDisk != _originalRawGame)
+        {
+            if (!IsRawGameDirty)
+            {
+                GameIniRaw = gameOnDisk;
+                _originalRawGame = gameOnDisk;
+                HasExternalChangeForGame = false;
+            }
+            else
+            {
+                HasExternalChangeForGame = true;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void ReloadRawGus()
+    {
+        if (_config == null) return;
+        GameUserSettingsRaw = _config.LoadGameUserSettingsRaw();
+        _originalRawGus = GameUserSettingsRaw;
+        HasExternalChangeForGus = false;
+    }
+
+    [RelayCommand]
+    private void ReloadRawGame()
+    {
+        if (_config == null) return;
+        GameIniRaw = _config.LoadGameRaw();
+        _originalRawGame = GameIniRaw;
+        HasExternalChangeForGame = false;
+    }
+
+    [RelayCommand]
+    private void DismissExternalChangeGus() => HasExternalChangeForGus = false;
+
+    [RelayCommand]
+    private void DismissExternalChangeGame() => HasExternalChangeForGame = false;
 
     // Any CLI-only property change refreshes the preview.
     partial void OnMapChanged(string value) => OnPropertyChanged(nameof(CommandLinePreview));
