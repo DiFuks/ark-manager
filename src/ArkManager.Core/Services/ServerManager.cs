@@ -37,6 +37,12 @@ public sealed class ServerManager
     /// </summary>
     public bool IsReady { get; private set; }
 
+    /// <summary>
+    /// When the server became Ready (accepted connections). Source of truth for the Uptime tile —
+    /// we don't count the loading phase. Null while !Ready.
+    /// </summary>
+    public DateTime? ReadyAt { get; private set; }
+
     public event Action<ServerState>? StateChanged;
     public event Action<bool>? ReadyChanged;
     public event Action<string>? LogLine;
@@ -230,6 +236,9 @@ public sealed class ServerManager
             _stopRequested = false;
         }
         SetReady(true); // already running and accepting players
+        // Adoption case: we don't know exactly when the world finished loading. Closest honest
+        // approximation is the process start time — better than UtcNow which would reset uptime to 0.
+        ReadyAt = _running.StartedAt;
         SetState(ServerState.Running);
         PushLog($"[adopted running server pid={d.Pid}, up {d.Uptime:hh\\:mm\\:ss}]");
         StartAdoptedMonitor(d.Pid);
@@ -344,6 +353,7 @@ public sealed class ServerManager
     {
         if (IsReady == value) return;
         IsReady = value;
+        ReadyAt = value ? DateTime.UtcNow : null;
         ReadyChanged?.Invoke(value);
     }
 

@@ -76,7 +76,13 @@ public partial class ServerViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private string _playersDetail = "—";
 
-    public string PlayersDisplay => State == "Running" && Ready ? PlayersOnline.ToString() : "—";
+    // Cap from LaunchOptions.MaxPlayers — kept in sync via SettingsService.Changed so a Config-tab
+    // edit reflects on the Server tile without restart.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlayersDisplay))]
+    private int _maxPlayers;
+
+    public string PlayersDisplay => State == "Running" && Ready ? $"{PlayersOnline}/{MaxPlayers}" : "—";
 
     public bool HasPlayersDetail =>
         State == "Running"
@@ -102,6 +108,8 @@ public partial class ServerViewModel : ViewModelBase
         _server = server;
         var o = settings.Current.LaunchOptions;
         Identity = $"{config.Snapshot.SessionName} · {o.Map}";
+        MaxPlayers = o.MaxPlayers;
+        settings.Changed += s => App.UiThread(() => MaxPlayers = s.LaunchOptions.MaxPlayers);
         foreach (var l in server.Snapshot()) AppendLine(l);
         server.StateChanged += s => App.UiThread(() => { State = s.ToString(); Pid = server.Pid; });
         server.ReadyChanged += r => App.UiThread(() => Ready = r);
@@ -278,8 +286,10 @@ public partial class ServerViewModel : ViewModelBase
 
     private void UpdateUptime()
     {
-        if (_server?.StartedAt == null) { Uptime = "—"; return; }
-        var t = DateTime.UtcNow - _server.StartedAt.Value;
+        // Count from Ready (world loaded, accepting connections), not from process Start —
+        // the loading phase isn't real uptime to the user.
+        if (_server?.ReadyAt == null) { Uptime = "—"; return; }
+        var t = DateTime.UtcNow - _server.ReadyAt.Value;
         Uptime = $"{(int)t.TotalHours:D2}:{t.Minutes:D2}:{t.Seconds:D2}";
     }
 }
