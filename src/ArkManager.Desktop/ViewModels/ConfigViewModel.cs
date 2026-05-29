@@ -1,6 +1,7 @@
 using ArkManager.Core.Models;
 using ArkManager.Core.Services;
 using ArkManager.Core.Services.Config;
+using ArkManager.Core.Services.Firewall;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -10,6 +11,7 @@ public partial class ConfigViewModel : ViewModelBase
 {
     private readonly SettingsService? _settings;
     private readonly ConfigService? _config;
+    private readonly IFirewallService? _firewall;
 
     public IReadOnlyList<MapPreset> KnownMaps { get; } = Maps.Known;
 
@@ -36,6 +38,9 @@ public partial class ConfigViewModel : ViewModelBase
     [ObservableProperty] private string _extraCommandLineArgs = "";
     [ObservableProperty] private string _extraQueryString = "";
 
+    // Auto-open Windows Firewall inbound rules on server Start. Persists on toggle.
+    [ObservableProperty] private bool _manageFirewallRules;
+
     // Raw view and editing of ini files.
     [ObservableProperty] private string _gameUserSettingsRaw = "";
     [ObservableProperty] private string _gameIniRaw = "";
@@ -59,12 +64,21 @@ public partial class ConfigViewModel : ViewModelBase
 
     public string CommandLinePreview => string.Join(" ", Quote(BuildCli()));
 
+    public bool FirewallIsSupported => _firewall?.IsSupported ?? false;
+    public bool FirewallCanModify   => _firewall is { IsSupported: true, IsElevated: true };
+    public string FirewallHelpText  =>
+        _firewall is null                  ? ""
+      : !_firewall.IsSupported             ? ""
+      : !_firewall.IsElevated              ? "Run ArkManager as administrator to enable. Without admin rights, Windows Firewall changes are not allowed."
+      :                                      "Creates inbound rules for Game (UDP), Query (UDP), and RCON (TCP) ports on each Start. Rules persist after Stop.";
+
     public ConfigViewModel() { }
 
-    public ConfigViewModel(SettingsService settings, ConfigService config)
+    public ConfigViewModel(SettingsService settings, ConfigService config, IFirewallService firewall)
     {
         _settings = settings;
         _config = config;
+        _firewall = firewall;
         LoadFromSettings();
         LoadIniFiles();
     }
@@ -163,6 +177,8 @@ public partial class ConfigViewModel : ViewModelBase
         ClusterDirOverride = o.ClusterDirOverride ?? "";
         ExtraCommandLineArgs = o.ExtraCommandLineArgs;
         ExtraQueryString = o.ExtraQueryString;
+        // Effective value: only show checked when admin rights are present. The JSON-stored intent is preserved.
+        ManageFirewallRules = FirewallCanModify && _settings.Current.ManageFirewallRules;
     }
 
     private void LoadIniFiles()
@@ -209,6 +225,16 @@ public partial class ConfigViewModel : ViewModelBase
     // overwrite the values we put there. To spare the user from pressing Reload —
     // re-read the active sub-tab from disk whenever it is switched to.
     // Unsaved edits in the current sub-tab are lost on return (the user explicitly asked for this).
+    // Auto-save on toggle. Idempotent: skips if values already match (e.g. during LoadFromSettings)
+    // or if elevation is missing (we never persist changes the user can't make).
+    partial void OnManageFirewallRulesChanged(bool value)
+    {
+        if (_settings is null) return;
+        if (!FirewallCanModify) return;
+        if (_settings.Current.ManageFirewallRules == value) return;
+        _settings.Update(s => s.ManageFirewallRules = value);
+    }
+
     partial void OnSelectedTabIndexChanged(int value)
     {
         if (_config == null) return;
