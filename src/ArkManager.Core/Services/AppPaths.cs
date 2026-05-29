@@ -17,9 +17,9 @@ public sealed class AppPaths
     public string DefaultServerInstallDir { get; }
     public string ServerRuntimeDir { get; }
 
-    public AppPaths()
+    public AppPaths(string? dataDirOverride = null)
     {
-        DataDir = ResolveDataDir();
+        DataDir = dataDirOverride ?? ResolveDataDir();
         LogsDir = Path.Combine(DataDir, "logs");
         SettingsFile = Path.Combine(DataDir, "settings.json");
         SteamCmdDir = Path.Combine(DataDir, "steamcmd");
