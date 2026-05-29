@@ -270,6 +270,13 @@ public sealed class ServerManager
         => isReady && ShouldAttemptGracefulSave(o);
 
     /// <summary>
+    /// Gate for auto-firewall: must be opted into AND on a supported OS AND with admin rights.
+    /// Extracted for testability (the StartAsync call site is a one-line if).
+    /// </summary>
+    internal static bool ShouldEnsureFirewallRules(AppSettings s, Firewall.IFirewallService fw)
+        => s.ManageFirewallRules && fw.IsSupported && fw.IsElevated;
+
+    /// <summary>
     /// saveworld (wait for disk flush) + DoExit via RCON. Any error is just
     /// logged: the hard-kill in StopAsync remains a guaranteed fallback.
     /// </summary>
