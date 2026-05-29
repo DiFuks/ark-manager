@@ -61,6 +61,26 @@ public sealed class SteamCmdService
         return args;
     }
 
+    /// <summary>
+    /// Minimal args used to let steamcmd self-update before the real install.
+    /// On Windows, steamcmd's self-update spawns a new process and exits the old one,
+    /// and the new process does NOT inherit our original command-line args. Running
+    /// app_update on a stale steamcmd therefore loses our args during the relaunch and
+    /// the install never happens (see the "Missing configuration" failure mode).
+    /// A standalone "+login anonymous +quit" call is harmless if steamcmd is up-to-date.
+    /// </summary>
+    public static IReadOnlyList<string> BuildWarmupArgs(SteamCmdHostOs os)
+    {
+        var args = new List<string>();
+        if (os != SteamCmdHostOs.Windows)
+        {
+            args.Add("+@sSteamCmdForcePlatformType");
+            args.Add("windows");
+        }
+        args.AddRange(new[] { "+login", "anonymous", "+quit" });
+        return args;
+    }
+
     private readonly AppPaths _paths;
     private readonly SettingsService _settings;
 
@@ -146,6 +166,8 @@ public sealed class SteamCmdService
 
     /// <summary>
     /// Runs app_update 2430930 validate. Output is streamed line-by-line to onOutput.
+    /// Preceded by a warm-up call so steamcmd can self-update without dropping the
+    /// real install's args during the relaunch (see <see cref="BuildWarmupArgs"/>).
     /// </summary>
     public async Task<int> InstallOrUpdateServerAsync(
         string installDir,
@@ -157,9 +179,18 @@ public sealed class SteamCmdService
 
         Directory.CreateDirectory(installDir);
         var bin = ResolveSteamCmdBinary();
+        var os = DetectHostOs();
 
-        var args = BuildInstallArgs(installDir, DetectHostOs());
+        var warmupArgs = BuildWarmupArgs(os);
+        onOutput("Warming up steamcmd (allows self-update before the real install)...");
+        onOutput($"$ {bin} {string.Join(" ", warmupArgs)}");
+        await ProcessRunner.RunStreamingAsync(
+            bin, warmupArgs,
+            onStdOut: onOutput,
+            onStdErr: onOutput,
+            ct: ct);
 
+        var args = BuildInstallArgs(installDir, os);
         onOutput($"$ {bin} {string.Join(" ", args)}");
         return await ProcessRunner.RunStreamingAsync(
             bin, args,

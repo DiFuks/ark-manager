@@ -43,4 +43,34 @@ public class SteamCmdBootstrapTests
         Assert.Contains("+@sSteamCmdForcePlatformType", linuxArgs);
         Assert.Contains("windows", linuxArgs);
     }
+
+    [Fact]
+    public void Warmup_args_on_windows_only_login_and_quit()
+    {
+        var args = SteamCmdService.BuildWarmupArgs(SteamCmdHostOs.Windows);
+        Assert.Equal(new[] { "+login", "anonymous", "+quit" }, args);
+    }
+
+    [Fact]
+    public void Warmup_args_on_nonwindows_include_force_platform()
+    {
+        var args = SteamCmdService.BuildWarmupArgs(SteamCmdHostOs.MacOS);
+        Assert.Equal(
+            new[] { "+@sSteamCmdForcePlatformType", "windows", "+login", "anonymous", "+quit" },
+            args);
+    }
+
+    [Fact]
+    public void Warmup_args_never_include_app_update()
+    {
+        // Whole point of the warmup is to NOT carry app_update — otherwise the
+        // self-update relaunch would silently drop it (see SteamCmdService docs).
+        foreach (var os in new[] { SteamCmdHostOs.Windows, SteamCmdHostOs.MacOS, SteamCmdHostOs.Linux })
+        {
+            var args = SteamCmdService.BuildWarmupArgs(os);
+            Assert.DoesNotContain("+app_update", args);
+            Assert.DoesNotContain("+app_info_update", args);
+            Assert.DoesNotContain("+force_install_dir", args);
+        }
+    }
 }
