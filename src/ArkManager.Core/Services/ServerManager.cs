@@ -109,28 +109,38 @@ public sealed class ServerManager
     public async Task StopAsync(CancellationToken ct = default)
     {
         int? pid;
+        bool wasReady;
         lock (_lock)
         {
             if (State is ServerState.Stopped or ServerState.Crashed) return;
             pid = _running?.Pid;
+            wasReady = IsReady;
             _stopRequested = true;
         }
         SetState(ServerState.Stopping);
 
         try
         {
-            // Graceful: first ask the server to save the world and exit via RCON.
-            // Without this the hard-kill (below and in ProcessRunner via ct) loses all progress
-            // since the last auto-save — ASA flushes the world to disk only on saveworld/exit.
-            await TryGracefulSaveAndExitAsync(ct);
-
-            // Wait for the server to exit on its own after DoExit (ASA's graceful exit
-            // takes ~20s). If it doesn't exit within 60s — finish it with a hard-kill (the
-            // world is already saved by saveworld above, no data loss).
-            if (pid is int p)
+            if (ShouldAttemptGracefulSave(_settings.Current.LaunchOptions, wasReady))
             {
-                if (!await WaitForExitAsync(p, TimeSpan.FromSeconds(60), ct))
-                    await _launcher.StopAsync(p, ct);
+                // Ready + RCON configured: ask the server to save the world and exit. Otherwise
+                // a hard-kill loses progress since the last auto-save — ASA flushes the world
+                // to disk only on saveworld/exit.
+                await TryGracefulSaveAndExitAsync(ct);
+                // ASA's graceful exit takes ~20s. If it doesn't exit within 60s — finish it
+                // with a hard-kill (the world is already saved by saveworld above, no data loss).
+                if (pid is int p1 && !await WaitForExitAsync(p1, TimeSpan.FromSeconds(60), ct))
+                    await _launcher.StopAsync(p1, ct);
+            }
+            else if (pid is int p2)
+            {
+                // !Ready (still loading) or RCON unavailable: skip the graceful path entirely.
+                // There's nothing to save (world not loaded) and ASA wouldn't react to DoExit;
+                // waiting 60s for a voluntary exit just makes the UI sit in "Stopping…".
+                PushLog(wasReady
+                    ? "[stop] graceful save unavailable (RCON disabled or no admin password) — hard-kill."
+                    : "[stop] server is still loading — hard-kill (nothing to save yet).");
+                await _launcher.StopAsync(p2, ct);
             }
             _cts?.Cancel();
         }
@@ -151,22 +161,31 @@ public sealed class ServerManager
     public async Task ShutdownAsync()
     {
         int? pid;
+        bool wasReady;
         lock (_lock)
         {
             if (State is ServerState.Stopped or ServerState.Crashed) return;
             _stopRequested = true;
             pid = _running?.Pid;
+            wasReady = IsReady;
         }
         SetState(ServerState.Stopping);
 
-        // Save the world (saveworld + DoExit). Has its own timeout inside; errors aren't critical.
-        await TryGracefulSaveAndExitAsync(CancellationToken.None);
-
-        // Wait briefly for a voluntary exit after DoExit, then finish it — kill is mandatory.
-        if (pid is int p)
+        if (ShouldAttemptGracefulSave(_settings.Current.LaunchOptions, wasReady))
         {
-            await WaitForExitAsync(p, TimeSpan.FromSeconds(10), CancellationToken.None);
-            try { await _launcher.StopAsync(p); } catch { /* already dead */ }
+            // Save the world (saveworld + DoExit). Has its own 30s timeout inside; errors aren't critical.
+            await TryGracefulSaveAndExitAsync(CancellationToken.None);
+            // Wait briefly for a voluntary exit after DoExit, then finish it — kill is mandatory.
+            if (pid is int p)
+            {
+                await WaitForExitAsync(p, TimeSpan.FromSeconds(10), CancellationToken.None);
+                try { await _launcher.StopAsync(p); } catch { /* already dead */ }
+            }
+        }
+        else if (pid is int p2)
+        {
+            // !Ready or RCON unavailable: nothing useful in waiting. Kill immediately.
+            try { await _launcher.StopAsync(p2); } catch { /* already dead */ }
         }
         _cts?.Cancel();
 
@@ -240,6 +259,15 @@ public sealed class ServerManager
     /// <summary>Decides whether it makes sense to attempt a graceful save via RCON.</summary>
     internal static bool ShouldAttemptGracefulSave(ServerLaunchOptions o)
         => o.RconEnabled && !string.IsNullOrWhiteSpace(o.AdminPassword);
+
+    /// <summary>
+    /// As above, but also gated on Ready: while the world is still loading there's nothing
+    /// to save AND ASA won't react to DoExit anyway. The graceful path would just turn into
+    /// a 60-second wait for a voluntary exit that never comes — Stop has to skip straight to
+    /// the hard-kill in that case.
+    /// </summary>
+    internal static bool ShouldAttemptGracefulSave(ServerLaunchOptions o, bool isReady)
+        => isReady && ShouldAttemptGracefulSave(o);
 
     /// <summary>
     /// saveworld (wait for disk flush) + DoExit via RCON. Any error is just

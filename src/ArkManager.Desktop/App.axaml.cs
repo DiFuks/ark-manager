@@ -93,8 +93,14 @@ public partial class App : Application
         try
         {
             var server = AppServices.Get<ServerManager>();
-            // Block, but with a cap — otherwise the process exits before the server is killed.
-            server.ShutdownAsync().Wait(TimeSpan.FromSeconds(45));
+            // Hop to the thread pool before .Wait(). ShutdownRequested fires on the UI thread,
+            // and ShutdownAsync awaits without ConfigureAwait(false) — its continuations would
+            // try to resume on the (blocked) UI thread → deadlock, Avalonia force-closes after
+            // 45s, and the ASA process survives as an orphan. Running on a pool thread breaks
+            // the SyncContext capture so kill actually runs. Hit on Windows where the server is
+            // usually in Loading + no admin password → graceful save is skipped and the hard
+            // kill is the only thing standing between us and an orphan.
+            Task.Run(() => server.ShutdownAsync()).Wait(TimeSpan.FromSeconds(45));
         }
         catch { /* DI not yet built / already stopped — ignore */ }
     }

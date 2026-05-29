@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using ArkManager.Core.Services;
 using ArkManager.Core.Services.Rcon;
@@ -30,6 +31,8 @@ public partial class ServerViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusBrush))]
     [NotifyPropertyChangedFor(nameof(StatusText))]
+    [NotifyPropertyChangedFor(nameof(PlayersDisplay))]
+    [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private bool _ready;
 
     // Status dot like in the ARK window: grey stopped → yellow loading → green ready → red crash.
@@ -60,10 +63,10 @@ public partial class ServerViewModel : ViewModelBase
     [ObservableProperty] private string _filter = "";
     [ObservableProperty] private bool _autoScroll = true;
 
-    // PlayersOnline-as-a-number is only meaningful while the server is actually running: "0 online"
-    // is concrete info, but "0" with the server stopped is noise. PlayersDisplay hides the zero
-    // behind an em-dash in any state other than Running. PlayersDetail is hidden too
-    // (we hit a case: server stopped with 5 players — stale names kept hanging under the zero).
+    // PlayersOnline-as-a-number is only meaningful once the world has actually loaded: while the
+    // process is alive but still in the yellow "Loading…" phase the RCON port isn't open yet,
+    // so PlayerPoller can't produce a real count. Showing "0" there is misleading. Gate on Ready,
+    // not just Running, so the tile flips to a number only once the server is accepting players.
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayersDisplay))]
     private int _playersOnline;
@@ -72,10 +75,11 @@ public partial class ServerViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private string _playersDetail = "—";
 
-    public string PlayersDisplay => State == "Running" ? PlayersOnline.ToString() : "—";
+    public string PlayersDisplay => State == "Running" && Ready ? PlayersOnline.ToString() : "—";
 
     public bool HasPlayersDetail =>
         State == "Running"
+        && Ready
         && !string.IsNullOrWhiteSpace(PlayersDetail)
         && PlayersDetail != "—";
 
@@ -83,6 +87,12 @@ public partial class ServerViewModel : ViewModelBase
     [ObservableProperty] private string _ramUsage = "—";
 
     private double? _totalRamGb;
+
+    // Stateful — needs the previous TotalProcessorTime snapshot to compute %.
+    // Initialised lazily in the Windows branch (we don't want to pay the cost on macOS/Linux
+    // where we go through ps anyway).
+    private CpuPercentSampler? _winCpuSampler;
+    private int? _winSampledPid;
 
     public ServerViewModel() { }
 
@@ -133,11 +143,24 @@ public partial class ServerViewModel : ViewModelBase
     {
         if (_server?.Pid is not int pid)
         {
+            // Reset the Windows sampler so the next start doesn't carry a stale delta from
+            // the previous run's TotalProcessorTime baseline.
+            _winSampledPid = null;
+            _winCpuSampler?.Reset();
             App.UiThread(() => { CpuUsage = "—"; RamUsage = "—"; });
             return;
         }
         try
         {
+            // Windows: the server runs natively as a single process — no wine, no helpers — so
+            // .NET Process APIs give us everything (no ps/footprint). Cross-platform Process.WorkingSet64
+            // + dCpu/dWall/cores covers it; ps stays for macOS/Linux where we need the wine subtree.
+            if (OperatingSystem.IsWindows())
+            {
+                SampleWindows(pid);
+                return;
+            }
+
             var lcC = new Dictionary<string, string> { ["LC_ALL"] = "C" };
 
             // CPU — sum of %cpu over the process tree (ps; %cpu uses a dot thanks to LC_ALL=C).
@@ -169,6 +192,40 @@ public partial class ServerViewModel : ViewModelBase
             });
         }
         catch { /* ps unavailable — not critical */ }
+    }
+
+    private void SampleWindows(int pid)
+    {
+        try
+        {
+            using var proc = Process.GetProcessById(pid);
+            // First snapshot for this PID, or PID changed since last call — reset the delta.
+            if (_winSampledPid != pid)
+            {
+                _winSampledPid = pid;
+                _winCpuSampler = new CpuPercentSampler(Environment.ProcessorCount);
+            }
+            var cpu = _winCpuSampler!.Sample(proc.TotalProcessorTime, DateTime.UtcNow);
+            var memBytes = proc.WorkingSet64;
+
+            _totalRamGb ??= SystemMemory.GetTotalRamBytes() is long b && b > 0
+                ? b / 1024.0 / 1024.0 / 1024.0
+                : null;
+            var gb = memBytes / 1024.0 / 1024.0 / 1024.0;
+
+            App.UiThread(() =>
+            {
+                CpuUsage = $"{cpu:0}%";
+                RamUsage = _totalRamGb is > 0
+                    ? $"{gb / _totalRamGb.Value * 100:0}% ({gb:0.0} GB)"
+                    : $"{gb:0.0} GB";
+            });
+        }
+        catch (ArgumentException)
+        {
+            // PID gone since we read it — server just exited, the next tick will see Pid=null.
+            App.UiThread(() => { CpuUsage = "—"; RamUsage = "—"; });
+        }
     }
 
     private static async Task<double?> ReadTotalRamGbAsync()

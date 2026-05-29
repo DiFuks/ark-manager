@@ -75,8 +75,19 @@ public partial class RconViewModel : ViewModelBase
     {
         if (_server == null) return;
         var shouldBeConnected = _server.State == ServerState.Running && _server.IsReady;
-        if (shouldBeConnected && !Connected) _ = ConnectAsync();
-        else if (!shouldBeConnected && Connected) _ = DisconnectAsync();
+        if (shouldBeConnected && !Connected)
+        {
+            _ = ConnectAsync();
+        }
+        else if (!shouldBeConnected)
+        {
+            // Clear any stale "Error: …" left over from a failed connect attempt — otherwise the
+            // status badge stays red after Stop even though we're no longer trying to connect.
+            // DisconnectAsync clears StatusDetail too, but it only runs if we WERE connected;
+            // a failed-from-the-start session needs an explicit reset.
+            if (Connected) _ = DisconnectAsync();
+            else if (!string.IsNullOrEmpty(StatusDetail)) StatusDetail = "";
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanReconnect))]
@@ -92,8 +103,20 @@ public partial class RconViewModel : ViewModelBase
     private async Task ConnectAsync()
     {
         if (Connected || _settings == null) return;
-        var port = _settings.Current.LaunchOptions.RconPort;
-        var pass = _settings.Current.LaunchOptions.AdminPassword ?? "";
+        var opts = _settings.Current.LaunchOptions;
+
+        // Pre-flight: ASA never opens the RCON port without an admin password, so a TCP attempt
+        // would just produce a system-localised "connection refused" — useless to the user.
+        // Stop here with an actionable hint instead.
+        if (RconErrors.DescribePrecondition(opts) is string precond)
+        {
+            StatusDetail = "Error: " + precond;
+            Append("[connect skipped] " + precond);
+            return;
+        }
+
+        var port = opts.RconPort;
+        var pass = opts.AdminPassword!;
         _client = new RconClient();
         try
         {
@@ -104,8 +127,9 @@ public partial class RconViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusDetail = "Error: " + ex.Message;
-            Append("[connect failed] " + ex.Message);
+            var msg = RconErrors.DescribeConnectException(ex);
+            StatusDetail = "Error: " + msg;
+            Append("[connect failed] " + msg);
             await _client.DisposeAsync(); _client = null;
             Connected = false;
         }
@@ -137,7 +161,7 @@ public partial class RconViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Append("[error] " + ex.Message);
+            Append("[error] " + RconErrors.DescribeConnectException(ex));
         }
         Command = "";
     }

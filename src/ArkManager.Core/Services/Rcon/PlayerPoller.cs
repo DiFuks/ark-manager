@@ -12,6 +12,8 @@ public sealed class PlayerPoller : IAsyncDisposable
 {
     private readonly SettingsService _settings;
     private readonly ServerManager _server;
+    private readonly Action<ServerState> _onState;
+    private readonly Action<bool> _onReady;
     private CancellationTokenSource? _cts;
     private Task? _worker;
 
@@ -21,12 +23,20 @@ public sealed class PlayerPoller : IAsyncDisposable
     {
         _settings = settings;
         _server = server;
-        _server.StateChanged += OnStateChanged;
+        // Gate on Ready, not just Running. Before the world finishes loading ASA hasn't opened
+        // the RCON port yet, so polling would immediately fall into the "connection refused" /
+        // "RCON disabled" branch and spam a misleading error into PlayersDetail — long before
+        // the RCON tab itself even tries to connect (it also waits for Ready). Matching that
+        // gating keeps the two views in sync.
+        _onState = _ => Sync();
+        _onReady = _ => Sync();
+        _server.StateChanged += _onState;
+        _server.ReadyChanged += _onReady;
     }
 
-    private void OnStateChanged(ServerState s)
+    private void Sync()
     {
-        if (s == ServerState.Running) Start();
+        if (_server.State == ServerState.Running && _server.IsReady) Start();
         else Stop();
     }
 
@@ -45,8 +55,10 @@ public sealed class PlayerPoller : IAsyncDisposable
 
     private async Task LoopAsync(CancellationToken ct)
     {
-        // Give the server time to warm up before the first poll.
-        try { await Task.Delay(TimeSpan.FromSeconds(20), ct); } catch { return; }
+        // We're already gated on Ready, so the RCON port is open the moment we enter the loop.
+        // No 20-second warmup needed — but give RCON a couple of seconds to stabilise before
+        // the first probe, otherwise we sometimes catch the auth handshake mid-flight.
+        try { await Task.Delay(TimeSpan.FromSeconds(2), ct); } catch { return; }
 
         while (!ct.IsCancellationRequested)
         {
@@ -67,13 +79,28 @@ public sealed class PlayerPoller : IAsyncDisposable
     private async Task<PlayerSample> PollOnceAsync(CancellationToken ct)
     {
         var opts = _settings.Current.LaunchOptions;
-        if (!opts.RconEnabled || string.IsNullOrEmpty(opts.AdminPassword))
-            return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "RCON disabled or no admin password");
+        // Short, tile-sized hints — the PLAYERS tile uses CharacterEllipsis and chops long
+        // text. The verbose precondition lives in the RCON tab status badge; here we just
+        // tell the user what's missing.
+        if (!opts.RconEnabled)
+            return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "RCON disabled");
+        if (string.IsNullOrWhiteSpace(opts.AdminPassword))
+            return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "Set Admin password");
 
-        await using var c = new RconClient();
-        await c.ConnectAsync("127.0.0.1", opts.RconPort, opts.AdminPassword!, ct);
-        var resp = await c.SendAsync("ListPlayers", ct);
-        return ParseListPlayers(resp);
+        try
+        {
+            await using var c = new RconClient();
+            await c.ConnectAsync("127.0.0.1", opts.RconPort, opts.AdminPassword!, ct);
+            var resp = await c.SendAsync("ListPlayers", ct);
+            return ParseListPlayers(resp);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            // Unwrap into a stable English message — SocketException is OS-localised otherwise.
+            return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow,
+                RconErrors.DescribeConnectException(ex));
+        }
     }
 
     /// <summary>
@@ -100,6 +127,7 @@ public sealed class PlayerPoller : IAsyncDisposable
     {
         Stop();
         if (_worker != null) { try { await _worker; } catch { } }
-        _server.StateChanged -= OnStateChanged;
+        _server.StateChanged -= _onState;
+        _server.ReadyChanged -= _onReady;
     }
 }

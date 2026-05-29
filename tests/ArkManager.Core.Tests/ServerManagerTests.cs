@@ -34,6 +34,24 @@ public class ServerManagerTests
         Assert.False(ServerManager.ShouldAttemptGracefulSave(o));
     }
 
+    // While the server is still in the Loading phase (!IsReady) there's nothing to save —
+    // the world is not loaded — and ASA does not respond to DoExit either. The graceful save
+    // path becomes a 60-second wait for a voluntary exit that never comes; the UI just sits
+    // in "Stopping…". Skip straight to the hard-kill in this case.
+    [Fact]
+    public void ShouldAttemptGracefulSave_False_WhenNotReady()
+    {
+        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = "secret" };
+        Assert.False(ServerManager.ShouldAttemptGracefulSave(o, isReady: false));
+    }
+
+    [Fact]
+    public void ShouldAttemptGracefulSave_True_WhenReadyAndRconConfigured()
+    {
+        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = "secret" };
+        Assert.True(ServerManager.ShouldAttemptGracefulSave(o, isReady: true));
+    }
+
     // The "green" readiness indicator = the log line ASA prints once the world is loaded
     // and the server starts accepting connections. Before it the process is alive but still in "yellow" loading.
     [Theory]
