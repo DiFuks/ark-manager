@@ -43,14 +43,6 @@ public sealed class AppSettings
 public sealed class ServerLaunchOptions
 {
     public string Map { get; set; } = "TheIsland_WP";
-    public string SessionName { get; set; } = "My ASA Server";
-    public int Port { get; set; } = 7777;
-    public int QueryPort { get; set; } = 27015;
-    public int RconPort { get; set; } = 27020;
-    public bool RconEnabled { get; set; } = true;
-    public string? ServerPassword { get; set; }
-    public string? AdminPassword { get; set; }
-    public string? SpectatorPassword { get; set; }
     public int MaxPlayers { get; set; } = 70;
     public bool NoBattlEye { get; set; } = true;
     public bool AutoManagedMods { get; set; } = true;

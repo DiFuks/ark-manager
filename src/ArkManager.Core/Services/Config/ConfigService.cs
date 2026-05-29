@@ -1,5 +1,3 @@
-using ArkManager.Core.Models;
-
 namespace ArkManager.Core.Services.Config;
 
 /// <summary>
@@ -147,32 +145,6 @@ public sealed class ConfigService : IDisposable
         Snapshot.ServerPassword = draft.ServerPassword;
         Snapshot.AdminPassword = draft.AdminPassword;
         Snapshot.SpectatorPassword = draft.SpectatorPassword;
-    }
-
-    /// <summary>
-    /// Applies the main settings from ServerLaunchOptions into [ServerSettings] and [SessionSettings].
-    /// (Legacy; kept until consumer migration is complete. Will be removed in a later task.)
-    /// </summary>
-    public void ApplyLaunchOptionsToIni(ServerLaunchOptions o)
-    {
-        _suppressUntilUtc = DateTime.UtcNow + SuppressWindow;
-        var ini = LoadGameUserSettings();
-        var server = ini.GetOrCreateSection("ServerSettings");
-        server.SetSingle("ServerPassword", o.ServerPassword ?? "");
-        server.SetSingle("ServerAdminPassword", o.AdminPassword ?? "");
-        server.SetSingle("SpectatorPassword", o.SpectatorPassword ?? "");
-        server.SetSingle("RCONEnabled", o.RconEnabled ? "True" : "False");
-        server.SetSingle("RCONPort", o.RconPort.ToString());
-
-        var session = ini.GetOrCreateSection("SessionSettings");
-        session.SetSingle("SessionName", o.SessionName);
-        session.SetSingle("Port", o.Port.ToString());
-        session.SetSingle("QueryPort", o.QueryPort.ToString());
-
-        var general = ini.GetOrCreateSection("/Script/Engine.GameSession");
-        general.SetSingle("MaxPlayers", o.MaxPlayers.ToString());
-
-        SaveGameUserSettings(ini);
     }
 
     /// <summary>

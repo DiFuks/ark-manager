@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using ArkManager.Core.Services;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Rcon;
 using ArkManager.Core.Util;
 using Avalonia;
@@ -96,11 +97,11 @@ public partial class ServerViewModel : ViewModelBase
 
     public ServerViewModel() { }
 
-    public ServerViewModel(ServerManager server, PlayerPoller poller, SettingsService settings)
+    public ServerViewModel(ServerManager server, PlayerPoller poller, SettingsService settings, ConfigService config)
     {
         _server = server;
-        var s = settings.Current.LaunchOptions;
-        Identity = $"{s.SessionName} · {s.Map}";
+        var o = settings.Current.LaunchOptions;
+        Identity = $"{config.Snapshot.SessionName} · {o.Map}";
         foreach (var l in server.Snapshot()) AppendLine(l);
         server.StateChanged += s => App.UiThread(() => { State = s.ToString(); Pid = server.Pid; });
         server.ReadyChanged += r => App.UiThread(() => Ready = r);

@@ -1,5 +1,5 @@
 using System.Net.Sockets;
-using ArkManager.Core.Models;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Rcon;
 using Xunit;
 
@@ -10,8 +10,8 @@ public class RconErrorsTests
     [Fact]
     public void Precondition_RconDisabled_ReturnsHint()
     {
-        var o = new ServerLaunchOptions { RconEnabled = false, AdminPassword = "x" };
-        var msg = RconErrors.DescribePrecondition(o);
+        var snap = new ServerConfigSnapshot { RconEnabled = false, AdminPassword = "x" };
+        var msg = RconErrors.DescribePrecondition(snap);
         Assert.NotNull(msg);
         Assert.Contains("disabled", msg, StringComparison.OrdinalIgnoreCase);
     }
@@ -22,8 +22,8 @@ public class RconErrorsTests
     [InlineData("   ")]
     public void Precondition_EmptyAdminPassword_PointsAtConfigTab(string? pw)
     {
-        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = pw };
-        var msg = RconErrors.DescribePrecondition(o);
+        var snap = new ServerConfigSnapshot { RconEnabled = true, AdminPassword = pw ?? "" };
+        var msg = RconErrors.DescribePrecondition(snap);
         Assert.NotNull(msg);
         Assert.Contains("ServerAdminPassword", msg);
         Assert.Contains("Config", msg);
@@ -32,8 +32,8 @@ public class RconErrorsTests
     [Fact]
     public void Precondition_Ok_ReturnsNull()
     {
-        var o = new ServerLaunchOptions { RconEnabled = true, AdminPassword = "secret" };
-        Assert.Null(RconErrors.DescribePrecondition(o));
+        var snap = new ServerConfigSnapshot { RconEnabled = true, AdminPassword = "secret" };
+        Assert.Null(RconErrors.DescribePrecondition(snap));
     }
 
     // SocketException.Message comes from FormatMessage and is localised by the OS, so on a

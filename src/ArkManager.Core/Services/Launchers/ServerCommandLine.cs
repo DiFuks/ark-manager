@@ -16,7 +16,7 @@ public static class ServerCommandLine
         // Passwords and RCON are NOT put into the URL query. Reason: with multiple parameters
         // after ServerAdminPassword= the ASA URL parser may glue the tail of the string into
         // the password value and save it that way to GameUserSettings.ini — RCON auth then
-        // breaks. These keys are written to ini via ConfigService.ApplyLaunchOptionsToIni,
+        // breaks. These keys are managed exclusively in GameUserSettings.ini via ConfigService,
         // and that's where the server reads them from.
         var queryParts = new List<string>
         {

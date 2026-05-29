@@ -1,5 +1,4 @@
 using System.Net.Sockets;
-using ArkManager.Core.Models;
 using ArkManager.Core.Services.Config;
 
 namespace ArkManager.Core.Services.Rcon;
@@ -14,17 +13,6 @@ namespace ArkManager.Core.Services.Rcon;
 public static class RconErrors
 {
     /// <summary>Pre-flight check before attempting a TCP connect. null = ok to try.</summary>
-    public static string? DescribePrecondition(ServerLaunchOptions o)
-    {
-        if (!o.RconEnabled)
-            return "RCON is disabled — enable it on the Config tab.";
-        if (string.IsNullOrWhiteSpace(o.AdminPassword))
-            return "ServerAdminPassword is empty. Set it on the Config tab — " +
-                   "ASA does not open the RCON port without an admin password.";
-        return null;
-    }
-
-    /// <summary>Pre-flight check using the Snapshot. null = ok to try.</summary>
     public static string? DescribePrecondition(ServerConfigSnapshot snap)
     {
         if (!snap.RconEnabled)

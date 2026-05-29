@@ -68,8 +68,7 @@ public sealed class ServerManager
         try
         {
             // Safety net: if the ini was hand-deleted or never created post-install, materialize defaults
-            // before launching. Empirically (2026-05-29) ASA does NOT overwrite our 8 keys, so a full
-            // ApplyLaunchOptionsToIni here is unnecessary — see the design doc for details.
+            // before launching. Empirically (2026-05-29) ASA does NOT overwrite our 8 keys on restart.
             _config.EnsureIni();
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
