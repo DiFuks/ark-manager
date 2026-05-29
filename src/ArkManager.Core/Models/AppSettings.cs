@@ -26,6 +26,12 @@ public sealed class AppSettings
     /// <summary>Auto-backup every N minutes (0 = off). Rotation — via BackupRotationKeep.</summary>
     /// <remarks>Tick is always skipped when the server is not Running: idle snapshots are pointless.</remarks>
     public int AutoBackupIntervalMinutes { get; set; } = 0;
+
+    /// <summary>
+    /// Open Windows Firewall inbound rules for the configured game/query/RCON ports on
+    /// each Start (Windows only, requires admin). When off — no firewall changes.
+    /// </summary>
+    public bool ManageFirewallRules { get; set; } = false;
 }
 
 public sealed class ServerLaunchOptions
