@@ -108,6 +108,17 @@ public sealed class ConfigService : IDisposable
         SaveGameUserSettings(ini);
     }
 
+    /// <summary>
+    /// Idempotent: writes a default minimal ini if none exists. Used by InstallViewModel
+    /// after a successful steamcmd run, by App startup as a safety net for installs that
+    /// pre-date this method, and by ServerManager.StartAsync as a last-resort guarantee.
+    /// </summary>
+    public void EnsureIni()
+    {
+        if (File.Exists(GameUserSettingsPath)) return;
+        UpdateBasic(_ => { /* defaults already set by MutableBasic.FromSnapshot */ });
+    }
+
     public void WriteActiveMods(IReadOnlyList<string> modIds)
     {
         var ini = LoadGameUserSettings();

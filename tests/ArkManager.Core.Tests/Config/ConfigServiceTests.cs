@@ -113,4 +113,38 @@ public class ConfigServiceTests
         Assert.Single(changed);
         Assert.Equal(nameof(ServerConfigSnapshot.SessionName), changed[0]);
     }
+
+    [Fact]
+    public void EnsureIni_CreatesDefaultsWhenMissing()
+    {
+        using var env = new ConfigTestEnv();
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+        Assert.False(File.Exists(env.GameUserSettingsPath));
+
+        svc.EnsureIni();
+
+        Assert.True(File.Exists(env.GameUserSettingsPath));
+        var contents = env.ReadIni();
+        Assert.Contains("SessionName=My ASA Server", contents);
+        Assert.Contains("Port=7777", contents);
+        Assert.Contains("RCONEnabled=True", contents);
+        Assert.Contains("RCONPort=27020", contents);
+    }
+
+    [Fact]
+    public void EnsureIni_NoOpWhenExists()
+    {
+        using var env = new ConfigTestEnv();
+        env.WriteIni("[ServerSettings]\nServerPassword=do-not-touch\n");
+        var beforeMtime = File.GetLastWriteTimeUtc(env.GameUserSettingsPath);
+        Thread.Sleep(50); // mtime resolution slack
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+
+        svc.EnsureIni();
+
+        Assert.Equal(beforeMtime, File.GetLastWriteTimeUtc(env.GameUserSettingsPath));
+        Assert.Contains("ServerPassword=do-not-touch", env.ReadIni());
+    }
 }
