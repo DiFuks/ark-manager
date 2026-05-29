@@ -26,14 +26,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
       </div>
     </div>
     <div class="hero-shot">
-      <div class="window-chrome">
-        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-      </div>
       <img
         src={`${base}screenshots/server.png`}
         alt="ArkManager Server tab screenshot"
-        width="1600"
-        height="1000"
         loading="eager"
       />
     </div>
@@ -71,26 +66,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
   .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
 
   .hero-shot {
-    background: var(--panel-2);
-    border: 1px solid var(--line);
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--line);
   }
-  .window-chrome {
-    display: flex;
-    gap: 8px;
-    padding: 10px 14px;
-    background: var(--rail);
-    border-bottom: 1px solid var(--line);
+  .hero-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
   }
-  .dot {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--line-2);
-  }
-  .dot.red    { background: #ff5f57; }
-  .dot.yellow { background: #febc2e; }
-  .dot.green  { background: #28c840; }
 
   @media (max-width: 900px) {
     .hero { grid-template-columns: 1fr; gap: 48px; }

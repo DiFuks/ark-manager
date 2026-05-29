@@ -38,6 +38,45 @@ const cards = [
     <p class="meta dl-all">
       <a href="https://github.com/DiFuks/ark-manager/releases" target="_blank" rel="noopener">All releases →</a>
     </p>
+
+    <div class="first-launch panel">
+      <p class="section-label">FIRST LAUNCH</p>
+      <p class="fl-body">
+        ArkManager isn't signed with an Apple or Microsoft certificate — those
+        cost $99–$300 per year. Both systems will warn on first launch. Here's
+        how to get past the warning.
+      </p>
+
+      <div class="fl-grid">
+        <div class="fl-col">
+          <h4 class="fl-os">macOS</h4>
+          <p class="fl-step">
+            Try <strong>right-click → Open</strong> first. On recent macOS this
+            often fails silently for unsigned apps. If it does, open Terminal
+            and run:
+          </p>
+          <pre class="fl-code"><code>xattr -dr com.apple.quarantine /Applications/ArkManager.app</code></pre>
+          <p class="fl-step muted">
+            Replace the path if you keep ArkManager elsewhere. After this the
+            app launches normally — including subsequent updates.
+          </p>
+        </div>
+
+        <div class="fl-col">
+          <h4 class="fl-os">Windows</h4>
+          <p class="fl-step">
+            SmartScreen shows <em>"Windows protected your PC"</em>. Click
+            <strong>More info</strong> → <strong>Run anyway</strong>. That's a
+            one-time per binary.
+          </p>
+          <p class="fl-step muted">
+            If your environment blocks unsigned executables outright, you'll
+            need IT to allow-list ArkManager — same drill as with any
+            independent open-source tool.
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -73,11 +112,50 @@ const cards = [
   .dl-size { margin: 0; }
   .dl-btn { align-self: flex-start; }
   .dl-note { margin: 4px 0 0; min-height: 1em; }
-  .dl-all { margin: 32px 0 0; text-align: center; }
+  .dl-all { margin: 32px 0 48px; text-align: center; }
   .dl-all a { color: var(--muted); }
   .dl-all a:hover { color: var(--accent-ink); }
+
+  .first-launch { padding: 32px; }
+  .fl-body { margin: 12px 0 32px; color: var(--muted); max-width: 60ch; }
+  .fl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .fl-col { min-width: 0; }
+  .fl-os {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0 0 12px;
+    color: var(--text);
+  }
+  .fl-step {
+    margin: 0 0 12px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .fl-step.muted { color: var(--muted); }
+  .fl-step strong { color: var(--accent-ink); font-weight: 600; }
+  .fl-code {
+    background: var(--console);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin: 0 0 16px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-ink);
+    line-height: 1.5;
+  }
+  .fl-code code { white-space: pre; }
+
   @media (max-width: 800px) {
     .grid { grid-template-columns: 1fr; }
+    .fl-grid { grid-template-columns: 1fr; gap: 24px; }
   }
 </style>
 
