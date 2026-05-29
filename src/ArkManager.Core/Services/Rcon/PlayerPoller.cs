@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using ArkManager.Core.Services.Config;
 
 namespace ArkManager.Core.Services.Rcon;
 
@@ -12,6 +13,7 @@ public sealed class PlayerPoller : IAsyncDisposable
 {
     private readonly SettingsService _settings;
     private readonly ServerManager _server;
+    private readonly ConfigService _config;
     private readonly Action<ServerState> _onState;
     private readonly Action<bool> _onReady;
     private CancellationTokenSource? _cts;
@@ -19,10 +21,11 @@ public sealed class PlayerPoller : IAsyncDisposable
 
     public event Action<PlayerSample>? Sampled;
 
-    public PlayerPoller(SettingsService settings, ServerManager server)
+    public PlayerPoller(SettingsService settings, ServerManager server, ConfigService config)
     {
         _settings = settings;
         _server = server;
+        _config = config;
         // Gate on Ready, not just Running. Before the world finishes loading ASA hasn't opened
         // the RCON port yet, so polling would immediately fall into the "connection refused" /
         // "RCON disabled" branch and spam a misleading error into PlayersDetail — long before
@@ -78,19 +81,19 @@ public sealed class PlayerPoller : IAsyncDisposable
 
     private async Task<PlayerSample> PollOnceAsync(CancellationToken ct)
     {
-        var opts = _settings.Current.LaunchOptions;
+        var snap = _config.Snapshot;
         // Short, tile-sized hints — the PLAYERS tile uses CharacterEllipsis and chops long
         // text. The verbose precondition lives in the RCON tab status badge; here we just
         // tell the user what's missing.
-        if (!opts.RconEnabled)
+        if (!snap.RconEnabled)
             return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "RCON disabled");
-        if (string.IsNullOrWhiteSpace(opts.AdminPassword))
+        if (string.IsNullOrWhiteSpace(snap.AdminPassword))
             return new PlayerSample(0, Array.Empty<string>(), DateTime.UtcNow, "Set Admin password");
 
         try
         {
             await using var c = new RconClient();
-            await c.ConnectAsync("127.0.0.1", opts.RconPort, opts.AdminPassword!, ct);
+            await c.ConnectAsync("127.0.0.1", snap.RconPort, snap.AdminPassword, ct);
             var resp = await c.SendAsync("ListPlayers", ct);
             return ParseListPlayers(resp);
         }

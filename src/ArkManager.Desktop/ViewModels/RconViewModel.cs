@@ -1,4 +1,5 @@
 using ArkManager.Core.Services;
+using ArkManager.Core.Services.Config;
 using ArkManager.Core.Services.Rcon;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,8 +13,8 @@ public partial class RconViewModel : ViewModelBase
     // The local wine server always listens on 127.0.0.1; the manager has no remote scenarios.
     private const string LocalHost = "127.0.0.1";
 
-    private readonly SettingsService? _settings;
     private readonly ServerManager? _server;
+    private readonly ConfigService? _config;
     private RconClient? _client;
 
     [ObservableProperty] private string _lines = "";
@@ -32,7 +33,7 @@ public partial class RconViewModel : ViewModelBase
     private string _statusDetail = "";
 
     public string Endpoint =>
-        $"{LocalHost}:{_settings?.Current.LaunchOptions.RconPort ?? 27020}";
+        $"{LocalHost}:{_config?.Snapshot.RconPort ?? 27020}";
 
     public string StatusText => Connected
         ? $"Connected → {Endpoint}"
@@ -52,21 +53,25 @@ public partial class RconViewModel : ViewModelBase
 
     public RconViewModel() { }
 
-    public RconViewModel(SettingsService settings, ServerManager server)
+    public RconViewModel(ServerManager server, ConfigService config)
     {
-        _settings = settings;
         _server = server;
+        _config = config;
 
         // Auto-connect once the world has finished loading (Ready), auto-disconnect when leaving Running.
         // Ready ≠ just Running: the server may be "alive" yet still loading the world — at that point
         // the RCON port is not open. Hook onto Ready so we don't spawn failed connect attempts.
         _server.ReadyChanged += _ => App.UiThread(SyncWithServer);
         _server.StateChanged += _ => App.UiThread(SyncWithServer);
-        _settings.Changed += _ => App.UiThread(() =>
+        _config.Snapshot.PropertyChanged += (_, e) =>
         {
-            OnPropertyChanged(nameof(Endpoint));
-            OnPropertyChanged(nameof(StatusText));
-        });
+            if (e.PropertyName == nameof(ServerConfigSnapshot.RconPort))
+                App.UiThread(() =>
+                {
+                    OnPropertyChanged(nameof(Endpoint));
+                    OnPropertyChanged(nameof(StatusText));
+                });
+        };
 
         SyncWithServer();
     }
@@ -102,21 +107,21 @@ public partial class RconViewModel : ViewModelBase
 
     private async Task ConnectAsync()
     {
-        if (Connected || _settings == null) return;
-        var opts = _settings.Current.LaunchOptions;
+        if (Connected || _config == null) return;
+        var snap = _config.Snapshot;
 
         // Pre-flight: ASA never opens the RCON port without an admin password, so a TCP attempt
         // would just produce a system-localised "connection refused" — useless to the user.
         // Stop here with an actionable hint instead.
-        if (RconErrors.DescribePrecondition(opts) is string precond)
+        if (RconErrors.DescribePrecondition(snap) is string precond)
         {
             StatusDetail = "Error: " + precond;
             Append("[connect skipped] " + precond);
             return;
         }
 
-        var port = opts.RconPort;
-        var pass = opts.AdminPassword!;
+        var port = snap.RconPort;
+        var pass = snap.AdminPassword;
         _client = new RconClient();
         try
         {
