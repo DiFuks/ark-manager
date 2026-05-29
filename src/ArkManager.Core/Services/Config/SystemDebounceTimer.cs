@@ -1,6 +1,6 @@
 namespace ArkManager.Core.Services.Config;
 
-internal sealed class SystemDebounceTimer : IDebounceTimer, IDisposable
+public sealed class SystemDebounceTimer : IDebounceTimer, IDisposable
 {
     private readonly System.Threading.Timer _timer;
 

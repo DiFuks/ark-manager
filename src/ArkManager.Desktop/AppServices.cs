@@ -24,6 +24,7 @@ public static class AppServices
         sc.AddSingleton<AppPaths>();
         sc.AddSingleton<SettingsService>();
         sc.AddSingleton<SteamCmdService>();
+        sc.AddSingleton<IDebounceTimer, SystemDebounceTimer>();
         sc.AddSingleton<ConfigService>();
         sc.AddSingleton<BackupService>();
         sc.AddSingleton<AutoBackupWorker>();
