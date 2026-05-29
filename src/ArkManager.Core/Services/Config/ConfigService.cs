@@ -49,6 +49,41 @@ public sealed class ConfigService : IDisposable
     }
 
     /// <summary>
+    /// Mutates the 8 ArkManager-owned keys in GameUserSettings.ini and updates Snapshot
+    /// in lockstep. Existing unrelated keys (ASA's ~100 defaults, custom edits) are preserved.
+    /// </summary>
+    public void UpdateBasic(Action<MutableBasic> mutate)
+    {
+        var draft = MutableBasic.FromSnapshot(Snapshot);
+        mutate(draft);
+
+        var ini = LoadGameUserSettings();
+        var server = ini.GetOrCreateSection("ServerSettings");
+        server.SetSingle("ServerPassword", draft.ServerPassword);
+        server.SetSingle("ServerAdminPassword", draft.AdminPassword);
+        server.SetSingle("SpectatorPassword", draft.SpectatorPassword);
+        server.SetSingle("RCONEnabled", draft.RconEnabled ? "True" : "False");
+        server.SetSingle("RCONPort", draft.RconPort.ToString());
+
+        var session = ini.GetOrCreateSection("SessionSettings");
+        session.SetSingle("SessionName", draft.SessionName);
+        session.SetSingle("Port", draft.Port.ToString());
+        session.SetSingle("QueryPort", draft.QueryPort.ToString());
+
+        SaveGameUserSettings(ini);
+
+        // Sync Snapshot — INPC raises only for fields that actually changed (ObservableObject behavior).
+        Snapshot.SessionName = draft.SessionName;
+        Snapshot.Port = draft.Port;
+        Snapshot.QueryPort = draft.QueryPort;
+        Snapshot.RconPort = draft.RconPort;
+        Snapshot.RconEnabled = draft.RconEnabled;
+        Snapshot.ServerPassword = draft.ServerPassword;
+        Snapshot.AdminPassword = draft.AdminPassword;
+        Snapshot.SpectatorPassword = draft.SpectatorPassword;
+    }
+
+    /// <summary>
     /// Applies the main settings from ServerLaunchOptions into [ServerSettings] and [SessionSettings].
     /// (Legacy; kept until consumer migration is complete. Will be removed in a later task.)
     /// </summary>

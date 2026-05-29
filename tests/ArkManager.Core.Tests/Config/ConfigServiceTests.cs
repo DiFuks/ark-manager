@@ -55,4 +55,62 @@ public class ConfigServiceTests
         Assert.Equal("adm-pw", svc.Snapshot.AdminPassword);
         Assert.Equal("spec-pw", svc.Snapshot.SpectatorPassword);
     }
+
+    [Fact]
+    public void UpdateBasic_WritesIniWithMutatedValues()
+    {
+        using var env = new ConfigTestEnv();
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+
+        svc.UpdateBasic(b => { b.RconPort = 27050; b.AdminPassword = "newpw"; });
+
+        Assert.True(File.Exists(env.GameUserSettingsPath));
+        var contents = env.ReadIni();
+        Assert.Contains("RCONPort=27050", contents);
+        Assert.Contains("ServerAdminPassword=newpw", contents);
+    }
+
+    [Fact]
+    public void UpdateBasic_PreservesUnknownKeys()
+    {
+        using var env = new ConfigTestEnv();
+        env.WriteIni("""
+            [ServerSettings]
+            ServerPassword=keep-me
+            AllowThirdPersonPlayer=True
+            TheMaxStructuresInRange=10500
+
+            [Custom]
+            WhateverASAWrote=yes
+            """);
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+
+        svc.UpdateBasic(b => b.RconPort = 27050);
+
+        var contents = env.ReadIni();
+        Assert.Contains("ServerPassword=keep-me", contents);
+        Assert.Contains("AllowThirdPersonPlayer=True", contents);
+        Assert.Contains("TheMaxStructuresInRange=10500", contents);
+        Assert.Contains("[Custom]", contents);
+        Assert.Contains("WhateverASAWrote=yes", contents);
+        Assert.Contains("RCONPort=27050", contents);
+    }
+
+    [Fact]
+    public void UpdateBasic_RaisesPropertyChangedOnlyForChanged()
+    {
+        using var env = new ConfigTestEnv();
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+
+        var changed = new List<string>();
+        svc.Snapshot.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? "");
+
+        svc.UpdateBasic(b => b.SessionName = "NewName");
+
+        Assert.Single(changed);
+        Assert.Equal(nameof(ServerConfigSnapshot.SessionName), changed[0]);
+    }
 }
