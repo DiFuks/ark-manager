@@ -17,9 +17,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
         Just download and run.
       </p>
       <div class="cta-row">
-        <a id="hero-cta" class="btn primary" href="#download">
-          <Icon name="download" size={18} /> Download
-        </a>
+        <div class="cta-primary">
+          <a id="hero-cta" class="btn primary" href="#download">
+            <Icon name="download" size={18} /> Download
+          </a>
+          <a class="cta-alt" href="#download">All platforms →</a>
+        </div>
         <a class="btn" href="https://github.com/DiFuks/ark-manager" target="_blank" rel="noopener">
           <Icon name="github" size={18} /> View on GitHub
         </a>
@@ -63,7 +66,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
     margin: 0 0 32px;
     max-width: 36ch;
   }
-  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cta-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .cta-primary { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .cta-alt {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .cta-alt:hover { color: var(--accent-ink); text-decoration: underline; }
 
   .hero-shot {
     border-radius: var(--radius);
