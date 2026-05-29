@@ -1,0 +1,31 @@
+:root {
+  /* Field Manual palette — mirrors src/ArkManager.Desktop/Themes/Tokens.axaml. */
+  --bg:           #1a1611;
+  --rail:         #15110c;
+  --panel:        #221d15;
+  --panel-2:      #1d1810;
+  --console:      #100d09;
+  --line:         #332a1d;
+  --line-2:       #473a27;
+  --text:         #ece3d3;
+  --muted:        #9c8d72;
+  --accent:       #e08a2b;
+  --accent-on:    #1a1207;
+  --accent-ink:   #f2a64a;
+  --accent-soft:  rgba(224, 138, 43, 0.13);
+  --accent-glow:  rgba(224, 138, 43, 0.30);
+  --ok:           #8fbf52;
+  --ok-soft:      rgba(143, 191, 82, 0.13);
+  --ok-line:      rgba(143, 191, 82, 0.30);
+  --danger:       #d9685a;
+  --warn:         #d9a441;
+
+  --font-display: 'Zilla Slab', Georgia, serif;
+  --font-ui:      'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+  --container:    1200px;
+  --pad-x:        clamp(20px, 4vw, 48px);
+  --section-y:    clamp(64px, 12vh, 128px);
+  --radius:       8px;
+}
