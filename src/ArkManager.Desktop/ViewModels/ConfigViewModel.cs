@@ -246,14 +246,20 @@ public partial class ConfigViewModel : ViewModelBase
             switch (value)
             {
                 case 1:
-                    GameUserSettingsRaw = _config.LoadGameUserSettingsRaw();
-                    _originalRawGus = GameUserSettingsRaw;
-                    HasExternalChangeForGus = false;
+                    if (!IsRawGusDirty)
+                    {
+                        GameUserSettingsRaw = _config.LoadGameUserSettingsRaw();
+                        _originalRawGus = GameUserSettingsRaw;
+                        HasExternalChangeForGus = false;
+                    }
                     break;
                 case 2:
-                    GameIniRaw = _config.LoadGameRaw();
-                    _originalRawGame = GameIniRaw;
-                    HasExternalChangeForGame = false;
+                    if (!IsRawGameDirty)
+                    {
+                        GameIniRaw = _config.LoadGameRaw();
+                        _originalRawGame = GameIniRaw;
+                        HasExternalChangeForGame = false;
+                    }
                     break;
             }
         }

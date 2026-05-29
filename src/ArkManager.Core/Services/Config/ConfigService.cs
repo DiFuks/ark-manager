@@ -167,6 +167,7 @@ public sealed class ConfigService : IDisposable
 
     public void WriteActiveMods(IReadOnlyList<string> modIds)
     {
+        _suppressUntilUtc = DateTime.UtcNow + SuppressWindow;
         var ini = LoadGameUserSettings();
         var section = ini.GetOrCreateSection("ModInstaller");
         section.SetSingle("ActiveMods", string.Join(",", modIds));

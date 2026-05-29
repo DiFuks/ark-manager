@@ -59,6 +59,9 @@ public sealed class SettingsService
 
     private void MigrateV1ToV2(AppSettings loaded, JsonNode? rawNode)
     {
+        if (string.IsNullOrWhiteSpace(loaded.ServerInstallPath))
+            return;  // No install path → nowhere safe to put the ini. Defaults will pick up on next launch.
+
         var lo = rawNode?["launchOptions"] as JsonObject;
         if (lo is null) return;
 
