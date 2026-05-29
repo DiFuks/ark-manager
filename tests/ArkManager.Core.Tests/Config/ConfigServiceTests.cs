@@ -147,4 +147,66 @@ public class ConfigServiceTests
         Assert.Equal(beforeMtime, File.GetLastWriteTimeUtc(env.GameUserSettingsPath));
         Assert.Contains("ServerPassword=do-not-touch", env.ReadIni());
     }
+
+    [Fact]
+    public void Watcher_ReloadsSnapshotOnExternalEdit()
+    {
+        using var env = new ConfigTestEnv();
+        env.WriteIni("[ServerSettings]\nRCONPort=27020\n[SessionSettings]\nSessionName=Old\n");
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+        Assert.Equal(27020, svc.Snapshot.RconPort);
+        Assert.Equal("Old", svc.Snapshot.SessionName);
+
+        // External edit.
+        File.WriteAllText(env.GameUserSettingsPath,
+            "[ServerSettings]\nRCONPort=27050\n[SessionSettings]\nSessionName=New\n");
+
+        // Give the OS watcher a moment to fire (it will Schedule on the fake timer).
+        SpinWait.SpinUntil(() => timer.ScheduleCount > 0, TimeSpan.FromSeconds(2));
+        timer.Tick();
+
+        Assert.Equal(27050, svc.Snapshot.RconPort);
+        Assert.Equal("New", svc.Snapshot.SessionName);
+    }
+
+    [Fact]
+    public void Watcher_SuppressesEchoFromOwnWrite()
+    {
+        using var env = new ConfigTestEnv();
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+
+        var changed = new List<string>();
+        svc.Snapshot.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? "");
+
+        svc.UpdateBasic(b => b.SessionName = "Echo");
+
+        // OS event arrives; fake-tick the debounce. Suppression window is in effect.
+        SpinWait.SpinUntil(() => timer.ScheduleCount > 0, TimeSpan.FromSeconds(2));
+        timer.Tick();
+
+        // Exactly one PropertyChanged from the synchronous UpdateBasic; watcher did not echo.
+        Assert.Single(changed);
+        Assert.Equal(nameof(ServerConfigSnapshot.SessionName), changed[0]);
+    }
+
+    [Fact]
+    public void RawFilesChanged_FiresOnExternalRawEdit()
+    {
+        using var env = new ConfigTestEnv();
+        env.WriteIni("[X]\nA=1\n");
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+
+        var fired = 0;
+        svc.RawFilesChanged += () => fired++;
+
+        File.WriteAllText(env.GameUserSettingsPath, "[X]\nA=2\n");
+
+        SpinWait.SpinUntil(() => timer.ScheduleCount > 0, TimeSpan.FromSeconds(2));
+        timer.Tick();
+
+        Assert.Equal(1, fired);
+    }
 }
