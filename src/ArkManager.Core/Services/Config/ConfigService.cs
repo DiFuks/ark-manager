@@ -35,7 +35,14 @@ public sealed class ConfigService : IDisposable
             Directory.CreateDirectory(ConfigDir);
             _watcher = new FileSystemWatcher(ConfigDir, "*.ini")
             {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime,
+                // NotifyFilters.FileName is required so the kqueue back-end monitors
+                // NOTE_RENAME / NOTE_WRITE on the parent directory rather than a single
+                // inode fd. Without it, atomic-save editors (VS Code, TextEdit, Sublime)
+                // that write to a temp sibling then rename(2) into place cause the watcher
+                // to lose track of the inode after the first save, silencing all subsequent
+                // external edits.
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
+                             | NotifyFilters.CreationTime | NotifyFilters.FileName,
                 EnableRaisingEvents = true,
             };
             _watcher.Changed += OnFileChanged;

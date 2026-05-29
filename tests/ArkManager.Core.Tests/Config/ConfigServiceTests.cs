@@ -209,4 +209,41 @@ public class ConfigServiceTests
 
         Assert.Equal(1, fired);
     }
+
+    /// <summary>
+    /// Regression test: atomic-save editors (VS Code, TextEdit, Sublime) write to a temp sibling
+    /// then call rename(2) to atomically replace the target. On macOS the kqueue back-end of
+    /// FileSystemWatcher loses track of the inode after the first rename, so subsequent external
+    /// edits never fire. The fix is to include NotifyFilters.FileName so the watcher monitors
+    /// the parent-directory kqueue events (NOTE_WRITE / NOTE_RENAME) rather than a single fd.
+    /// </summary>
+    [Fact]
+    public void Watcher_ReloadsSnapshotOnMultipleExternalEdits()
+    {
+        using var env = new ConfigTestEnv();
+        env.WriteIni("[ServerSettings]\nRCONPort=27020\n[SessionSettings]\nSessionName=Original\n");
+        var timer = new FakeDebounceTimer();
+        using var svc = new ConfigService(env.Settings, timer);
+        Assert.Equal("Original", svc.Snapshot.SessionName);
+
+        // ── Edit 1: atomic-rename save (simulates VS Code / TextEdit / Sublime) ─────────────
+        var tmp1 = env.GameUserSettingsPath + ".tmp1";
+        File.WriteAllText(tmp1, "[ServerSettings]\nRCONPort=27020\n[SessionSettings]\nSessionName=AfterFirstEdit\n");
+        File.Move(tmp1, env.GameUserSettingsPath, overwrite: true);
+
+        int countAfterFirst = timer.ScheduleCount;
+        SpinWait.SpinUntil(() => timer.ScheduleCount > countAfterFirst, TimeSpan.FromSeconds(2));
+        timer.Tick();
+        Assert.Equal("AfterFirstEdit", svc.Snapshot.SessionName);
+
+        // ── Edit 2: another atomic-rename — this is what broke before the fix ────────────────
+        var tmp2 = env.GameUserSettingsPath + ".tmp2";
+        File.WriteAllText(tmp2, "[ServerSettings]\nRCONPort=27020\n[SessionSettings]\nSessionName=AfterSecondEdit\n");
+        File.Move(tmp2, env.GameUserSettingsPath, overwrite: true);
+
+        int countAfterSecond = timer.ScheduleCount;
+        SpinWait.SpinUntil(() => timer.ScheduleCount > countAfterSecond, TimeSpan.FromSeconds(2));
+        timer.Tick();
+        Assert.Equal("AfterSecondEdit", svc.Snapshot.SessionName);
+    }
 }
