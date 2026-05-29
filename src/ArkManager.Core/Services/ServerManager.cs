@@ -20,6 +20,7 @@ public sealed class ServerManager
     private readonly IServerLauncher _launcher;
     private readonly ModsService _mods;
     private readonly ConfigService _config;
+    private readonly Firewall.IFirewallService _firewall;
 
     private readonly object _lock = new();
     private CancellationTokenSource? _cts;
@@ -43,12 +44,14 @@ public sealed class ServerManager
     private readonly ConcurrentQueue<string> _ringLog = new();
     public IReadOnlyCollection<string> Snapshot() => _ringLog.ToArray();
 
-    public ServerManager(SettingsService settings, IServerLauncher launcher, ModsService mods, ConfigService config)
+    public ServerManager(SettingsService settings, IServerLauncher launcher, ModsService mods, ConfigService config, Firewall.IFirewallService firewall)
     {
         _settings = settings;
         _launcher = launcher;
         _mods = mods;
         _config = config;
+        _firewall = firewall;
+        _firewall.Log += line => PushLog("[firewall] " + line);
     }
 
     public async Task StartAsync(CancellationToken externalCt = default)
@@ -74,6 +77,12 @@ public sealed class ServerManager
             _config.ApplyLaunchOptionsToIni(_settings.Current.LaunchOptions);
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
+
+            if (ShouldEnsureFirewallRules(_settings.Current, _firewall))
+            {
+                var o = _settings.Current.LaunchOptions;
+                await _firewall.EnsureRulesAsync(o.Port, o.QueryPort, o.RconPort, _cts.Token);
+            }
 
             _running = await _launcher.StartAsync(
                 _settings.Current,

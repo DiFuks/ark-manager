@@ -2,6 +2,7 @@ using ArkManager.App.ViewModels;
 using ArkManager.Core.Services;
 using ArkManager.Core.Services.Backups;
 using ArkManager.Core.Services.Config;
+using ArkManager.Core.Services.Firewall;
 using ArkManager.Core.Services.Launchers;
 using ArkManager.Core.Services.Mods;
 using ArkManager.Core.Services.Rcon;
@@ -32,6 +33,10 @@ public static class AppServices
             sc.AddSingleton<IServerLauncher, NativeWindowsLauncher>();
         else
             sc.AddSingleton<IServerLauncher, BundledWineLauncher>();
+        if (OperatingSystem.IsWindows())
+            sc.AddSingleton<IFirewallService, WindowsFirewallService>();
+        else
+            sc.AddSingleton<IFirewallService, NoopFirewallService>();
         sc.AddSingleton<ServerManager>();
         sc.AddSingleton<PlayerPoller>();
 
