@@ -96,4 +96,29 @@ public class ServerCommandLineTests
         var args = ServerCommandLine.Build(s, Array.Empty<string>());
         Assert.DoesNotContain("-NoBattlEye", args);
     }
+
+    [Fact]
+    public void Build_MaxPlayers_NotInUrlQuery()
+    {
+        var s = new AppSettings { LaunchOptions = new ServerLaunchOptions { MaxPlayers = 42 } };
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        var url = args[0];
+        Assert.DoesNotContain("MaxPlayers=", url);
+    }
+
+    [Fact]
+    public void Build_MaxPlayers_AsWinLiveMaxPlayersFlag()
+    {
+        var s = new AppSettings { LaunchOptions = new ServerLaunchOptions { MaxPlayers = 42 } };
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        Assert.Contains("-WinLiveMaxPlayers=42", args);
+    }
+
+    [Fact]
+    public void Build_MaxPlayers_OmittedWhenZero()
+    {
+        var s = new AppSettings { LaunchOptions = new ServerLaunchOptions { MaxPlayers = 0 } };
+        var args = ServerCommandLine.Build(s, Array.Empty<string>());
+        Assert.DoesNotContain(args, a => a.StartsWith("-WinLiveMaxPlayers="));
+    }
 }

@@ -24,7 +24,6 @@ public static class ServerCommandLine
             $"SessionName={Escape(o.SessionName)}",
             $"Port={o.Port}",
             $"QueryPort={o.QueryPort}",
-            $"MaxPlayers={o.MaxPlayers}",
         };
 
         if (!string.IsNullOrWhiteSpace(o.ExtraQueryString))
@@ -39,6 +38,11 @@ public static class ServerCommandLine
         // -stdout -FullStdOutLogOutput pipe the FULL UE log to stdout (otherwise it only
         // goes to the window/ShooterGame.log and isn't visible in ArkManager). -unattended suppresses dialogs.
         var list = new List<string> { queryString, "-server", "-log", "-stdout", "-FullStdOutLogOutput", "-unattended" };
+
+        // ASA quirk: ?MaxPlayers= in URL and MaxPlayers= in [/Script/Engine.GameSession] are ignored.
+        // Only -WinLiveMaxPlayers=N actually changes the player cap. Verified empirically 2026-05-29.
+        if (o.MaxPlayers > 0)
+            list.Add($"-WinLiveMaxPlayers={o.MaxPlayers}");
 
         if (modIds.Count > 0)
             list.Add("-mods=" + string.Join(",", modIds));
