@@ -38,3 +38,6 @@ save-backup/
 
 ## Local design docs / planning scratchpad
 docs/superpowers/
+
+## Claude Code session-local state
+.claude/
