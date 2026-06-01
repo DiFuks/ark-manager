@@ -108,35 +108,53 @@ out `IsEnabled` in XAML. See `ServerViewModel.CanStart/CanStop` and
 `InstallViewModel.CanInstallSteamCmd`/`CanInstallOrUpdateServer`. The latter
 keeps `Install server` disabled while there's no steamcmd / empty path.
 
+### settings.json schema v2 — ini is source of truth
+
+As of `SchemaVersion=2` (migration 2026-05-29) the 8 server-knob fields
+(`ServerPassword`, `ServerAdminPassword`, `SpectatorPassword`, `RCONEnabled`,
+`RCONPort`, `SessionName`, `Port`, `QueryPort`) live **only** in
+`GameUserSettings.ini`. They used to be in `settings.json → LaunchOptions`;
+`AppSettings.Load` migrates legacy files. `settings.json` keeps the rest:
+`Map`, `MaxPlayers`, `NoBattlEye`, `AutoManagedMods`, `ClusterId`,
+`ClusterDirOverride`, `ExtraCommandLineArgs`, `ExtraQueryString`,
+backups settings, `ManageFirewallRules`.
+
+Empirically (2026-05-29) ASA does **not** overwrite our 8 keys on restart, so
+the ini stays stable across launches. Restoring a save = drop the ini in
+place, no reconciliation step needed.
+
 ### Config ↔ ini auto-reload
 
-ASA writes its own defaults into `GameUserSettings.ini` on startup and
-sometimes overwrites our values. To save the user from hitting Reload,
-`ConfigViewModel` refreshes its buffers on:
+`ConfigService` owns a `FileSystemWatcher` on `<ConfigDir>/*.ini` (debounced
+250 ms). On every external change it re-parses `[ServerSettings]` /
+`[SessionSettings]` into `Snapshot` (an `ObservableObject`); INPC fires only
+for fields that actually changed. Self-writes (`UpdateBasic`,
+`SaveGameUserSettingsRaw`, `SaveGameRaw`, `WriteActiveMods`) bump
+`_suppressUntilUtc` for 500 ms so the watcher echo is swallowed.
 
-- **switching to the Config tab as a whole** —
-  `MainWindowViewModel.OnSelectedChanged` calls
-  `ConfigViewModel.RefreshFromDisk()` (reads both raw tabs + Basic from ini);
-- **sub-tab switch** (Basic ↔ GUS.ini ↔ Game.ini) —
-  `OnSelectedTabIndexChanged` re-reads only the active sub-tab.
+`ConfigViewModel` binds the Basic tab directly to `Snapshot` and subscribes to
+`RawFilesChanged` for the raw-editor sub-tabs. Sub-tab switches
+(`OnSelectedTabIndexChanged`) re-read the raw text for whichever
+GUS.ini / Game.ini tab the user just opened — the Basic tab needs no refresh
+because Snapshot is already live via the watcher. There is no
+`RefreshFromDisk` call from the parent nav switch.
 
-The Basic tab picks up
-`[ServerSettings]`/`[SessionSettings]`/`[/Script/Engine.GameSession]` **only**
-for the fields that `ApplyLaunchOptionsToIni` writes: passwords, RCON,
-SessionName, ports, MaxPlayers. Everything else (Map, NoBattlEye,
-AutoManagedMods, ClusterId, Extra*) lives only in the VM / settings.json.
+The Basic tab covers exactly the 8 ini-owned fields above. Everything else
+(Map, NoBattlEye, AutoManagedMods, ClusterId, Extra*, MaxPlayers) lives in
+`settings.json` and is edited on the Server tab.
 
-Trade-off: unsaved edits in the current sub-tab are lost when you come back to
-it. The user explicitly asked for this ("no Reload presses").
+Trade-off: unsaved edits in a raw sub-tab are lost when you come back to it.
+The user explicitly asked for this ("no Reload presses").
 
-### ServerManager.StartAsync syncs the ini
+### ServerManager.StartAsync only guarantees the ini exists
 
-Before `_launcher.StartAsync` we call `_config.ApplyLaunchOptionsToIni(...)`.
-Without it, the very first launch after a fresh install would pick up ASA's
-defaults for RCON / passwords — RCON would end up disabled even if
-`RconEnabled=true` in settings.json. Save in the Config tab does the same plus
-a JSON update; here we just guarantee that ini and settings.json haven't
-drifted.
+Before `_launcher.StartAsync` we call `_config.EnsureIni()` — idempotent:
+it writes a default ini (via `UpdateBasic` with no mutation) only if
+`GameUserSettings.ini` doesn't exist. This covers the very first launch on a
+fresh install where the user never opened the Config tab. There is **no**
+write-back of `settings.json` values into the ini — the ini is the source of
+truth (schema v2), and any values the user typed in the Config tab were
+already persisted there by `ConfigService.UpdateBasic`.
 
 ### ServerCommandLine: passwords and RCON are NOT in the URL
 
@@ -148,9 +166,10 @@ URL parser can splice the rest of the string into a password value and
 persist it that way into `GameUserSettings.ini` — then RCON auth breaks (it
 gets a glued password like `2222?RCONEnabled=True?RCONPort=27020`).
 
-These keys are written **only into the ini** via
-`ConfigService.ApplyLaunchOptionsToIni` (`[ServerSettings]` section). The
-server reads them from there. The RCON client also uses the ini value.
+These keys are written **only into the ini** via `ConfigService.UpdateBasic`
+(`[ServerSettings]` / `[SessionSettings]` sections — the Save button on the
+Config → Basic tab). The server reads them from there. The RCON client also
+uses the ini value.
 
 The `Build_Passwords_NotInUrlQuery` / `Build_Rcon_NotInUrlQuery` tests assert
 these keys are absent from the URL.
