@@ -76,6 +76,11 @@ public partial class ServerViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasPlayersDetail))]
     private string _playersDetail = "—";
 
+    // Full comma-joined name list — bound to the tile's tooltip. PlayersDetail itself is a short
+    // summary (first N names + "+M more") so the tile doesn't bloat when a full server (70 names)
+    // is online. Tooltip is the escape hatch when the user wants the whole roster.
+    [ObservableProperty] private string _playersDetailFull = "—";
+
     // Cap from LaunchOptions.MaxPlayers — kept in sync via SettingsService.Changed so a Config-tab
     // edit reflects on the Server tile without restart.
     [ObservableProperty]
@@ -90,16 +95,35 @@ public partial class ServerViewModel : ViewModelBase
         && !string.IsNullOrWhiteSpace(PlayersDetail)
         && PlayersDetail != "—";
 
+    // Pure function — returned as (short, full): short goes into the PLAYERS tile under the count,
+    // full is the tooltip. Above PreviewLimit names we condense to "A, B, …, E +M more" so the
+    // tile stays readable on a 70-slot server while the tooltip still surfaces every name.
+    internal const int PlayersPreviewLimit = 5;
+    internal static (string Short, string Full) BuildPlayersDetail(PlayerSample s)
+    {
+        if (s.Error != null) return (s.Error, s.Error);
+        if (s.Names.Count == 0) return ("—", "—");
+
+        var full = string.Join(", ", s.Names);
+        if (s.Names.Count <= PlayersPreviewLimit) return (full, full);
+
+        var head = string.Join(", ", s.Names.Take(PlayersPreviewLimit));
+        var more = s.Names.Count - PlayersPreviewLimit;
+        return ($"{head} +{more} more", full);
+    }
+
     [ObservableProperty] private string _cpuUsage = "—";
     [ObservableProperty] private string _ramUsage = "—";
 
     private double? _totalRamGb;
 
     // Stateful — needs the previous TotalProcessorTime snapshot to compute %.
-    // Initialised lazily in the Windows branch (we don't want to pay the cost on macOS/Linux
-    // where we go through ps anyway).
-    private CpuPercentSampler? _winCpuSampler;
-    private int? _winSampledPid;
+    // Used on Windows AND Linux: under wine on Linux `wine64` execve's into `wine64-preloader`
+    // (PID stays), so .NET's Process API (which reads /proc/<pid>/stat for utime+stime and
+    // /proc/<pid>/status for VmRSS) sees the running game correctly. macOS stays on ps because
+    // we need the wineserver subtree there and phys_footprint vs RSS divergence under Rosetta.
+    private CpuPercentSampler? _procCpuSampler;
+    private int? _procSampledPid;
 
     public ServerViewModel() { }
 
@@ -127,9 +151,7 @@ public partial class ServerViewModel : ViewModelBase
         poller.Sampled += s => App.UiThread(() =>
         {
             PlayersOnline = s.Count;
-            PlayersDetail = s.Error != null
-                ? s.Error
-                : s.Names.Count == 0 ? "—" : string.Join(", ", s.Names);
+            (PlayersDetail, PlayersDetailFull) = BuildPlayersDetail(s);
         });
 
         _ = Task.Run(async () =>
@@ -152,21 +174,23 @@ public partial class ServerViewModel : ViewModelBase
     {
         if (_server?.Pid is not int pid)
         {
-            // Reset the Windows sampler so the next start doesn't carry a stale delta from
+            // Reset the sampler so the next start doesn't carry a stale delta from
             // the previous run's TotalProcessorTime baseline.
-            _winSampledPid = null;
-            _winCpuSampler?.Reset();
+            _procSampledPid = null;
+            _procCpuSampler?.Reset();
             App.UiThread(() => { CpuUsage = "—"; RamUsage = "—"; });
             return;
         }
         try
         {
-            // Windows: the server runs natively as a single process — no wine, no helpers — so
-            // .NET Process APIs give us everything (no ps/footprint). Cross-platform Process.WorkingSet64
-            // + dCpu/dWall/cores covers it; ps stays for macOS/Linux where we need the wine subtree.
-            if (OperatingSystem.IsWindows())
+            // Windows: native single process. Linux: under wine the launched PID is the running
+            // game (wine64 execve's to wine64-preloader, same PID), so /proc/<pid>/stat gives us
+            // everything. .NET's Process.TotalProcessorTime + WorkingSet64 wrap that uniformly.
+            // macOS stays on ps because under wine via Rosetta we need to sum the subtree and
+            // use phys_footprint instead of RSS.
+            if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
             {
-                SampleWindows(pid);
+                SampleViaProcessApi(pid);
                 return;
             }
 
@@ -203,18 +227,18 @@ public partial class ServerViewModel : ViewModelBase
         catch { /* ps unavailable — not critical */ }
     }
 
-    private void SampleWindows(int pid)
+    private void SampleViaProcessApi(int pid)
     {
         try
         {
             using var proc = Process.GetProcessById(pid);
             // First snapshot for this PID, or PID changed since last call — reset the delta.
-            if (_winSampledPid != pid)
+            if (_procSampledPid != pid)
             {
-                _winSampledPid = pid;
-                _winCpuSampler = new CpuPercentSampler(Environment.ProcessorCount);
+                _procSampledPid = pid;
+                _procCpuSampler = new CpuPercentSampler(Environment.ProcessorCount);
             }
-            var cpu = _winCpuSampler!.Sample(proc.TotalProcessorTime, DateTime.UtcNow);
+            var cpu = _procCpuSampler!.Sample(proc.TotalProcessorTime, DateTime.UtcNow);
             var memBytes = proc.WorkingSet64;
 
             _totalRamGb ??= SystemMemory.GetTotalRamBytes() is long b && b > 0

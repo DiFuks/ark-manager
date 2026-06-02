@@ -340,6 +340,13 @@ public sealed class ServerManager
         return !await _launcher.IsRunningAsync(pid, ct);
     }
 
+    /// <summary>
+    /// Pushes a diagnostic line into the server console log. Used by collaborators (PlayerPoller,
+    /// auto-backup, firewall) so users see *why* something is happening — RCON polling state,
+    /// backup outcomes — without us needing a separate logging UI per subsystem.
+    /// </summary>
+    public void PushDiagnostic(string line) => PushLog(line);
+
     private void PushLog(string line)
     {
         _ringLog.Enqueue(line);

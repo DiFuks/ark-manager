@@ -56,7 +56,8 @@
                     <TextBlock Classes="section" Text="PLAYERS"/>
                     <TextBlock Classes="stat" Text="{Binding PlayersDisplay}"/>
                     <TextBlock Classes="meta" Text="{Binding PlayersDetail}" TextTrimming="CharacterEllipsis"
-                               IsVisible="{Binding HasPlayersDetail}"/>
+                               IsVisible="{Binding HasPlayersDetail}"
+                               ToolTip.Tip="{Binding PlayersDetailFull}"/>
                 </StackPanel>
             </Border>
         </Grid>

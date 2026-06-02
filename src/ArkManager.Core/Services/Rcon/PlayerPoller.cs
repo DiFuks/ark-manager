@@ -48,6 +48,7 @@ public sealed class PlayerPoller : IAsyncDisposable
         Stop();
         _cts = new CancellationTokenSource();
         _worker = Task.Run(() => LoopAsync(_cts.Token));
+        _server.PushDiagnostic("[players] polling started");
     }
 
     public void Stop()
@@ -63,12 +64,18 @@ public sealed class PlayerPoller : IAsyncDisposable
         // the first probe, otherwise we sometimes catch the auth handshake mid-flight.
         try { await Task.Delay(TimeSpan.FromSeconds(2), ct); } catch { return; }
 
+        var firstPollLogged = false;
         while (!ct.IsCancellationRequested)
         {
             try
             {
                 var sample = await PollOnceAsync(ct);
                 Sampled?.Invoke(sample);
+                if (!firstPollLogged && sample.Error == null)
+                {
+                    _server.PushDiagnostic($"[players] first RCON poll ok: {sample.Count} player(s)");
+                    firstPollLogged = true;
+                }
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex)
@@ -95,7 +102,19 @@ public sealed class PlayerPoller : IAsyncDisposable
             await using var c = new RconClient();
             await c.ConnectAsync("127.0.0.1", snap.RconPort, snap.AdminPassword, ct);
             var resp = await c.SendAsync("ListPlayers", ct);
-            return ParseListPlayers(resp);
+            var sample = ParseListPlayers(resp);
+            // If the response is non-trivial yet parses to 0 names, dump the raw body once so we
+            // can spot ASA format changes / platform-specific quirks in the field. Real
+            // "No Players Connected" replies are skipped — that's the well-understood empty case.
+            if (sample.Count == 0
+                && !string.IsNullOrWhiteSpace(resp)
+                && !resp.Contains("No Players", StringComparison.OrdinalIgnoreCase))
+            {
+                var preview = resp.Replace('\n', ' ').Replace('\r', ' ').Trim();
+                if (preview.Length > 200) preview = preview[..200] + "…";
+                _server.PushDiagnostic($"[players] ListPlayers parsed 0 names; raw: {preview}");
+            }
+            return sample;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -108,8 +127,11 @@ public sealed class PlayerPoller : IAsyncDisposable
 
     /// <summary>
     /// ASA ListPlayers returns lines like:
-    ///   "0. Nickname, 1234567890123456789"   (steam id)
+    ///   "0. Nickname, 00025dbef45f4f10a4d9d69b041389f2"   (EOS Account ID — 32 hex)
     ///   or "No Players Connected"
+    /// ASA uses Epic Online Services as its identity layer even for Steam-joined players, so the
+    /// ID column is always EOS-formatted (hex). `\d+` matched only pure-Steam-ID setups and
+    /// silently dropped every player on current ASA — accept any non-whitespace token here.
     /// </summary>
     public static PlayerSample ParseListPlayers(string raw)
     {
@@ -119,8 +141,7 @@ public sealed class PlayerPoller : IAsyncDisposable
         var names = new List<string>();
         foreach (var line in raw.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            // "0. Nickname, steamid"
-            var m = Regex.Match(line, @"^\d+\.\s*(?<name>.+?)\s*,\s*\d+\s*$");
+            var m = Regex.Match(line, @"^\d+\.\s*(?<name>.+?)\s*,\s*\S+\s*$");
             if (m.Success) names.Add(m.Groups["name"].Value);
         }
         return new PlayerSample(names.Count, names, DateTime.UtcNow);

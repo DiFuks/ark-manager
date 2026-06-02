@@ -89,7 +89,7 @@ public sealed class RconClient : IAsyncDisposable
 
     private async Task WritePacketAsync(int id, int type, string body, CancellationToken ct)
     {
-        var bodyBytes = Encoding.ASCII.GetBytes(body);
+        var bodyBytes = Encoding.UTF8.GetBytes(body);
         var size = 4 + 4 + bodyBytes.Length + 2; // id + type + body + 2 nul
         var buf = new byte[4 + size];
         BitConverter.GetBytes(size).CopyTo(buf, 0);
@@ -110,7 +110,7 @@ public sealed class RconClient : IAsyncDisposable
         var id = BitConverter.ToInt32(rest, 0);
         var type = BitConverter.ToInt32(rest, 4);
         var bodyLen = size - 4 - 4 - 2;
-        var body = bodyLen > 0 ? Encoding.ASCII.GetString(rest, 8, bodyLen) : "";
+        var body = bodyLen > 0 ? Encoding.UTF8.GetString(rest, 8, bodyLen) : "";
         return (id, type, body);
     }
 
