@@ -8,6 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/DiFuks/ark-manager/total?style=flat-square&color=e08a2b)](https://github.com/DiFuks/ark-manager/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/DiFuks/ark-manager/release.yml?style=flat-square)](https://github.com/DiFuks/ark-manager/actions/workflows/release.yml)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square)](https://dotnet.microsoft.com/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-9c8d72?style=flat-square)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-9c8d72?style=flat-square)](#download)
 [![Website](https://img.shields.io/badge/website-arkmanager.org-e08a2b?style=flat-square)](https://arkmanager.org)
 
@@ -142,7 +143,10 @@ publish with embedded wine on macOS/Linux.
 
 </details>
 
-## Licensing
+## License
 
-Wine sources: WineHQ (LGPL 2.1), gcenx macOS builds, lutris-wine Linux builds — all
-redistributable. Pinned versions + SHA256 in [`build/wine-sources.json`](build/wine-sources.json).
+ArkManager is released under the [MIT License](LICENSE).
+
+Bundled wine sources are redistributable: WineHQ (LGPL 2.1), gcenx macOS builds,
+lutris-wine Linux builds — pinned versions + SHA256 in
+[`build/wine-sources.json`](build/wine-sources.json).
