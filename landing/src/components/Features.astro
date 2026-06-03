@@ -1,21 +1,22 @@
 ---
 import Icon from './Icon.astro';
+import { type Lang, useTranslations } from '../i18n/ui';
 
-const features = [
-  { icon: 'download',  title: 'SteamCMD install & update',  body: 'One click. Steam handles the 25 GB.' },
-  { icon: 'mod',       title: 'CurseForge mods',            body: 'Add by ID. Names resolve automatically.' },
-  { icon: 'gear',      title: 'ini editor',                 body: 'Form view for basics, raw tabs for the rest.' },
-  { icon: 'archive',   title: 'Auto-backups',               body: 'Snapshot Saved/ on a timer. Only while running.' },
-  { icon: 'terminal',  title: 'RCON client',                body: 'saveworld, DoExit, Broadcast — one click.' },
-  { icon: 'users',     title: 'Live players',               body: 'Names and counts polled in the background.' },
-  { icon: 'cluster',   title: 'Cluster support',            body: 'ClusterId + transfer dir, GUI-driven.' },
-  { icon: 'map',       title: '7 map presets',              body: 'Plus raw Game.ini for mod maps.' },
-] as const;
+interface Props {
+  lang: Lang;
+}
+
+// Icons are language-neutral; titles/bodies come from the dictionary in order.
+const icons = ['download', 'mod', 'gear', 'archive', 'terminal', 'users', 'cluster', 'map'] as const;
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const features = t.features.items.map((item, i) => ({ icon: icons[i], ...item }));
 ---
 <section id="features">
   <div class="container">
-    <p class="section-label">FEATURES</p>
-    <h2 class="h2">Everything ASA admins reach for, in one place.</h2>
+    <p class="section-label">{t.features.label}</p>
+    <h2 class="h2">{t.features.heading}</h2>
     <div class="grid">
       {features.map(f => (
         <article class="panel feature">

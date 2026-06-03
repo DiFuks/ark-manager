@@ -1,19 +1,22 @@
 ---
-const steps = [
-  { n: '1', title: 'Install SteamCMD',   body: 'One-click bootstrap. No terminal.' },
-  { n: '2', title: 'Install the server', body: 'Steam pulls 25 GB. Sit back.' },
-  { n: '3', title: 'Configure',          body: 'Session name, admin password, ports. Defaults are sensible.' },
-  { n: '4', title: 'Start',              body: 'Wine builds its prefix on first run (~30s on mac/linux).' },
-];
+import { type Lang, useTranslations } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const steps = t.quickstart.steps;
 ---
 <section id="quickstart">
   <div class="container">
-    <p class="section-label">QUICK START</p>
-    <h2 class="h2">Four steps. Two clicks each.</h2>
+    <p class="section-label">{t.quickstart.label}</p>
+    <h2 class="h2">{t.quickstart.heading}</h2>
     <div class="grid">
-      {steps.map(s => (
+      {steps.map((s, i) => (
         <article class="panel step">
-          <div class="num">{s.n}</div>
+          <div class="num">{i + 1}</div>
           <h3 class="step-title">{s.title}</h3>
           <p class="step-body">{s.body}</p>
         </article>

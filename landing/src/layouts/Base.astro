@@ -2,28 +2,38 @@
 import '../styles/tokens.css';
 import '../styles/base.css';
 import Analytics from '../components/Analytics.astro';
+import {
+  type Lang,
+  defaultLang,
+  useTranslations,
+  localeHref,
+  ogLocale,
+} from '../i18n/ui';
 
 interface Props {
+  lang: Lang;
   title?: string;
   description?: string;
 }
 
-const {
-  title = 'ArkManager — cross-platform dedicated server manager for ARK: Survival Ascended',
-  description = 'Cross-platform dedicated server manager for ARK: Survival Ascended. No setup, no wine to install, no .NET runtime to install. macOS, Linux, Windows.',
-} = Astro.props;
+const { lang, title, description } = Astro.props;
+const t = useTranslations(lang);
 
-const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
-const siteOrigin = Astro.site ?? new URL('https://arkmanager.org');
-const ogImage = new URL(`${base}og-image.png`, siteOrigin).toString();
-const canonical = new URL(Astro.url.pathname, siteOrigin).toString();
+const pageTitle = title ?? t.meta.title;
+const pageDescription = description ?? t.meta.description;
+
+const siteOrigin = Astro.site ?? new URL(localeHref.en);
+const ogImage = new URL('og-image.png', siteOrigin).toString();
+const canonical = localeHref[lang];
+const altLang: Lang = lang === 'en' ? 'ru' : 'en';
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'ArkManager',
-  description,
+  description: pageDescription,
   url: canonical,
+  inLanguage: lang,
   applicationCategory: 'UtilitiesApplication',
   operatingSystem: 'macOS, Linux, Windows',
   downloadUrl: 'https://github.com/DiFuks/ark-manager/releases/latest',
@@ -35,37 +45,61 @@ const jsonLd = {
 };
 ---
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
+    {/* Smart locale redirect: only on the English root, only for human
+        visitors (bots don't run JS — they index the static page as-is).
+        Honours a previously stored explicit choice; otherwise sends
+        ru-* browsers to /ru/. Runs before paint to avoid a flash. */}
+    {lang === defaultLang && (
+      <script is:inline>
+        (function () {
+          try {
+            var stored = localStorage.getItem('arkmanager-lang');
+            if (stored === 'en') return;
+            if (stored === 'ru') { location.replace('/ru/'); return; }
+            var l = (navigator.language || navigator.userLanguage || '').toLowerCase();
+            if (l.indexOf('ru') === 0) location.replace('/ru/');
+          } catch (e) {}
+        })();
+      </script>
+    )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#1a1611" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
     <link rel="canonical" href={canonical} />
+
+    <!-- hreflang: reciprocal alternates + x-default (the English root). -->
+    <link rel="alternate" hreflang="en" href={localeHref.en} />
+    <link rel="alternate" hreflang="ru" href={localeHref.ru} />
+    <link rel="alternate" hreflang="x-default" href={localeHref.en} />
 
     <!-- Search engine ownership verification.
          Google is verified via the public/google9a8e66d959572a73.html file. -->
     <meta name="yandex-verification" content="911b60ca34075021" />
 
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="ArkManager — dedicated server manager for ARK: Survival Ascended" />
+    <meta property="og:image:alt" content={t.meta.ogAlt} />
     <meta property="og:site_name" content="ArkManager" />
+    <meta property="og:locale" content={ogLocale[lang]} />
+    <meta property="og:locale:alternate" content={ogLocale[altLang]} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
     <meta name="twitter:image" content={ogImage} />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

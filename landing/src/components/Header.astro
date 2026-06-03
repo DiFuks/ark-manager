@@ -1,0 +1,104 @@
+---
+import Icon from './Icon.astro';
+import { type Lang, useTranslations } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+---
+<header class="site-header">
+  <div class="container bar">
+    <a class="brand" href={lang === 'en' ? '/' : '/ru/'}>
+      <Icon name="server" size={18} />
+      <span>ArkManager</span>
+    </a>
+
+    <nav class="right">
+      <a class="gh" href="https://github.com/DiFuks/ark-manager" target="_blank" rel="noopener" aria-label="GitHub">
+        <Icon name="github" size={18} />
+      </a>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <a
+          href="/"
+          class={`lang ${lang === 'en' ? 'active' : ''}`}
+          data-set-lang="en"
+          hreflang="en"
+          aria-current={lang === 'en' ? 'true' : undefined}
+        >EN</a>
+        <span class="sep" aria-hidden="true">/</span>
+        <a
+          href="/ru/"
+          class={`lang ${lang === 'ru' ? 'active' : ''}`}
+          data-set-lang="ru"
+          hreflang="ru"
+          aria-current={lang === 'ru' ? 'true' : undefined}
+        >RU</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .brand:hover { text-decoration: none; color: var(--accent-ink); }
+  .brand svg { color: var(--accent-ink); }
+  .right { display: flex; align-items: center; gap: 16px; }
+  .gh {
+    display: inline-flex;
+    color: var(--muted);
+  }
+  .gh:hover { color: var(--accent-ink); }
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .lang {
+    color: var(--muted);
+    padding: 2px 2px;
+  }
+  .lang:hover { color: var(--text); text-decoration: none; }
+  .lang.active { color: var(--accent-ink); font-weight: 600; }
+  .sep { color: var(--line-2); }
+</style>
+
+<script>
+  // Remember an explicit language choice so the smart redirect (Base.astro)
+  // never overrides it on subsequent visits.
+  document.querySelectorAll<HTMLAnchorElement>('[data-set-lang]').forEach(el => {
+    el.addEventListener('click', () => {
+      try {
+        localStorage.setItem('arkmanager-lang', el.dataset.setLang!);
+      } catch {
+        /* ignore — private mode / disabled storage */
+      }
+    });
+  });
+</script>

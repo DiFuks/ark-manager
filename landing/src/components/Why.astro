@@ -1,9 +1,12 @@
 ---
-const items = [
-  { label: 'BUNDLED',         headline: 'Wine embedded. No external installs.' },
-  { label: 'SELF-CONTAINED',  headline: '.NET runtime ships with the app.' },
-  { label: 'OPEN SOURCE',     headline: 'Inspect, fork, contribute.' },
-];
+import { type Lang, useTranslations } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const items = useTranslations(lang).why;
 ---
 <section id="why">
   <div class="container">

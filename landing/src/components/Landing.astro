@@ -1,0 +1,27 @@
+---
+import Header from './Header.astro';
+import Hero from './Hero.astro';
+import Why from './Why.astro';
+import Features from './Features.astro';
+import Screenshots from './Screenshots.astro';
+import QuickStart from './QuickStart.astro';
+import Download from './Download.astro';
+import Footer from './Footer.astro';
+import { type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+<Header lang={lang} />
+<main>
+  <Hero lang={lang} />
+  <Why lang={lang} />
+  <Features lang={lang} />
+  <Screenshots lang={lang} />
+  <QuickStart lang={lang} />
+  <Download lang={lang} />
+</main>
+<Footer lang={lang} />
