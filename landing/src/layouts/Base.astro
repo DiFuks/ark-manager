@@ -13,7 +13,9 @@ const {
 } = Astro.props;
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
-const ogImage = new URL(`${base}og-image.png`, Astro.site ?? 'https://difuks.github.io').toString();
+const siteOrigin = Astro.site ?? new URL('https://arkmanager.org');
+const ogImage = new URL(`${base}og-image.png`, siteOrigin).toString();
+const canonical = new URL(Astro.url.pathname, siteOrigin).toString();
 ---
 <!doctype html>
 <html lang="en">
@@ -23,11 +25,19 @@ const ogImage = new URL(`${base}og-image.png`, Astro.site ?? 'https://difuks.git
     <meta name="color-scheme" content="dark" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Search engine ownership verification (fill in after registering the site):
+    <meta name="google-site-verification" content="..." />
+    <meta name="yandex-verification" content="..." />
+    -->
 
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="ArkManager" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
