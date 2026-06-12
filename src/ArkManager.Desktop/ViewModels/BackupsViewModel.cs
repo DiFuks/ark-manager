@@ -107,16 +107,33 @@ public partial class BackupsViewModel : ViewModelBase
         else AutoBackupStatus = "Auto-backup off";
     }
 
+    // Guards against two in-flight reloads racing the Clear/Add below (e.g. typing a path
+    // fires OnBackupsDirectoryChanged per keystroke): only the newest reload publishes.
+    private int _reloadSeq;
+
     [RelayCommand]
     public void Reload()
     {
         if (_service == null) return;
-        Backups.Clear();
-        foreach (var b in _service.ListBackups()) Backups.Add(b);
-        var total = 0L;
-        foreach (var b in Backups) total += b.SizeBytes;
-        Summary = $"{Backups.Count} snapshots · {DisplayFormat.HumanSize(total)} total";
-        Status = "";
+        var seq = ++_reloadSeq;
+        // Off the UI thread: ListBackups stats every zip in BackupsDirectory, which the user
+        // may point at a NAS / external drive — sync enumeration there can block for seconds.
+        _ = Task.Run(() =>
+        {
+            IReadOnlyList<BackupInfo> list;
+            try { list = _service.ListBackups(); }
+            catch { list = Array.Empty<BackupInfo>(); }
+            var total = 0L;
+            foreach (var b in list) total += b.SizeBytes;
+            App.UiThread(() =>
+            {
+                if (seq != _reloadSeq) return; // a newer reload superseded this one
+                Backups.Clear();
+                foreach (var b in list) Backups.Add(b);
+                Summary = $"{list.Count} snapshots · {DisplayFormat.HumanSize(total)} total";
+                Status = "";
+            });
+        });
     }
 
     [RelayCommand(CanExecute = nameof(CanCreate))]
@@ -152,15 +169,19 @@ public partial class BackupsViewModel : ViewModelBase
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
-    public void Delete()
+    public async Task DeleteAsync()
     {
         if (_service == null || Selected == null) return;
+        var path = Selected.FilePath;
+        Busy = true; // CanDelete gates on !Busy → no double-click while the file is going away
         try
         {
-            _service.Delete(Selected.FilePath);
+            // Same NAS/external-drive caveat as Reload — don't block the UI on File.Delete.
+            await Task.Run(() => _service.Delete(path));
             Reload();
         }
         catch (Exception ex) { Status = "Error: " + ex.Message; }
+        finally { Busy = false; }
     }
 
     [RelayCommand]
