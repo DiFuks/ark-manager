@@ -21,13 +21,16 @@ public partial class ConfigView : UserControl
 
     // The controls live inside lazily-realised TabItems (own namescope), so root-level x:Name
     // fields are null here. We locate search/editor/info by structure from the clicked element:
-    // find-bar — StackPanel [search, button, info]; editor — TextBox in Row 1 of the parent Grid.
+    // find-bar — StackPanel [search, button, info]; editor — the only TextBox that is a direct
+    // child of the parent Grid (the search box lives inside the find-bar StackPanel, not the
+    // Grid). We do NOT pin it to a row index — the "file changed on disk" ribbon shifts the
+    // editor's row, and a hard-coded row is exactly what silently broke find earlier.
     private static void FindInBar(Control? origin)
     {
         if (origin?.Parent is not Panel bar || bar.Parent is not Grid grid) return;
         var search = bar.Children.OfType<TextBox>().FirstOrDefault();
         var info = bar.Children.OfType<TextBlock>().FirstOrDefault();
-        var editor = grid.Children.OfType<TextBox>().FirstOrDefault(c => Grid.GetRow(c) == 1);
+        var editor = grid.Children.OfType<TextBox>().FirstOrDefault();
         if (search != null && editor != null) FindNext(editor, search, info);
     }
 
