@@ -10,7 +10,7 @@
     into each one).
   -->
   <PropertyGroup>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <BaseOutputPath>$(MSBuildProjectDirectory)/bin.noindex/</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/obj.noindex/</BaseIntermediateOutputPath>
   </PropertyGroup>
