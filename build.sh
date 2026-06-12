@@ -95,6 +95,21 @@ rid_of() {
   esac
 }
 
+# Drop artifacts of OTHER versions from dist/ so it doesn't accumulate every past
+# release locally. Keeps the current $VERSION (incl. other targets' archives from a
+# previous run) and never touches non-ArkManager files. No-op on CI (fresh checkout).
+prune_old_versions() {
+  shopt -s nullglob
+  local keep="$APP_NAME-$VERSION-" entry base
+  for entry in "$DIST/$APP_NAME-"*; do
+    base=$(basename "$entry")
+    [[ "$base" == "$keep"* ]] && continue
+    echo "==> removing stale artifact: $base" >&2
+    rm -rf "$entry"
+  done
+  shopt -u nullglob
+}
+
 publish_for() {
   local target="$1" rid; rid=$(rid_of "$target")
   echo "==> dotnet publish ($CONFIG / $rid / self-contained)" >&2
@@ -207,6 +222,8 @@ package_linux() {
 }
 
 # --- run ---------------------------------------------------------------------
+prune_old_versions
+
 for t in "${TARGETS[@]}"; do
   echo ""
   echo "### Target: $t ###"
