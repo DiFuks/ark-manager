@@ -75,7 +75,7 @@ public sealed class AutoBackupWorker : IDisposable
             try
             {
                 Log?.Invoke("[auto-backup] creating snapshot...");
-                var info = await _backups.CreateBackupAsync(note: "auto", progress: null, _shutdown.Token);
+                var info = await _backups.CreateBackupAsync(note: BackupService.AutoNote, progress: null, _shutdown.Token);
                 BackupCreated?.Invoke(info);
                 Log?.Invoke($"[auto-backup] done: {Path.GetFileName(info.FilePath)}");
             }

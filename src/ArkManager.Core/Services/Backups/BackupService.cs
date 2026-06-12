@@ -5,7 +5,16 @@ namespace ArkManager.Core.Services.Backups;
 
 public sealed record BackupInfo(string FilePath, DateTime CreatedUtc, long SizeBytes, string? Note)
 {
-    public string DisplayName => string.IsNullOrWhiteSpace(Note) ? "Auto snapshot" : Note!;
+    // Note carries the marker baked into the file name (parsed back by ListBackups):
+    // the auto-backup sentinels read as their own labels, an empty note means a manual
+    // snapshot the user didn't name, anything else is the user's own note.
+    public string DisplayName => Note switch
+    {
+        BackupService.AutoNote => "Auto snapshot",
+        BackupService.PreRestoreNote => "Pre-restore snapshot",
+        null or "" => "Manual snapshot",
+        var n => n,
+    };
     public string Age => DisplayFormat.RelativeTime(CreatedUtc, DateTime.UtcNow);
     public string SizeText => DisplayFormat.HumanSize(SizeBytes);
 }
@@ -18,7 +27,31 @@ public sealed class BackupService
 {
     private readonly SettingsService _settings;
 
+    // Reserved notes baked into auto-created snapshots. They double as DisplayName markers
+    // (see BackupInfo.DisplayName), so the worker / restore path must use these constants
+    // rather than literals.
+    public const string AutoNote = "auto";
+    public const string PreRestoreNote = "pre-restore-auto";
+
     public BackupService(SettingsService settings) => _settings = settings;
+
+    private const string FileNamePrefix = "asa-backup-";
+
+    /// <summary>
+    /// Reads back the note baked into a backup file name
+    /// (<c>asa-backup-{stamp}_{note}.zip</c>). The timestamp itself never contains an
+    /// underscore, so the first underscore separates stamp from note. Returns null when
+    /// there is no note suffix (a manual snapshot the user didn't name).
+    /// </summary>
+    internal static string? NoteFromFileName(string fileName)
+    {
+        var name = Path.GetFileNameWithoutExtension(fileName);
+        if (!name.StartsWith(FileNamePrefix, StringComparison.Ordinal)) return null;
+        var rest = name[FileNamePrefix.Length..]; // {stamp} or {stamp}_{note}
+        var us = rest.IndexOf('_');
+        if (us < 0 || us + 1 >= rest.Length) return null;
+        return rest[(us + 1)..];
+    }
 
     private string ServerRoot =>
         _settings.Current.ServerInstallPath
@@ -39,7 +72,7 @@ public sealed class BackupService
         var safeNote = string.IsNullOrWhiteSpace(note)
             ? ""
             : "_" + new string(note.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_').Take(40).ToArray());
-        var fileName = $"asa-backup-{stamp}{safeNote}.zip";
+        var fileName = $"{FileNamePrefix}{stamp}{safeNote}.zip";
         var filePath = Path.Combine(BackupsRoot, fileName);
 
         await Task.Run(() =>
@@ -57,10 +90,10 @@ public sealed class BackupService
     public IReadOnlyList<BackupInfo> ListBackups()
     {
         if (!Directory.Exists(BackupsRoot)) return Array.Empty<BackupInfo>();
-        return Directory.EnumerateFiles(BackupsRoot, "asa-backup-*.zip")
+        return Directory.EnumerateFiles(BackupsRoot, $"{FileNamePrefix}*.zip")
             .Select(f => new FileInfo(f))
             .OrderByDescending(f => f.CreationTimeUtc)
-            .Select(f => new BackupInfo(f.FullName, f.CreationTimeUtc, f.Length, null))
+            .Select(f => new BackupInfo(f.FullName, f.CreationTimeUtc, f.Length, NoteFromFileName(f.Name)))
             .ToList();
     }
 
@@ -74,7 +107,7 @@ public sealed class BackupService
         if (wipeFirst && Directory.Exists(savedDir))
         {
             // Before deleting — just in case, take a quick snapshot of the current Saved.
-            await CreateBackupAsync(note: "pre-restore-auto", progress: null, ct: ct);
+            await CreateBackupAsync(note: PreRestoreNote, progress: null, ct: ct);
             Directory.Delete(savedDir, recursive: true);
         }
 
