@@ -13,8 +13,8 @@ namespace ArkManager.App.ViewModels;
 
 public partial class ServerViewModel : ViewModelBase
 {
-    private const int MaxLogChars = 500_000;
     private readonly ServerManager? _server;
+    private readonly Services.ConsoleLog? _console;
 
     [ObservableProperty] private string _log = "";
     [ObservableProperty] private string _identity = "—";
@@ -130,6 +130,9 @@ public partial class ServerViewModel : ViewModelBase
     public ServerViewModel(ServerManager server, PlayerPoller poller, SettingsService settings, ConfigService config)
     {
         _server = server;
+        // Batched, capped console — folds a flood of server output into ~10 re-renders/sec
+        // instead of one O(buffer) string copy + TextBox re-render per line (the UI-freeze case).
+        _console = new Services.ConsoleLog(s => Log = s);
         var o = settings.Current.LaunchOptions;
         Identity = $"{config.Snapshot.SessionName} · {o.Map}";
         MaxPlayers = o.MaxPlayers;
@@ -142,11 +145,13 @@ public partial class ServerViewModel : ViewModelBase
         State = server.State.ToString();
         Pid = server.Pid;
         Ready = server.IsReady;
-        server.LogLine += line => App.UiThread(() =>
+        // No per-line UiThread hop: ConsoleLog.Append is thread-safe and the timer publishes the
+        // batched result on the UI thread. The filter (live, applies to new lines only) stays here.
+        server.LogLine += line =>
         {
             if (!string.IsNullOrWhiteSpace(Filter) && !line.Contains(Filter, StringComparison.OrdinalIgnoreCase)) return;
             AppendLine(line);
-        });
+        };
 
         poller.Sampled += s => App.UiThread(() =>
         {
@@ -293,20 +298,12 @@ public partial class ServerViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    public void ClearLog() => Log = "";
+    public void ClearLog() => _console?.Clear();
 
     [RelayCommand]
     public async Task CopyLog() => await Services.Browse.CopyToClipboardAsync(Log);
 
-    private void AppendLine(string line)
-    {
-        Log += line + Environment.NewLine;
-        if (Log.Length > MaxLogChars)
-        {
-            var cut = Log.IndexOf('\n', Log.Length - MaxLogChars);
-            Log = cut > 0 ? Log[(cut + 1)..] : Log[^MaxLogChars..];
-        }
-    }
+    private void AppendLine(string line) => _console?.Append(line);
 
     private void UpdateUptime()
     {

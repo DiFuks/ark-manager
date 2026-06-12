@@ -9,10 +9,10 @@ namespace ArkManager.App.ViewModels;
 
 public partial class InstallViewModel : ViewModelBase
 {
-    private const int MaxLogChars = 200_000;
     private readonly SettingsService? _settings;
     private readonly SteamCmdService? _steam;
     private readonly ConfigService? _config;
+    private readonly Services.ConsoleLog? _console;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(InstallOrUpdateServerCommand))]
@@ -99,6 +99,7 @@ public partial class InstallViewModel : ViewModelBase
         _settings = settings;
         _steam = steam;
         _config = config;
+        _console = new Services.ConsoleLog(s => Log = s);
         ServerInstallPath = settings.Current.ServerInstallPath ?? "";
         UpdateSteamState();
         RefreshInstalledVersion();
@@ -238,16 +239,7 @@ public partial class InstallViewModel : ViewModelBase
     public async Task CopyLog() => await Services.Browse.CopyToClipboardAsync(Log);
 
     [RelayCommand]
-    public void ClearLog() => Log = "";
+    public void ClearLog() => _console?.Clear();
 
-    private void Append(string line) => App.UiThread(() =>
-    {
-        Log += line + Environment.NewLine;
-        // Prevent the string from growing forever — trim the "head" at a line boundary.
-        if (Log.Length > MaxLogChars)
-        {
-            var cut = Log.IndexOf('\n', Log.Length - MaxLogChars);
-            Log = cut > 0 ? Log[(cut + 1)..] : Log[^MaxLogChars..];
-        }
-    });
+    private void Append(string line) => _console?.Append(line);
 }

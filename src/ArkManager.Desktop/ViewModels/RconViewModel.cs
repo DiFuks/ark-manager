@@ -8,13 +8,12 @@ namespace ArkManager.App.ViewModels;
 
 public partial class RconViewModel : ViewModelBase
 {
-    private const int MaxLogChars = 200_000;
-
     // The local wine server always listens on 127.0.0.1; the manager has no remote scenarios.
     private const string LocalHost = "127.0.0.1";
 
     private readonly ServerManager? _server;
     private readonly ConfigService? _config;
+    private readonly Services.ConsoleLog? _console;
     private RconClient? _client;
 
     [ObservableProperty] private string _lines = "";
@@ -57,6 +56,7 @@ public partial class RconViewModel : ViewModelBase
     {
         _server = server;
         _config = config;
+        _console = new Services.ConsoleLog(s => Lines = s);
 
         // Auto-connect once the world has finished loading (Ready), auto-disconnect when leaving Running.
         // Ready ≠ just Running: the server may be "alive" yet still loading the world — at that point
@@ -171,16 +171,8 @@ public partial class RconViewModel : ViewModelBase
         Command = "";
     }
 
-    [RelayCommand] public void Clear() => Lines = "";
+    [RelayCommand] public void Clear() => _console?.Clear();
     [RelayCommand] public async Task CopyLog() => await Services.Browse.CopyToClipboardAsync(Lines);
 
-    private void Append(string line)
-    {
-        Lines += line + Environment.NewLine;
-        if (Lines.Length > MaxLogChars)
-        {
-            var cut = Lines.IndexOf('\n', Lines.Length - MaxLogChars);
-            Lines = cut > 0 ? Lines[(cut + 1)..] : Lines[^MaxLogChars..];
-        }
-    }
+    private void Append(string line) => _console?.Append(line);
 }
