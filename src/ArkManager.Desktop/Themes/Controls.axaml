@@ -151,6 +151,16 @@
         <Setter Property="Height" Value="NaN"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Top"/>
+        <!-- Padding here insets the whole inner ScrollViewer (scroll bars included), so it can't
+             keep text off the bars — the gutter has to go on PART_ScrollViewer instead (below). -->
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+    <!-- The floating scroll bars hover at the inner ScrollViewer's right/bottom edges. Padding on
+         PART_ScrollViewer insets the text content (not the bars), so the bars land on an empty
+         gutter instead of clipping the last line / right-most column. Left/top keep the text off
+         the border and aligned under the "CONSOLE" header. -->
+    <Style Selector="TextBox.log /template/ ScrollViewer#PART_ScrollViewer">
+        <Setter Property="Padding" Value="14,6,16,14"/>
     </Style>
     <!-- NumericUpDown: surface = the inner TextBox (drawn by the regular TextBox style above →
          same background/border/corner-radius as text fields). ButtonSpinner is transparent and

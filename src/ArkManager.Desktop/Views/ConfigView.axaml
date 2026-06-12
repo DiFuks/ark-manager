@@ -137,7 +137,7 @@
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
                              Background="{DynamicResource ConsoleBrush}"
                              BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                             CornerRadius="11" Padding="12"/>
+                             CornerRadius="11"/>
                 </Grid>
             </TabItem>
 
@@ -164,7 +164,7 @@
                              FontFamily="{DynamicResource MonoFont}" FontSize="12"
                              Background="{DynamicResource ConsoleBrush}"
                              BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                             CornerRadius="11" Padding="12"/>
+                             CornerRadius="11"/>
                 </Grid>
             </TabItem>
 
