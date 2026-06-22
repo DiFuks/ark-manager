@@ -8,7 +8,7 @@
         <TextBlock Grid.Row="0" Classes="h1" Text="Mods"/>
 
         <Grid Grid.Row="1" ColumnDefinitions="*,auto" ColumnSpacing="8">
-            <TextBox Grid.Column="0" Text="{Binding NewModId}" PlaceholderText="CurseForge ID (comma/space-separated for several)"/>
+            <TextBox Grid.Column="0" Text="{Binding NewModId}" AcceptsReturn="False" KeyDown="MessageTextBox_KeyDown" PlaceholderText="CurseForge ID (comma/space-separated for several)"/>
             <Button Grid.Column="1" Classes="primary" Command="{Binding AddCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="{DynamicResource IconPlus}"/><TextBlock Text="Add"/></StackPanel>
             </Button>
