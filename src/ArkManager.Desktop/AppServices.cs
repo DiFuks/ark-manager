@@ -39,6 +39,8 @@ public static class AppServices
         else
             sc.AddSingleton<IFirewallService, NoopFirewallService>();
         sc.AddSingleton<ServerManager>();
+        // The same ServerManager instance flushes the world before a backup (see BackupService).
+        sc.AddSingleton<IWorldFlusher>(sp => sp.GetRequiredService<ServerManager>());
         sc.AddSingleton<PlayerPoller>();
 
         // ViewModels

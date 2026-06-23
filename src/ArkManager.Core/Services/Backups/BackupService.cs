@@ -26,6 +26,7 @@ public sealed record BackupInfo(string FilePath, DateTime CreatedUtc, long SizeB
 public sealed class BackupService
 {
     private readonly SettingsService _settings;
+    private readonly IWorldFlusher? _flusher;
 
     // Reserved notes baked into auto-created snapshots. They double as DisplayName markers
     // (see BackupInfo.DisplayName), so the worker / restore path must use these constants
@@ -33,7 +34,13 @@ public sealed class BackupService
     public const string AutoNote = "auto";
     public const string PreRestoreNote = "pre-restore-auto";
 
-    public BackupService(SettingsService settings) => _settings = settings;
+    // _flusher is optional: the designer / pure-logic tests construct without it. In the app it's
+    // wired to ServerManager so every snapshot is preceded by a saveworld when the server is live.
+    public BackupService(SettingsService settings, IWorldFlusher? flusher = null)
+    {
+        _settings = settings;
+        _flusher = flusher;
+    }
 
     private const string FileNamePrefix = "asa-backup-";
 
@@ -67,6 +74,11 @@ public sealed class BackupService
         var savedDir = Path.Combine(ServerRoot, "ShooterGame", "Saved");
         if (!Directory.Exists(savedDir))
             throw new InvalidOperationException("ShooterGame/Saved folder not found. Run the server at least once.");
+
+        // Flush the live world to disk first so the zip captures the current state, not just the
+        // server's last periodic auto-save. No-op when the server isn't running (disk already final).
+        if (_flusher != null)
+            await _flusher.TrySaveWorldAsync(ct);
 
         var stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
         var safeNote = string.IsNullOrWhiteSpace(note)

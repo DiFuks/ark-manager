@@ -14,7 +14,7 @@ public enum ServerState { Stopped, Starting, Running, Stopping, Crashed }
 /// Coordinates the running server's state: PID, log, transitions.
 /// The UI layer subscribes to StateChanged / LogLine.
 /// </summary>
-public sealed class ServerManager
+public sealed class ServerManager : Backups.IWorldFlusher
 {
     private readonly SettingsService _settings;
     private readonly IServerLauncher _launcher;
@@ -289,6 +289,38 @@ public sealed class ServerManager
     /// </summary>
     internal static bool ShouldEnsureFirewallRules(AppSettings s, Firewall.IFirewallService fw)
         => s.ManageFirewallRules && fw.IsSupported && fw.IsElevated;
+
+    /// <summary>
+    /// Flush the live world to disk via RCON <c>saveworld</c>, without exiting. Used before a
+    /// backup so the snapshot reflects the current world, not just the server's last periodic
+    /// auto-save. No-op (returns false) when the world isn't Ready (RCON port not open yet, or
+    /// the server is stopped) or RCON/admin-password is unavailable — in that case the on-disk
+    /// Saved is either already final (stopped) or only as fresh as the last server auto-save.
+    /// </summary>
+    public async Task<bool> TrySaveWorldAsync(CancellationToken ct = default)
+    {
+        var s = _config.Snapshot;
+        if (!ShouldAttemptGracefulSave(s, IsReady)) return false;
+
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+
+            await using var rcon = new RconClient();
+            await rcon.ConnectAsync("127.0.0.1", s.RconPort, s.AdminPassword, timeout.Token);
+
+            PushLog("[backup] saveworld...");
+            var resp = await rcon.SendAsync("saveworld", timeout.Token);
+            PushLog("[backup] " + (string.IsNullOrWhiteSpace(resp) ? "(saveworld ok)" : resp.Trim()));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            PushLog("[backup] saveworld failed: " + ex.Message + " — snapshot may lag the live world.");
+            return false;
+        }
+    }
 
     /// <summary>
     /// saveworld (wait for disk flush) + DoExit via RCON. Any error is just
