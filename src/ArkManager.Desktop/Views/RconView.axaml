@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ArkManager.App.ViewModels"
+             xmlns:b="using:ArkManager.App.Behaviors"
              x:Class="ArkManager.App.Views.RconView"
              x:DataType="vm:RconViewModel">
     <Grid RowDefinitions="auto,auto,*,auto" RowSpacing="16">
@@ -41,7 +42,7 @@
         </Border>
 
         <Grid Grid.Row="3" ColumnDefinitions="*,auto" ColumnSpacing="6">
-            <TextBox Grid.Column="0" Text="{Binding Command}" AcceptsReturn="False" KeyDown="MessageTextBox_KeyDown" PlaceholderText="RCON command (e.g. ListPlayers)"/>
+            <TextBox Grid.Column="0" Text="{Binding Command}" b:SubmitOnEnter.Command="{Binding SendCommand}" PlaceholderText="RCON command (e.g. ListPlayers)"/>
             <Button Grid.Column="1" Classes="primary" Content="Send" Command="{Binding SendCommand}"/>
         </Grid>
     </Grid>
