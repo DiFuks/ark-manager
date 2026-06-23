@@ -41,7 +41,7 @@
         </Border>
 
         <Grid Grid.Row="3" ColumnDefinitions="*,auto" ColumnSpacing="6">
-            <TextBox Grid.Column="0" Text="{Binding Command}" PlaceholderText="RCON command (e.g. ListPlayers)"/>
+            <TextBox Grid.Column="0" Text="{Binding Command}" AcceptsReturn="False" KeyDown="MessageTextBox_KeyDown" PlaceholderText="RCON command (e.g. ListPlayers)"/>
             <Button Grid.Column="1" Classes="primary" Content="Send" Command="{Binding SendCommand}"/>
         </Grid>
     </Grid>
