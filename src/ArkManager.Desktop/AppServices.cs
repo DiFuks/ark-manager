@@ -22,6 +22,7 @@ public static class AppServices
 
         // Core singletons
         sc.AddSingleton<AppPaths>();
+        sc.AddSingleton<AppLog>();
         sc.AddSingleton<SettingsService>();
         sc.AddSingleton<SteamCmdService>();
         sc.AddSingleton<IDebounceTimer, SystemDebounceTimer>();

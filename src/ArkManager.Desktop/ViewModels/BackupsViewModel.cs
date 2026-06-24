@@ -13,6 +13,7 @@ public partial class BackupsViewModel : ViewModelBase
     private readonly AutoBackupWorker? _auto;
     private readonly ServerManager? _server;
     private readonly SettingsService? _settings;
+    private readonly AppLog? _appLog;
 
     public ObservableCollection<BackupInfo> Backups { get; } = new();
 
@@ -50,12 +51,13 @@ public partial class BackupsViewModel : ViewModelBase
 
     public BackupsViewModel() { }
 
-    public BackupsViewModel(BackupService service, AutoBackupWorker auto, ServerManager server, SettingsService settings)
+    public BackupsViewModel(BackupService service, AutoBackupWorker auto, ServerManager server, SettingsService settings, AppLog appLog)
     {
         _service = service;
         _auto = auto;
         _server = server;
         _settings = settings;
+        _appLog = appLog;
         BackupsDirectory = settings.Current.BackupsDirectory ?? "";
         BackupRotationKeep = settings.Current.BackupRotationKeep;
         AutoBackupIntervalMinutes = settings.Current.AutoBackupIntervalMinutes;
@@ -149,7 +151,7 @@ public partial class BackupsViewModel : ViewModelBase
             Reload();
             Note = "";
         }
-        catch (Exception ex) { Status = "Error: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; _appLog?.Write("[backup] create failed: " + ex); }
         finally { Busy = false; Progress = 0; }
     }
 
@@ -164,7 +166,7 @@ public partial class BackupsViewModel : ViewModelBase
             await _service.RestoreAsync(Selected.FilePath, wipeFirst: true, progress);
             Status = "Restored from: " + Path.GetFileName(Selected.FilePath);
         }
-        catch (Exception ex) { Status = "Error: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; _appLog?.Write("[backup] restore failed: " + ex); }
         finally { Busy = false; Progress = 0; }
     }
 
@@ -180,7 +182,7 @@ public partial class BackupsViewModel : ViewModelBase
             await Task.Run(() => _service.Delete(path));
             Reload();
         }
-        catch (Exception ex) { Status = "Error: " + ex.Message; }
+        catch (Exception ex) { Status = "Error: " + ex.Message; _appLog?.Write("[backup] delete failed: " + ex); }
         finally { Busy = false; }
     }
 

@@ -50,13 +50,18 @@ public sealed class ServerManager : Backups.IWorldFlusher
     private readonly ConcurrentQueue<string> _ringLog = new();
     public IReadOnlyCollection<string> Snapshot() => _ringLog.ToArray();
 
-    public ServerManager(SettingsService settings, IServerLauncher launcher, ModsService mods, ConfigService config, Firewall.IFirewallService firewall)
+    // Server console persisted to disk (the in-memory ring is lost on exit) via the shared
+    // session log, tagged [server] so it's distinguishable from app diagnostics in the same file.
+    private readonly AppLog _appLog;
+
+    public ServerManager(SettingsService settings, IServerLauncher launcher, ModsService mods, ConfigService config, Firewall.IFirewallService firewall, AppLog appLog)
     {
         _settings = settings;
         _launcher = launcher;
         _mods = mods;
         _config = config;
         _firewall = firewall;
+        _appLog = appLog;
         _firewall.Log += line => PushLog("[firewall] " + line);
     }
 
@@ -381,6 +386,7 @@ public sealed class ServerManager : Backups.IWorldFlusher
 
     private void PushLog(string line)
     {
+        _appLog.Write("[server] " + line);
         _ringLog.Enqueue(line);
         // Ring buffer ~5000 lines
         while (_ringLog.Count > 5000 && _ringLog.TryDequeue(out _)) { }

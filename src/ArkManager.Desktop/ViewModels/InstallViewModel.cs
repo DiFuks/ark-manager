@@ -12,6 +12,8 @@ public partial class InstallViewModel : ViewModelBase
     private readonly SettingsService? _settings;
     private readonly SteamCmdService? _steam;
     private readonly ConfigService? _config;
+    private readonly AppPaths? _paths;
+    private readonly AppLog? _appLog;
     private readonly Services.ConsoleLog? _console;
 
     [ObservableProperty]
@@ -94,11 +96,13 @@ public partial class InstallViewModel : ViewModelBase
 
     public InstallViewModel() { }
 
-    public InstallViewModel(SettingsService settings, SteamCmdService steam, ConfigService config)
+    public InstallViewModel(SettingsService settings, SteamCmdService steam, ConfigService config, AppPaths paths, AppLog appLog)
     {
         _settings = settings;
         _steam = steam;
         _config = config;
+        _paths = paths;
+        _appLog = appLog;
         _console = new Services.ConsoleLog(s => Log = s);
         ServerInstallPath = settings.Current.ServerInstallPath ?? "";
         UpdateSteamState();
@@ -223,6 +227,14 @@ public partial class InstallViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    public void OpenLogs()
+    {
+        if (_paths == null) return;
+        Directory.CreateDirectory(_paths.LogsDir);
+        App.OpenInFinder(_paths.LogsDir);
+    }
+
+    [RelayCommand]
     public async Task BrowseServerFolderAsync()
     {
         var picked = await Services.Browse.PickFolderAsync("Select ASA server folder", ServerInstallPath);
@@ -241,5 +253,10 @@ public partial class InstallViewModel : ViewModelBase
     [RelayCommand]
     public void ClearLog() => _console?.Clear();
 
-    private void Append(string line) => _console?.Append(line);
+    private void Append(string line)
+    {
+        _console?.Append(line);
+        // Persist the install/update transcript so a failed or slow SteamCMD run can be attached.
+        _appLog?.Write("[steamcmd] " + line);
+    }
 }

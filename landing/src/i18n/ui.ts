@@ -100,11 +100,19 @@ export const ui = {
           'Try <strong>right-click → Open</strong> first. On recent macOS this often fails silently for unsigned apps. If it does, open Terminal and run:',
         macNote:
           'Replace the path if you keep ArkManager elsewhere. After this the app launches normally — including subsequent updates.',
+        macRosetta:
+          'On Apple Silicon you may also see <em>"support for Intel applications will be discontinued soon"</em> (and, on a fresh Mac, a prompt to install Rosetta) the first time you start a server. That\'s expected — the ASA server is a Windows Intel binary, run through bundled wine under Rosetta 2. Allow it and continue; Apple keeps Rosetta around for years yet.',
         winTitle: 'Windows',
         winStep:
           'SmartScreen shows <em>"Windows protected your PC"</em>. Click <strong>More info</strong> → <strong>Run anyway</strong>. That\'s a one-time per binary.',
         winNote:
           "If your environment blocks unsigned executables outright, you'll need IT to allow-list ArkManager — same drill as with any independent open-source tool.",
+      },
+      help: {
+        text: 'Hit any other snag? Open an issue on GitHub — describe what happened and attach the log, and we\'ll take a look.',
+        cta: 'Open an issue →',
+        href: 'https://github.com/DiFuks/ark-manager/issues/new',
+        logsLabel: 'Grab the log from the <strong>Open logs</strong> button on the Install tab.',
       },
     },
     footer: {
@@ -182,11 +190,19 @@ export const ui = {
           'Сначала попробуй <strong>правый клик → Открыть</strong>. На свежих macOS для неподписанных приложений это часто молча не срабатывает. Если так — открой Терминал и выполни:',
         macNote:
           'Подставь свой путь, если держишь ArkManager в другом месте. После этого приложение запускается как обычно — включая последующие обновления.',
+        macRosetta:
+          'На Apple Silicon при первом запуске сервера может также появиться предупреждение <em>«поддержка приложений для Intel скоро будет прекращена»</em> (а на новом Mac — запрос на установку Rosetta). Это нормально: сервер ASA — это Windows-бинарь под Intel, который запускается через встроенный wine поверх Rosetta 2. Разреши и продолжай — Apple оставит Rosetta ещё на годы.',
         winTitle: 'Windows',
         winStep:
           'SmartScreen покажет <em>«Система Windows защитила ваш компьютер»</em>. Нажми <strong>Подробнее</strong> → <strong>Выполнить в любом случае</strong>. Это разово на каждый бинарник.',
         winNote:
           'Если среда вообще блокирует неподписанные исполняемые файлы, попроси IT добавить ArkManager в белый список — как с любым независимым open-source инструментом.',
+      },
+      help: {
+        text: 'Столкнулся с другой проблемой? Заведи issue на GitHub — опиши, что случилось, и приложи лог. Разберёмся.',
+        cta: 'Завести issue →',
+        href: 'https://github.com/DiFuks/ark-manager/issues/new',
+        logsLabel: 'Лог достанешь кнопкой <strong>Open logs</strong> на вкладке Install.',
       },
     },
     footer: {

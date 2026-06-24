@@ -63,6 +63,7 @@ const fl = d.firstLaunch;
           <p class="fl-step" set:html={fl.macStep}></p>
           <pre class="fl-code"><code>xattr -dr com.apple.quarantine /Applications/ArkManager.app</code></pre>
           <p class="fl-step muted">{fl.macNote}</p>
+          <p class="fl-step muted" set:html={fl.macRosetta}></p>
         </div>
 
         <div class="fl-col">
@@ -71,6 +72,14 @@ const fl = d.firstLaunch;
           <p class="fl-step muted">{fl.winNote}</p>
         </div>
       </div>
+    </div>
+
+    <div class="fl-help">
+      <p class="meta">
+        {d.help.text}
+        <a href={d.help.href} target="_blank" rel="noopener">{d.help.cta}</a>
+      </p>
+      <p class="meta fl-logs-label" set:html={d.help.logsLabel}></p>
     </div>
   </div>
 </section>
@@ -147,6 +156,17 @@ const fl = d.firstLaunch;
     line-height: 1.5;
   }
   .fl-code code { white-space: pre; }
+
+  .fl-help {
+    margin: 24px 0 0;
+    text-align: center;
+    color: var(--muted);
+  }
+  .fl-help > p { margin: 0; }
+  .fl-help a { color: var(--accent-ink); white-space: nowrap; }
+  .fl-help a:hover { text-decoration: underline; }
+  .fl-logs-label { margin-top: 8px; }
+  .fl-logs-label strong { color: var(--accent-ink); font-weight: 600; }
 
   @media (max-width: 800px) {
     .grid { grid-template-columns: 1fr; }

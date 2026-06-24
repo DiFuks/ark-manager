@@ -58,6 +58,11 @@
                                 <PathIcon Data="{DynamicResource IconFolder}"/><TextBlock Text="Show in Finder"/>
                             </StackPanel>
                         </Button>
+                        <Button Command="{Binding OpenLogsCommand}" ToolTip.Tip="Open the app log folder">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{DynamicResource IconFolder}"/><TextBlock Text="Open logs"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                     <ProgressBar IsIndeterminate="True" IsVisible="{Binding Busy}" Height="4"/>
                 </StackPanel>

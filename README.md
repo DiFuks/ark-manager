@@ -39,6 +39,10 @@ unpack and run. **The .NET runtime and wine are embedded** — nothing else to i
 First launch on macOS / Windows is gated by the OS because the app is not paid-signed:
 
 - **macOS** — right-click → **Open** once (ad-hoc signed, not notarized).
+  On Apple Silicon you may also see *"support for Intel apps will be discontinued soon"*
+  (or a prompt to install Rosetta) the first time you start a server — that's expected:
+  the ASA server is a Windows Intel binary run through bundled wine under Rosetta 2.
+  Allow it and continue; Apple keeps Rosetta around for years yet.
 - **Windows** — SmartScreen → **More info** → **Run anyway** (no Authenticode cert).
 
 > The ASA dedicated server itself is a Windows `.exe` — there is no native mac/linux build.
@@ -142,6 +146,13 @@ publish with embedded wine on macOS/Linux.
 - ARM64 Linux, Intel Mac — untested.
 
 </details>
+
+## Help & bug reports
+
+Hit any snag — install, launch, wine, RCON, anything? **[Open an issue](https://github.com/DiFuks/ark-manager/issues/new)**
+describing what happened and attach the log. Grab it from the **Open logs** button on the Install tab
+(it opens `<DataDir>/logs/`; attach the newest `arkmanager-*.log` — one file per app run holds the
+server console plus install/backup/crash diagnostics).
 
 ## License
 

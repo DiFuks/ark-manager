@@ -17,6 +17,9 @@ public partial class App : Application
     // Keep signal registrations alive (otherwise GC collects them and the hook does not fire).
     private static PosixSignalRegistration? _sigInt, _sigTerm, _sigQuit;
     private static int _shutdownDone;
+
+    // The single session log (server console + app diagnostics funnel here). Kept alive statically.
+    private static AppLog? _appLog;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -25,6 +28,19 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         AppServices.Build();
+
+        // Catch crashes of ArkManager itself (not the server) into a file so a user can attach it.
+        _appLog = AppServices.Get<AppLog>();
+        _appLog.Write($"ArkManager started — {RuntimeInformation.OSDescription} / {RuntimeInformation.OSArchitecture}");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            _appLog?.Write("[FATAL] " + ((e.ExceptionObject as Exception)?.ToString() ?? "unknown error"));
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            _appLog?.Write("[unobserved-task] " + e.Exception);
+            e.SetObserved();
+        };
+        Dispatcher.UIThread.UnhandledException += (_, e) => _appLog?.Write("[UI] " + e.Exception);
+
         // Resolve the singleton worker so it subscribes to StateChanged.
         _ = AppServices.Get<ArkManager.Core.Services.Rcon.PlayerPoller>();
         _ = AppServices.Get<ArkManager.Core.Services.Backups.AutoBackupWorker>();

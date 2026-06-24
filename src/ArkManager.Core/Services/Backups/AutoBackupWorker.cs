@@ -12,6 +12,7 @@ public sealed class AutoBackupWorker : IDisposable
     private readonly SettingsService _settings;
     private readonly ServerManager _server;
     private readonly BackupService _backups;
+    private readonly AppLog _appLog;
     private readonly CancellationTokenSource _shutdown = new();
 
     // We only cancel the sleep, not the whole work. Each iteration creates a new linked token.
@@ -27,11 +28,12 @@ public sealed class AutoBackupWorker : IDisposable
     public event Action<Exception>? BackupFailed;
     public event Action<string>? Log;
 
-    public AutoBackupWorker(SettingsService settings, ServerManager server, BackupService backups)
+    public AutoBackupWorker(SettingsService settings, ServerManager server, BackupService backups, AppLog appLog)
     {
         _settings = settings;
         _server = server;
         _backups = backups;
+        _appLog = appLog;
         _settings.Changed += OnSettingsChanged;
         _ = Task.Run(LoopAsync);
     }
@@ -75,15 +77,18 @@ public sealed class AutoBackupWorker : IDisposable
             try
             {
                 Log?.Invoke("[auto-backup] creating snapshot...");
+                _appLog.Write("[auto-backup] creating snapshot...");
                 var info = await _backups.CreateBackupAsync(note: BackupService.AutoNote, progress: null, _shutdown.Token);
                 BackupCreated?.Invoke(info);
                 Log?.Invoke($"[auto-backup] done: {Path.GetFileName(info.FilePath)}");
+                _appLog.Write($"[auto-backup] done: {Path.GetFileName(info.FilePath)}");
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex)
             {
                 BackupFailed?.Invoke(ex);
                 Log?.Invoke("[auto-backup] error: " + ex.Message);
+                _appLog.Write("[auto-backup] error: " + ex);
             }
             finally
             {
