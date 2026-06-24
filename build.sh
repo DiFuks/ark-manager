@@ -72,6 +72,61 @@ ensure_wine() {
   echo "$root"
 }
 
+# --- wine LGPL compliance ----------------------------------------------------
+# Wine is LGPL-2.1. We redistribute pre-built binaries, so every bundle ships the
+# license text plus a notice pointing at the corresponding source. Wine runs as a
+# separate process (not linked into the app) and lives in a replaceable folder,
+# which satisfies the LGPL relink/replace clause by construction.
+place_wine_licenses() {
+  # place_wine_licenses <wine_dir> <macos-arm64|linux-x64>
+  local wine_dir="$1" key="$2"
+  cp "$ROOT/build/licenses/COPYING.LGPL-2.1" "$wine_dir/COPYING.LGPL-2.1"
+
+  local bin_url wine_ver upstream_src builder build_src
+  bin_url=$(json_field "$key" url)
+  case "$key" in
+    macos-arm64)
+      wine_ver="Wine Stable 11.0_1 (based on Wine 11.0)"
+      upstream_src="https://dl.winehq.org/wine/source/11.0/wine-11.0.tar.xz"
+      builder="Gcenx/macOS_Wine_builds"
+      build_src="https://github.com/Gcenx/macOS_Wine_builds" ;;
+    linux-x64)
+      wine_ver="lutris-wine 7.2-2 (based on Wine 7.2)"
+      upstream_src="https://dl.winehq.org/wine/source/7.2/wine-7.2.tar.xz"
+      builder="lutris/wine"
+      build_src="https://github.com/lutris/wine" ;;
+  esac
+
+  cat > "$wine_dir/NOTICE.wine" <<NOTICE
+This product bundles $wine_ver, licensed under the GNU Lesser General Public
+License, version 2.1 — see COPYING.LGPL-2.1 in this folder.
+
+Wine is a separate program, launched by ArkManager as its own process; it is not
+linked into the ArkManager binary. You may replace the contents of this 'wine'
+folder with your own build of Wine.
+
+Bundled binary build:
+  $bin_url
+
+Corresponding source code:
+  Wine source:    $upstream_src
+  Build project:  $build_src ($builder)
+
+Wine is free software — see <https://www.winehq.org/>. ArkManager itself is
+MIT-licensed and is not derived from Wine.
+NOTICE
+}
+
+# Third-party notices + embedded-font licenses (OFL-1.1). The fonts are compiled
+# into the app on every platform, so this runs for all three targets.
+place_app_licenses() {
+  # place_app_licenses <dir>
+  local dir="$1"
+  cp "$ROOT/build/licenses/THIRD-PARTY-NOTICES.txt" "$dir/THIRD-PARTY-NOTICES.txt"
+  cp "$ROOT/build/licenses/IBMPlex-OFL.txt"         "$dir/IBMPlex-OFL.txt"
+  cp "$ROOT/build/licenses/ZillaSlab-OFL.txt"       "$dir/ZillaSlab-OFL.txt"
+}
+
 # --- parse args --------------------------------------------------------------
 TARGETS=()
 if [[ $# -eq 0 ]]; then
@@ -133,6 +188,8 @@ package_macos() {
   local wine_root; wine_root=$(ensure_wine macos-arm64)
   mkdir -p "$app/Contents/Resources/wine"
   cp -R "$wine_root/." "$app/Contents/Resources/wine/"
+  place_wine_licenses "$app/Contents/Resources/wine" macos-arm64
+  place_app_licenses "$app/Contents/Resources"
 
   # Icon (best-effort).
   local ICON_SRC="$ROOT/src/ArkManager.Desktop/Assets/AppIcon.png"
@@ -187,6 +244,7 @@ package_windows() {
   local out="$DIST/$APP_NAME-$VERSION-windows-x64"
   rm -rf "$out"; mkdir -p "$out"
   cp -R "$publish/." "$out/"
+  place_app_licenses "$out"
   local zip_path="$DIST/$APP_NAME-$VERSION-windows-x64.zip"
   rm -f "$zip_path"
   if command -v zip >/dev/null 2>&1; then
@@ -214,6 +272,8 @@ package_linux() {
   local wine_root; wine_root=$(ensure_wine linux-x64)
   mkdir -p "$out/wine"
   cp -R "$wine_root/." "$out/wine/"
+  place_wine_licenses "$out/wine" linux-x64
+  place_app_licenses "$out"
 
   # Ensure the apphost has +x (publish output usually already has it on Unix).
   chmod +x "$out/$APP_NAME" 2>/dev/null || true

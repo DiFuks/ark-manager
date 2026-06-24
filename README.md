@@ -158,6 +158,21 @@ server console plus install/backup/crash diagnostics).
 
 ArkManager is released under the [MIT License](LICENSE).
 
-Bundled wine sources are redistributable: WineHQ (LGPL 2.1), gcenx macOS builds,
-lutris-wine Linux builds — pinned versions + SHA256 in
-[`build/wine-sources.json`](build/wine-sources.json).
+### Bundled wine (LGPL-2.1)
+
+ArkManager bundles **Wine** (gcenx macOS builds, lutris-wine Linux builds) — pinned
+versions + SHA256 in [`build/wine-sources.json`](build/wine-sources.json). Wine is licensed
+under the **GNU Lesser General Public License, version 2.1**.
+
+ArkManager itself stays **MIT** — LGPL is weak copyleft, and wine is run as a **separate
+process** (not linked into the app), living in a replaceable `wine/` folder. Each macOS /
+Linux bundle ships `wine/COPYING.LGPL-2.1` (the license text) and `wine/NOTICE.wine`
+(attribution + links to the corresponding wine source for that exact build), so the
+distributed binaries satisfy LGPL-2.1. You may swap the `wine/` folder for your own build.
+
+### Bundled fonts (OFL-1.1)
+
+The UI embeds **IBM Plex** (© IBM Corp.) and **Zilla Slab** (© The Mozilla Foundation),
+both under the **SIL Open Font License 1.1**. Every bundle ships `THIRD-PARTY-NOTICES.txt`
+plus the font license texts (`IBMPlex-OFL.txt`, `ZillaSlab-OFL.txt`). License sources live
+in [`build/licenses/`](build/licenses).

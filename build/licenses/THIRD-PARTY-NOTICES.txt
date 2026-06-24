@@ -1,0 +1,26 @@
+ArkManager — third-party notices
+================================
+
+ArkManager itself is licensed under the MIT License (see LICENSE). It includes
+the following third-party components:
+
+Fonts (embedded in the application, all platforms)
+--------------------------------------------------
+- IBM Plex Sans & IBM Plex Mono — (c) 2017 IBM Corp., "Plex" Reserved Font Name.
+  SIL Open Font License 1.1 — full text in IBMPlex-OFL.txt.
+  https://github.com/IBM/plex
+- Zilla Slab — (c) 2017 The Mozilla Foundation.
+  SIL Open Font License 1.1 — full text in ZillaSlab-OFL.txt.
+  https://github.com/typotheque/zilla-slab
+
+Wine (macOS and Linux bundles only)
+-----------------------------------
+Bundled under the wine/ folder and licensed under the GNU Lesser General Public
+License, version 2.1. See wine/COPYING.LGPL-2.1 (license text) and wine/NOTICE.wine
+(attribution and links to the corresponding source). Wine runs as a separate
+process and is not linked into ArkManager.
+
+.NET runtime and libraries
+--------------------------
+The self-contained .NET runtime, Avalonia, CommunityToolkit.Mvvm and
+Microsoft.Extensions.* are licensed under the MIT License.
