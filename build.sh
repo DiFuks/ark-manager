@@ -234,7 +234,10 @@ PLIST
   # Ad-hoc sign so Gatekeeper accepts on Apple Silicon.
   codesign --force --deep --sign - "$app" 2>/dev/null || echo "    codesign skipped"
 
-  ( cd "$DIST/$APP_NAME-$VERSION-macos-arm64" && zip -qr "../$APP_NAME-$VERSION-macos-arm64.zip" "$APP_NAME.app" )
+  # ditto, not zip: zip materialises the ~67 symlinks in the wine tree
+  # (+100 MB, mangled layout). The ad-hoc seal still does not survive any
+  # extractor -- that needs notarization.
+  ditto -c -k --keepParent "$app" "$DIST/$APP_NAME-$VERSION-macos-arm64.zip"
   echo "    -> $DIST/$APP_NAME-$VERSION-macos-arm64.zip"
 }
 
