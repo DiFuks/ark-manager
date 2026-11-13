@@ -1,4 +1,4 @@
-# ArkManager — context for Claude
+# ArkManager — context for Codex
 
 ASA (ARK: Survival Ascended) dedicated server manager. Originally built as a
 Mac alternative to the Windows-only ASADedicatedManager; now cross-platform —
@@ -71,7 +71,7 @@ visually "drops").
 
 ## App-local state
 
-The app's vendor folder (per the user-CLAUDE.md rule):
+The app's vendor folder (per the user-AGENTS.md rule):
 
 - macOS:  `~/Library/Application Support/ArkManager/`
 - Linux:  `$XDG_DATA_HOME/ArkManager/`
@@ -367,3 +367,7 @@ Events: `BackupCreated` / `BackupFailed` / `Log` + public `NextRunUtc`.
 - Tests are xUnit, no mock frameworks. Parsers / pure logic come first.
 
 Branch `main`, pushed to `origin` on GitHub (`DiFuks/ark-manager`).
+
+## Worktree base
+
+При создании нового worktree для этого проекта использовать текущий `HEAD` как базу, если задача или пользователь не требуют другую ветку. Это сохраняет прежнюю настройку `worktree.baseRef = head`.
