@@ -1,4 +1,4 @@
-# ArkManager — context for Codex
+# ArkManager — instructions for agents
 
 ASA (ARK: Survival Ascended) dedicated server manager. Originally built as a
 Mac alternative to the Windows-only ASADedicatedManager; now cross-platform —
